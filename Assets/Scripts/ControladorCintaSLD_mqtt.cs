@@ -9,28 +9,14 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     [Header("Configuración de Movimiento")]
     public float multiplicadorVelocidad = 0.001f;
-    [SerializeField] private float velocidadActual = 0f; // La ponemos serializada para verla en el Inspector
+    [SerializeField] private float velocidadActual = 0f;
 
     private List<Transform> eslabonesOrdenados = new List<Transform>();
     private Vector3[] posRailes;
     private Quaternion[] rotRailes;
     private float progresoCiclo = 0f;
 
-    // --- CONEXIÓN CON EL DELEGADO ---
-    void OnEnable()
-    {
-        // Suscribirse al evento del Manager
-        if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnBeltUpdateEvent += ActualizarVelocidad;
-    }
-
-    void OnDisable()
-    {
-        // Desuscribirse al desactivar
-        if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnBeltUpdateEvent -= ActualizarVelocidad;
-    }
-
+    // --- CONEXIÓN ROBUSTA ---
     void Start()
     {
         if (objetoCintaPadre == null)
@@ -40,17 +26,35 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
 
         ConfigurarEslabones();
+
+        // Intentamos suscribirnos cada segundo hasta que el MQTTClient esté listo
+        InvokeRepeating("IntentarSuscripcion", 0f, 1f);
     }
 
+    void IntentarSuscripcion()
+    {
+        if (MQTTClient.Instance != null)
+        {
+            MQTTClient.Instance.OnBeltUpdateEvent += ActualizarVelocidad;
+            Debug.Log("<color=green><b>Cinta SLD:</b> Conectado con éxito al sistema central.</color>");
+            CancelInvoke("IntentarSuscripcion");
+        }
+    }
+
+    void OnDisable()
+    {
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnBeltUpdateEvent -= ActualizarVelocidad;
+    }
+
+    // --- LÓGICA DE LA CADENA ---
     void ConfigurarEslabones()
     {
-        // 1. Recoger todos los hijos del padre
         List<Transform> sinOrdenar = new List<Transform>();
         foreach (Transform t in objetoCintaPadre) sinOrdenar.Add(t);
 
         if (sinOrdenar.Count == 0) return;
 
-        // 2. Ordenarlos por cercanía física para formar la cadena
         eslabonesOrdenados.Clear();
         Transform actual = sinOrdenar[0];
         eslabonesOrdenados.Add(actual);
@@ -67,7 +71,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             actual = masCercano;
         }
 
-        // 3. Guardar la "foto" de las posiciones y rotaciones iniciales
         posRailes = new Vector3[eslabonesOrdenados.Count];
         rotRailes = new Quaternion[eslabonesOrdenados.Count];
 
@@ -80,24 +83,22 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     void ActualizarVelocidad(float nuevaVelocidad)
     {
+        // Debug para confirmar que llegan datos
+        // Debug.Log("Velocidad recibida en cinta: " + nuevaVelocidad);
         velocidadActual = nuevaVelocidad;
     }
 
     void Update()
     {
-        // Solo se mueve si recibimos velocidad > 0 y tenemos eslabones configurados
         if (velocidadActual > 0 && eslabonesOrdenados.Count > 0)
         {
             progresoCiclo += velocidadActual * multiplicadorVelocidad * Time.deltaTime;
 
-            // Si el progreso supera 1 (un paso de eslabón), reiniciamos
             if (progresoCiclo >= 1f) progresoCiclo -= 1f;
 
             for (int i = 0; i < eslabonesOrdenados.Count; i++)
             {
                 int sigIdx = (i + 1) % eslabonesOrdenados.Count;
-
-                // Interpolación entre el punto actual y el siguiente del carril
                 eslabonesOrdenados[i].localPosition = Vector3.Lerp(posRailes[i], posRailes[sigIdx], progresoCiclo);
                 eslabonesOrdenados[i].localRotation = Quaternion.Slerp(rotRailes[i], rotRailes[sigIdx], progresoCiclo);
             }

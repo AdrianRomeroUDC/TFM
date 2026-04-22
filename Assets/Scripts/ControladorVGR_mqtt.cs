@@ -1,9 +1,5 @@
 using UnityEngine;
-using uPLibrary.Networking.M2Mqtt;
-using uPLibrary.Networking.M2Mqtt.Messages;
 using System;
-using System.Text;
-using System.Security.Authentication;
 
 [Serializable]
 public class VGRData
@@ -15,7 +11,6 @@ public class VGRData
 
 public class ControladorVGR_mqtt : MonoBehaviour
 {
-    private MqttClient client;
     private float lastRot, lastVert, lastExt;
 
     [Header("Referencias")]
@@ -23,7 +18,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public Transform ejeVertical;
     public Transform ejeExtension;
 
-    [Header("Calibración PLC (Ajustado a tus Logs)")]
+    [Header("Calibración PLC")]
     public float plcRot_Min = 1395;
     public float plcRot_Max = 21;
     public float plcVert_Min = 20;
@@ -31,7 +26,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public float plcExt_Min = 40;
     public float plcExt_Max = 1210;
 
-    [Header("Calibración Unity (Capturar con Click Derecho)")]
+    [Header("Calibración Unity (Click Derecho para Capturar)")]
     [ContextMenuItem("Capturar", "CapturarRotMin")] public float unityRot_Min;
     [ContextMenuItem("Capturar", "CapturarRotMax")] public float unityRot_Max;
     [ContextMenuItem("Capturar", "CapturarVertMin")] public float unityVert_Min;
@@ -42,6 +37,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     [Header("Ajustes")]
     public float lerpSpeed = 5f;
 
+    // Métodos para el menú contextual del inspector
     void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
     void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
     void CapturarVertMin() => unityVert_Min = ejeVertical.localPosition.y;
@@ -49,17 +45,52 @@ public class ControladorVGR_mqtt : MonoBehaviour
     void CapturarExtMin() => unityExt_Min = ejeExtension.localPosition.x;
     void CapturarExtMax() => unityExt_Max = ejeExtension.localPosition.x;
 
-    void Start() => Connect();
+    // --- SUSCRIPCIÓN AL CLIENTE CENTRAL ---
+    void Start()
+    {
+        InvokeRepeating("IntentarSuscripcion", 0f, 1f);
+    }
+
+    void IntentarSuscripcion()
+    {
+        if (MQTTClient.Instance != null)
+        {
+            MQTTClient.Instance.OnVGRUpdateEvent += ActualizarPosicionDesdeMQTT;
+            Debug.Log("<color=green><b>VGR:</b> Suscrito al evento de posición.</color>");
+            CancelInvoke("IntentarSuscripcion");
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnVGRUpdateEvent -= ActualizarPosicionDesdeMQTT;
+    }
+
+    // Este método es invocado por el MQTT_Client
+    private void ActualizarPosicionDesdeMQTT(string json)
+    {
+        try
+        {
+            VGRData data = JsonUtility.FromJson<VGRData>(json);
+            lastRot = data.rotacion;
+            lastVert = data.vertical;
+            lastExt = data.estirar;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("Error parseando JSON de VGR: " + ex.Message);
+        }
+    }
 
     void Update()
     {
         float speed = lerpSpeed * Time.deltaTime;
 
-        // ROTACIÓN: Cálculo lineal para evitar efecto espejo
+        // ROTACIÓN
         if (ejeRotacion)
         {
             float t = Mathf.InverseLerp(plcRot_Min, plcRot_Max, lastRot);
-            // Forzamos el ángulo sin usar LerpAngle para que no busque el camino corto
             float targetAngle = unityRot_Min + (unityRot_Max - unityRot_Min) * t;
             ejeRotacion.localRotation = Quaternion.Slerp(ejeRotacion.localRotation, Quaternion.Euler(0, targetAngle, 0), speed);
         }
@@ -79,28 +110,5 @@ public class ControladorVGR_mqtt : MonoBehaviour
             float targetX = Mathf.Lerp(unityExt_Min, unityExt_Max, tE);
             ejeExtension.localPosition = Vector3.Lerp(ejeExtension.localPosition, new Vector3(targetX, ejeExtension.localPosition.y, ejeExtension.localPosition.z), speed);
         }
-    }
-
-    void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
-    {
-        try
-        {
-            string json = Encoding.UTF8.GetString(e.Message);
-            VGRData data = JsonUtility.FromJson<VGRData>(json);
-            lastRot = data.rotacion; lastVert = data.vertical; lastExt = data.estirar;
-        }
-        catch { }
-    }
-
-    void Connect()
-    {
-        try
-        {
-            client = new MqttClient("4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud", 8883, true, null, null, MqttSslProtocols.TLSv1_2);
-            client.Connect(Guid.NewGuid().ToString(), "LearningFactory", "Fischertechnik1");
-            client.Subscribe(new string[] { "f/pos_vgr" }, new byte[] { 0 });
-            client.MqttMsgPublishReceived += OnMessageReceived;
-        }
-        catch { }
     }
 }

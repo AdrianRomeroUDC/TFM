@@ -7,31 +7,44 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     public Transform pistonRojo;
     public Transform pistonAzul;
 
-    [Header("Coordenadas Estándar (Rojo y Azul)")]
-    public float xReposoEstandar = 0.001122198f;
-    public float xEstiradoEstandar = 0.000826f;
+    // Coordenadas Estándar (Rojo y Azul)
+    private float xReposoEstandar = 0.001122198f;
+    private float xEstiradoEstandar = 0.000826f;
 
-    [Header("Coordenadas Especiales (Blanco)")]
-    public float xReposoBlanco = 0.0002811983f;
-    public float xEstiradoBlanco = -0.0000149997f; // -2.9e-05 convertido a float
+    // Coordenadas Especiales (Blanco)
+    private float xReposoBlanco = 0.0002811983f;
+    private float xEstiradoBlanco = -0.0000149997f;
 
     [Header("Ajustes")]
     public float velocidadPiston = 0.01f;
 
     private float targetBlanco, targetRojo, targetAzul;
 
-    void OnEnable()
+    // --- LOGICA DE SUSCRIPCIÓN ROBUSTA ---
+    void Start()
+    {
+        // Reintentamos la suscripción cada segundo hasta que el cliente esté listo
+        InvokeRepeating("IntentarSuscripcion", 0f, 1f);
+    }
+
+    void IntentarSuscripcion()
     {
         if (MQTTClient.Instance != null)
+        {
             MQTTClient.Instance.OnCylinderUpdateEvent += ProcesarComandoCilindro;
+            Debug.Log("<color=green><b>Cilindros SLD:</b> Conectado con éxito al sistema central.</color>");
+            CancelInvoke("IntentarSuscripcion");
+        }
     }
 
     void OnDisable()
     {
+        // Siempre desvincular para evitar fugas de memoria
         if (MQTTClient.Instance != null)
             MQTTClient.Instance.OnCylinderUpdateEvent -= ProcesarComandoCilindro;
     }
 
+    // --- PROCESAMIENTO DE DATOS ---
     void ProcesarComandoCilindro(string color, int estado)
     {
         float valor = (float)estado;
@@ -58,6 +71,7 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
         float xObjetivo = Mathf.Lerp(reposo, estirado, estadoActual);
 
         Vector3 pos = piston.localPosition;
+        // Usamos MoveTowards para un movimiento lineal constante
         pos.x = Mathf.MoveTowards(pos.x, xObjetivo, velocidadPiston * Time.deltaTime);
         piston.localPosition = pos;
     }

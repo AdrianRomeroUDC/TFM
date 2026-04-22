@@ -1,18 +1,8 @@
 using UnityEngine;
-using uPLibrary.Networking.M2Mqtt;
-using uPLibrary.Networking.M2Mqtt.Messages;
 using System;
-using System.Text;
 
 public class ControladorDPS_mqtt : MonoBehaviour
 {
-    private MqttClient client;
-
-    [Header("Configuración MQTT")]
-    public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
-    public string username = "LearningFactory";
-    public string password = "Fischertechnik1";
-
     [Header("Posiciones y Referencias")]
     public Transform puntoEntrada;
     public Transform pinzaVGR;
@@ -31,43 +21,42 @@ public class ControladorDPS_mqtt : MonoBehaviour
     private string modoPendiente = "";
     private bool gripActivo = false;
 
-    void Awake() { LimpiarEscenaInmediata(); }
-    void Start() { Connect(); }
+    // --- CICLO DE VIDA Y SUSCRIPCIÓN ---
 
-    void Update()
+    void Awake()
     {
-        // El Update corre en el HILO PRINCIPAL, aquí sí podemos tocar transforms
-        if (modoPendiente != "")
+        LimpiarEscenaInmediata();
+    }
+
+    void Start()
+    {
+        // Intentamos suscribirnos cada segundo hasta que MQTTClient.Instance no sea null
+        InvokeRepeating("IntentarSuscripcion", 0f, 1f);
+    }
+
+    void IntentarSuscripcion()
+    {
+        if (MQTTClient.Instance != null)
         {
-            if (modoPendiente == "SPAWN_BASE") SpawnBase();
-            else if (modoPendiente == "DELETE") { if (piezaActual != null) Destroy(piezaActual); }
-            else if (modoPendiente == "DROP") EjecutarSoltarFisico(); // Nueva orden segura
-            else CambiarColorEnVGR(modoPendiente);
-
-            modoPendiente = "";
-        }
-
-        // Lógica de sujeción
-        if (gripActivo && piezaActual != null)
-        {
-            if (piezaActual.transform.parent != pinzaVGR)
-            {
-                piezaActual.transform.SetParent(pinzaVGR);
-                piezaActual.transform.localPosition = posicionEnPinza;
-                piezaActual.transform.localEulerAngles = rotacionEnPinza;
-
-                Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
-                if (rb != null) rb.isKinematic = true;
-            }
+            MQTTClient.Instance.OnDPSUpdateEvent += ProcesarMensajeMqtt;
+            Debug.Log("<color=green><b>DPS:</b> Conectado con éxito al sistema central.</color>");
+            CancelInvoke("IntentarSuscripcion");
         }
     }
 
-    void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
+    private void OnDisable()
     {
-        string msg = Encoding.UTF8.GetString(e.Message).Trim().ToUpper();
-        string topic = e.Topic;
+        // Desvincular el evento para evitar errores de referencia nula al cerrar
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnDPSUpdateEvent -= ProcesarMensajeMqtt;
+    }
 
-        // Aquí NO tocamos nada de Unity directamente, solo guardamos la orden
+    // --- PROCESAMIENTO DE DATOS ---
+
+    private void ProcesarMensajeMqtt(string topic, string message)
+    {
+        string msg = message.Trim().ToUpper();
+
         if (topic == "f/dps/pieza")
         {
             if (msg == "1") modoPendiente = "SPAWN_BASE";
@@ -87,12 +76,41 @@ public class ControladorDPS_mqtt : MonoBehaviour
             else
             {
                 gripActivo = false;
-                modoPendiente = "DROP"; // Le decimos al Update que suelte la pieza
+                modoPendiente = "DROP";
             }
         }
     }
 
-    // Esta función ahora es llamada desde el Update (Hilo Principal)
+    void Update()
+    {
+        // Ejecución de órdenes en el Hilo Principal (Seguro para Unity)
+        if (modoPendiente != "")
+        {
+            if (modoPendiente == "SPAWN_BASE") SpawnBase();
+            else if (modoPendiente == "DELETE") { if (piezaActual != null) Destroy(piezaActual); }
+            else if (modoPendiente == "DROP") EjecutarSoltarFisico();
+            else CambiarColorEnVGR(modoPendiente);
+
+            modoPendiente = "";
+        }
+
+        // Mantener la pieza pegada a la pinza si el grip está activo
+        if (gripActivo && piezaActual != null)
+        {
+            if (piezaActual.transform.parent != pinzaVGR)
+            {
+                piezaActual.transform.SetParent(pinzaVGR);
+                piezaActual.transform.localPosition = posicionEnPinza;
+                piezaActual.transform.localEulerAngles = rotacionEnPinza;
+
+                Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = true;
+            }
+        }
+    }
+
+    // --- ACCIONES FÍSICAS ---
+
     void EjecutarSoltarFisico()
     {
         if (piezaActual != null)
@@ -103,14 +121,18 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
             rb.isKinematic = false;
             rb.useGravity = true;
-            Debug.Log("Pieza soltada físicamente desde el hilo principal.");
+            Debug.Log("Pieza soltada físicamente.");
         }
     }
 
     void CambiarColorEnVGR(string color)
     {
         if (piezaActual == null) return;
-        GameObject prefab = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : (color == "BLUE") ? prefabAzul : null;
+
+        GameObject prefab = null;
+        if (color == "WHITE") prefab = prefabBlanco;
+        else if (color == "RED") prefab = prefabRojo;
+        else if (color == "BLUE") prefab = prefabAzul;
 
         if (prefab != null)
         {
@@ -119,7 +141,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
             piezaActual.transform.SetParent(pinzaVGR);
             piezaActual.transform.localPosition = posicionEnPinza;
             piezaActual.transform.localEulerAngles = rotacionEnPinza;
-            ConfigurarPieza(piezaActual, pinzaVGR);
+            ConfigurarPieza(piezaActual);
         }
     }
 
@@ -127,10 +149,11 @@ public class ControladorDPS_mqtt : MonoBehaviour
     {
         if (piezaActual != null) Destroy(piezaActual);
         piezaActual = Instantiate(prefabBaseGris, puntoEntrada.position, puntoEntrada.rotation);
-        ConfigurarPieza(piezaActual, puntoEntrada);
+        ConfigurarPieza(piezaActual);
+        Debug.Log("Base Gris instanciada en punto de entrada.");
     }
 
-    void ConfigurarPieza(GameObject pieza, Transform padre)
+    void ConfigurarPieza(GameObject pieza)
     {
         if (pieza.GetComponent<Rigidbody>() == null) pieza.AddComponent<Rigidbody>().isKinematic = true;
         if (pieza.GetComponent<Collider>() == null) pieza.AddComponent<MeshCollider>().convex = true;
@@ -139,18 +162,8 @@ public class ControladorDPS_mqtt : MonoBehaviour
     void LimpiarEscenaInmediata()
     {
         foreach (GameObject obj in GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
-            if (obj.name.Contains("(Clone)") && obj != this.gameObject) DestroyImmediate(obj);
-    }
-
-    void Connect()
-    {
-        try
         {
-            client = new MqttClient(brokerHost, 8883, true, null, null, MqttSslProtocols.TLSv1_2);
-            client.MqttMsgPublishReceived += OnMessageReceived;
-            client.Connect(Guid.NewGuid().ToString(), username, password);
-            client.Subscribe(new string[] { "f/dps/pieza", "f/dps/color", "f/vgr/grip" }, new byte[] { 0, 0, 0 });
+            if (obj.name.Contains("(Clone)")) DestroyImmediate(obj);
         }
-        catch (Exception ex) { Debug.LogError(ex.Message); }
     }
 }
