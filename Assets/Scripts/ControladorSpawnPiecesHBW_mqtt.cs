@@ -11,7 +11,7 @@ public class HBWStockPayload
     public string[] piezas;
 }
 
-public class GestorHBW_mqtt : MonoBehaviour
+public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 {
     private MqttClient client;
     private string lastJsonReceived;

@@ -4,7 +4,7 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 using System;
 using System.Text;
 
-public class GestorDPS_mqtt : MonoBehaviour
+public class ControladorDPS_mqtt : MonoBehaviour
 {
     private MqttClient client;
 
