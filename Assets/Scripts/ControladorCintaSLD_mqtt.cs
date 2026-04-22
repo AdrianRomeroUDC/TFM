@@ -12,6 +12,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
     public string topicBelt = "f/sld/belt";
 
+    [Header("Referencia a la Cinta")]
+    public Transform objetoCintaPadre; // Aquí arrastras el padre de los eslabones
+
     [Header("Configuración de Movimiento")]
     public float velocidadActual = 0f;
     public float multiplicadorVelocidad = 0.001f;
@@ -24,8 +27,15 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     void Start()
     {
+        if (objetoCintaPadre == null)
+        {
+            Debug.LogError("Asigna el objeto padre de la cinta en el Inspector.");
+            return;
+        }
+
         OrdenarEslabonesPorCercania();
 
+        // Guardamos las posiciones LOCALES respecto al padre (la cinta)
         posRailes = new Vector3[eslabonesOrdenados.Count];
         rotRailes = new Quaternion[eslabonesOrdenados.Count];
 
@@ -41,16 +51,14 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     void OrdenarEslabonesPorCercania()
     {
         List<Transform> sinOrdenar = new List<Transform>();
-        foreach (Transform t in transform) sinOrdenar.Add(t);
+        foreach (Transform t in objetoCintaPadre) sinOrdenar.Add(t);
 
         if (sinOrdenar.Count == 0) return;
 
-        // Empezamos por el primero que encontremos
         Transform actual = sinOrdenar[0];
         eslabonesOrdenados.Add(actual);
         sinOrdenar.RemoveAt(0);
 
-        // Buscamos siempre el más cercano al anterior para formar la cadena
         while (sinOrdenar.Count > 0)
         {
             Transform masCercano = sinOrdenar
@@ -75,6 +83,8 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             for (int i = 0; i < eslabonesOrdenados.Count; i++)
             {
                 int sigIdx = (i + 1) % eslabonesOrdenados.Count;
+
+                // Mantenemos el movimiento local al objetoCintaPadre
                 eslabonesOrdenados[i].localPosition = Vector3.Lerp(posRailes[i], posRailes[sigIdx], progresoCiclo);
                 eslabonesOrdenados[i].localRotation = Quaternion.Slerp(rotRailes[i], rotRailes[sigIdx], progresoCiclo);
             }

@@ -1368,8 +1368,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnimacionCintaSLD
   brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
   topicBelt: f/sld/belt
+  objetoCintaPadre: {fileID: 2593961540105253669}
   velocidadActual: 0
-  multiplicadorVelocidad: 0.001
+  multiplicadorVelocidad: 0.01
 --- !u!4 &334509518
 Transform:
   m_ObjectHideFlags: 0
@@ -182163,7 +182164,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2593961540105253669}
-  - component: {fileID: 5743864296588170018}
   m_Layer: 0
   m_Name: 9V_kette_mit_raupenbelag_id5614_step_____CintaTransportadora
   m_TagString: Untagged
@@ -182171,22 +182171,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &5743864296588170018
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5743864296588170017}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bc9fb7d4cdb6c84688450f46fed7499, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ControladorCintaSLD_mqtt
-  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
-  topicBelt: f/sld/belt
-  velocidadActual: 500
-  multiplicadorVelocidad: 0.01
 --- !u!4 &5745364197580996822
 Transform:
   m_ObjectHideFlags: 0
