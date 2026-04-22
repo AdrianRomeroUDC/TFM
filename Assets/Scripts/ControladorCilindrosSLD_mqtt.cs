@@ -1,72 +1,64 @@
 using UnityEngine;
-using uPLibrary.Networking.M2Mqtt;
-using uPLibrary.Networking.M2Mqtt.Messages;
-using System;
-using System.Text;
 
 public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 {
-    private MqttClient client;
-    public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
-    public string topicCylinders = "f/sld/cylinder";
-
-    [Header("Referencias de Pistones (Vástagos)")]
+    [Header("Referencias de Pistones")]
     public Transform pistonBlanco;
     public Transform pistonRojo;
     public Transform pistonAzul;
 
-    [Header("Coordenadas Exactas (Eje X local)")]
-    public float xReposo = 0.001122198f;
-    public float xEstirado = 0.000826f;
-    public float velocidadPiston = 0.001f; // Al ser valores tan pequeños, usa una velocidad baja
+    [Header("Coordenadas Estándar (Rojo y Azul)")]
+    public float xReposoEstandar = 0.001122198f;
+    public float xEstiradoEstandar = 0.000826f;
+
+    [Header("Coordenadas Especiales (Blanco)")]
+    public float xReposoBlanco = 0.0002811983f;
+    public float xEstiradoBlanco = -0.0000149997f; // -2.9e-05 convertido a float
+
+    [Header("Ajustes")]
+    public float velocidadPiston = 0.01f;
 
     private float targetBlanco, targetRojo, targetAzul;
 
-    void Start() => Connect();
+    void OnEnable()
+    {
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnCylinderUpdateEvent += ProcesarComandoCilindro;
+    }
+
+    void OnDisable()
+    {
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnCylinderUpdateEvent -= ProcesarComandoCilindro;
+    }
+
+    void ProcesarComandoCilindro(string color, int estado)
+    {
+        float valor = (float)estado;
+        if (color == "WHITE") targetBlanco = valor;
+        else if (color == "RED") targetRojo = valor;
+        else if (color == "BLUE") targetAzul = valor;
+    }
 
     void Update()
     {
-        MoverPiston(pistonBlanco, ref targetBlanco);
-        MoverPiston(pistonRojo, ref targetRojo);
-        MoverPiston(pistonAzul, ref targetAzul);
+        // El blanco usa sus propias coordenadas
+        MoverPiston(pistonBlanco, targetBlanco, xReposoBlanco, xEstiradoBlanco);
+
+        // El rojo y azul usan las estándar
+        MoverPiston(pistonRojo, targetRojo, xReposoEstandar, xEstiradoEstandar);
+        MoverPiston(pistonAzul, targetAzul, xReposoEstandar, xEstiradoEstandar);
     }
 
-    void MoverPiston(Transform piston, ref float estadoActual)
+    void MoverPiston(Transform piston, float estadoActual, float reposo, float estirado)
     {
         if (piston == null) return;
 
-        // Calculamos la X objetivo: si estado es 1 usa xEstirado, si es 0 usa xReposo
-        float xObjetivo = Mathf.Lerp(xReposo, xEstirado, estadoActual);
+        // Calculamos el objetivo usando las coordenadas que le pasemos
+        float xObjetivo = Mathf.Lerp(reposo, estirado, estadoActual);
 
         Vector3 pos = piston.localPosition;
         pos.x = Mathf.MoveTowards(pos.x, xObjetivo, velocidadPiston * Time.deltaTime);
         piston.localPosition = pos;
-    }
-
-    void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
-    {
-        string msg = Encoding.UTF8.GetString(e.Message).Trim().ToUpper();
-        string[] partes = msg.Split(',');
-        if (partes.Length != 2) return;
-
-        string color = partes[0];
-        if (float.TryParse(partes[1], out float valor))
-        {
-            if (color == "WHITE") targetBlanco = valor;
-            else if (color == "RED") targetRojo = valor;
-            else if (color == "BLUE") targetAzul = valor;
-        }
-    }
-
-    void Connect()
-    {
-        try
-        {
-            client = new MqttClient(brokerHost, 8883, true, null, null, MqttSslProtocols.TLSv1_2);
-            client.MqttMsgPublishReceived += OnMessageReceived;
-            client.Connect(Guid.NewGuid().ToString(), "LearningFactory", "Fischertechnik1");
-            client.Subscribe(new string[] { topicCylinders }, new byte[] { 0 });
-        }
-        catch (Exception ex) { Debug.LogError(ex.Message); }
     }
 }

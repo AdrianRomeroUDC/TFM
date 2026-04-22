@@ -1366,11 +1366,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8bc9fb7d4cdb6c84688450f46fed7499, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimacionCintaSLD
-  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
-  topicBelt: f/sld/belt
   objetoCintaPadre: {fileID: 2593961540105253669}
-  velocidadActual: 0
   multiplicadorVelocidad: 0.01
+  velocidadActual: 0
 --- !u!4 &334509518
 Transform:
   m_ObjectHideFlags: 0
@@ -1379,12 +1377,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 334509516}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.36158, y: -0, z: 2.35327}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.14750004, y: 0, z: 0.41725004}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1264709632}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &379042062
 GameObject:
@@ -1496,12 +1494,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 384571945}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.33295, y: -0, z: 2.61076}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.11887002, y: 0, z: 0.67473996}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1264709632}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &408665911
 GameObject:
@@ -2953,6 +2951,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &843689476
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 843689477}
+  m_Layer: 0
+  m_Name: Padre
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &843689477
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 843689476}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1991905256}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &844610196
 GameObject:
   m_ObjectHideFlags: 0
@@ -3646,7 +3675,7 @@ Transform:
   m_GameObject: {fileID: 1045703238}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000006717942, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.37646, y: 0, z: 1.4283}
+  m_LocalPosition: {x: 0.16237998, y: 0, z: -0.50772}
   m_LocalScale: {x: 100, y: 100.000015, z: 100.000015}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3659,7 +3688,7 @@ Transform:
   - {fileID: 592006260}
   - {fileID: 857321320}
   - {fileID: 1056699170}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1264709632}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1045703240
 MonoBehaviour:
@@ -4222,11 +4251,47 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1243185281}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.60261, y: -0, z: 2.39125}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.38853002, y: 0, z: 0.45522988}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
+  m_Father: {fileID: 1264709632}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1264709631
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1264709632}
+  m_Layer: 0
+  m_Name: Controladores_MQTT
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1264709632
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1264709631}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.21408, y: -0, z: 1.93602}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1243185283}
+  - {fileID: 384571947}
+  - {fileID: 334509518}
+  - {fileID: 1803506119}
+  - {fileID: 1045703239}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1302123921
@@ -5068,13 +5133,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8450290b854eefa4485368b6d7a09a38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ControladorCilindros
-  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
-  topicCylinders: f/sld/cylinder
   pistonBlanco: {fileID: 1991905256}
   pistonRojo: {fileID: 1381773752}
   pistonAzul: {fileID: 1583995213}
-  xReposo: 0.001122198
-  xEstirado: 0.000826
+  xReposoEstandar: 0.001122198
+  xEstiradoEstandar: 0.000826
+  xReposoBlanco: 0.0002811983
+  xEstiradoBlanco: -0.000029
   velocidadPiston: 0.1
 --- !u!4 &1803506119
 Transform:
@@ -5085,11 +5150,11 @@ Transform:
   m_GameObject: {fileID: 1803506117}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.60261, y: 0, z: 2.39125}
+  m_LocalPosition: {x: 0.38853002, y: 0, z: 0.45522988}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1264709632}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1814125929
 GameObject:
@@ -5903,7 +5968,7 @@ Transform:
   m_GameObject: {fileID: 1991905255}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071069, y: -0, z: 4.32978e-17, w: 0.7071067}
-  m_LocalPosition: {x: 0.0002811983, y: -0.00018075603, z: 0.0013900027}
+  m_LocalPosition: {x: 0.0002811983, y: -0.00018075609, z: 0.0013900027}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5914,6 +5979,7 @@ Transform:
   - {fileID: 8621301394254510334}
   - {fileID: 2945627411212537012}
   - {fileID: 1712108579688126423}
+  - {fileID: 843689477}
   m_Father: {fileID: 1634781541072564334}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1999249996
@@ -6020,6 +6086,54 @@ Transform:
   - {fileID: 1222187984219752144}
   - {fileID: 3295827464517011252}
   m_Father: {fileID: 947536931553726524}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2076051685
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2076051687}
+  - component: {fileID: 2076051686}
+  m_Layer: 0
+  m_Name: MQTT_Client
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2076051686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2076051685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9de9c0eec693b07449b47663f377526e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MQTTClient
+  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
+  puerto: 8883
+  usuario: LearningFactory
+  contrasena: Fischertechnik1
+--- !u!4 &2076051687
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2076051685}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.21408, y: -0, z: 1.93602}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2083643508
 GameObject:
@@ -284460,8 +284574,5 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 9029366199755941001}
-  - {fileID: 1243185283}
-  - {fileID: 384571947}
-  - {fileID: 334509518}
-  - {fileID: 1803506119}
-  - {fileID: 1045703239}
+  - {fileID: 2076051687}
+  - {fileID: 1264709632}
