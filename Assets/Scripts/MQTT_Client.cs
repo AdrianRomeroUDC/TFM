@@ -36,6 +36,9 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnVGRUpdate(string json);
     public event OnVGRUpdate OnVGRUpdateEvent;
 
+    public delegate void OnHBWPositionUpdate(string json);
+    public event OnHBWPositionUpdate OnHBWPositionUpdateEvent;
+
     void Awake()
     {
         if (instance == null) instance = this;
@@ -54,8 +57,8 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr" };
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0 };
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw"};
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
@@ -89,6 +92,10 @@ public class MQTTClient : MonoBehaviour
         else if (topic == "f/pos_vgr")
         {
             OnVGRUpdateEvent?.Invoke(msg);
+        }
+        else if (topic == "f/pos_hbw")
+        {
+            OnHBWPositionUpdateEvent?.Invoke(msg);
         }
     }
 

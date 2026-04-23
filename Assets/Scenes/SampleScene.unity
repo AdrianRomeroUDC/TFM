@@ -163,7 +163,7 @@ GameObject:
   m_Component:
   - component: {fileID: 22816313}
   m_Layer: 0
-  m_Name: BrazoAlmacen_DejarSacarPieza
+  m_Name: BrazoAlmacen_MovVertical
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -178,7 +178,7 @@ Transform:
   m_GameObject: {fileID: 22816312}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5000001, y: -0.49999994, z: -0.50000006, w: 0.49999997}
-  m_LocalPosition: {x: 0.0007033984, y: -0.00012747128, z: 0.0025499994}
+  m_LocalPosition: {x: 0.000703, y: -0.000281, z: 0.0025499994}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1286,8 +1286,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.088664316, y: -0.9103445, z: 0.25462946, w: 0.31396702}
-  m_LocalPosition: {x: 1.8610727, y: 0.49718246, z: 2.809646}
+  m_LocalRotation: {x: -0.0785508, y: 0.91985625, z: -0.23358673, w: -0.30517453}
+  m_LocalPosition: {x: 1.7307009, y: 0.42678273, z: 2.9947526}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1475,9 +1475,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62bb778931dc44b4baf71d86a6b406c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GestorDPS_mqtt
-  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
-  username: LearningFactory
-  password: Fischertechnik1
   puntoEntrada: {fileID: 1163600023}
   pinzaVGR: {fileID: 1770509447237504354}
   posicionEnPinza: {x: 0, y: 0, z: -0.0002}
@@ -3702,9 +3699,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbc545d936126f14caa4733bcb18f5bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GestorHBW_mqtt
-  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
-  username: LearningFactory
-  password: Fischertechnik1
   puntosDeHueco:
   - {fileID: 2083643509}
   - {fileID: 669572056}
@@ -4291,6 +4285,7 @@ Transform:
   - {fileID: 384571947}
   - {fileID: 334509518}
   - {fileID: 1803506119}
+  - {fileID: 1913756580}
   - {fileID: 1045703239}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -5136,10 +5131,6 @@ MonoBehaviour:
   pistonBlanco: {fileID: 1991905256}
   pistonRojo: {fileID: 1381773752}
   pistonAzul: {fileID: 1583995213}
-  xReposoEstandar: 0.001122198
-  xEstiradoEstandar: 0.000826
-  xReposoBlanco: 0.0002811983
-  xEstiradoBlanco: -0.000029
   velocidadPiston: 0.1
 --- !u!4 &1803506119
 Transform:
@@ -5811,6 +5802,65 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5560849661983007568}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1913756579
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1913756580}
+  - component: {fileID: 1913756581}
+  m_Layer: 0
+  m_Name: HBW_position_mqtt
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1913756580
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913756579}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.13199997, y: 0, z: 0.41729987}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1264709632}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1913756581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913756579}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00c288f69ed609b4fb4ad36748ee66e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ControladorHBWposition_mqtt
+  ejeHorizontal: {fileID: 6084714690604744264}
+  ejeVertical: {fileID: 22816313}
+  ejeExtension: {fileID: 460330939191136696}
+  plcH_Min: 0
+  plcH_Max: 1985
+  plcV_Min: 0
+  plcV_Max: 850
+  unityH_Min: 0.003718
+  unityH_Max: 0.006746
+  unityV_Min: -0.00005
+  unityV_Max: -0.001322
+  unityE_Estirado: -0.00149
+  unityE_Recogido: -0.001883
+  lerpSpeed: 5
+  tiempoAnimacion: 4
 --- !u!1 &1955133129
 GameObject:
   m_ObjectHideFlags: 0
@@ -71934,7 +71984,7 @@ GameObject:
   m_Component:
   - component: {fileID: 460330939191136696}
   m_Layer: 0
-  m_Name: 9V_Greifer_id15602_step_____BrazoAlmacen_2
+  m_Name: 9V_Greifer_id15602_step_____MovExtension
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -192235,7 +192285,7 @@ Transform:
   m_GameObject: {fileID: 6219390065692819774}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.70710677, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -0.0017935642, y: -0.00078286853, z: 0.0066224}
+  m_LocalPosition: {x: -0.001794, y: -0.000783, z: 0.003718}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -201122,7 +201172,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1633699619867208338}
   m_Layer: 0
-  m_Name: 9V_37783_Taster015_____FC_MovVerticalBrazo
+  m_Name: 9V_37783_Taster015_____FC_VerticalBrazo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
