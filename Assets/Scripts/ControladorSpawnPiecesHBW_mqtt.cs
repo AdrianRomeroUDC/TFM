@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 [Serializable]
 public class HBWStockPayload { public string[] piezas; }
@@ -9,7 +10,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     private string lastJsonReceived;
     private bool pendingUpdate = false;
 
-    [Header("Referencias de Escena")]
+    [Header("Referencias de Escena (Objetos ColXFilX)")]
     public Transform[] puntosDeHueco;
 
     [Header("Prefabs de Pieza")]
@@ -19,7 +20,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
     void Start()
     {
-        LimpiarEstantes();
+        LimpiarSoloPiezas();
         InvokeRepeating("IntentarSuscripcion", 0f, 1f);
     }
 
@@ -28,11 +29,8 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         if (MQTTClient.Instance != null)
         {
             MQTTClient.Instance.OnHBWUpdateEvent += ProcesarMensajeHBW;
-
-            // Si el mensaje llegó antes de que yo naciera, lo pido ahora
             string inicial = MQTTClient.Instance.GetLastHBWStatus();
             if (!string.IsNullOrEmpty(inicial)) ProcesarMensajeHBW(inicial);
-
             Debug.Log("<color=green>HBW Conectado</color>");
             CancelInvoke("IntentarSuscripcion");
         }
@@ -63,7 +61,20 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         for (int i = 0; i < puntosDeHueco.Length; i++)
         {
             if (i >= listaColores.Length) break;
-            foreach (Transform hijo in puntosDeHueco[i]) Destroy(hijo.gameObject);
+
+            Transform padreEje = puntosDeHueco[i];
+
+            // Verificamos que el padre tenga al menos un hijo (el cajón)
+            if (padreEje.childCount == 0) continue;
+
+            Transform cajon = padreEje.GetChild(0);
+
+            // Limpiamos solo piezas antiguas dentro del cajón
+            // Usamos un bucle inverso para evitar errores al destruir mientras recorremos
+            for (int j = cajon.childCount - 1; j >= 0; j--)
+            {
+                Destroy(cajon.GetChild(j).gameObject);
+            }
 
             GameObject prefab = null;
             string color = listaColores[i].Trim().ToUpper();
@@ -73,21 +84,32 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
             if (prefab != null)
             {
-                GameObject nueva = Instantiate(prefab, puntosDeHueco[i].position, puntosDeHueco[i].rotation);
-                nueva.transform.SetParent(puntosDeHueco[i]);
-                if (nueva.GetComponent<Rigidbody>()) nueva.GetComponent<Rigidbody>().isKinematic = true;
+                // Instanciamos usando la posición del PADRE pero emparentando al CAJÓN
+                GameObject nueva = Instantiate(prefab, padreEje.position, padreEje.rotation, cajon);
+
+                nueva.transform.localScale = Vector3.one;
             }
         }
     }
 
-    void LimpiarEstantes() { 
-        foreach (var h in puntosDeHueco) 
-            foreach (Transform hijo in h) 
-                Destroy(hijo.gameObject); 
+    void LimpiarSoloPiezas()
+    {
+        foreach (Transform h in puntosDeHueco)
+        {
+            if (h.childCount > 0)
+            {
+                Transform cajon = h.GetChild(0);
+                for (int j = cajon.childCount - 1; j >= 0; j--)
+                {
+                    Destroy(cajon.GetChild(j).gameObject);
+                }
+            }
+        }
     }
 
-    private void OnDisable() { 
-        if (MQTTClient.Instance != null) 
-            MQTTClient.Instance.OnHBWUpdateEvent -= ProcesarMensajeHBW; 
+    private void OnDisable()
+    {
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnHBWUpdateEvent -= ProcesarMensajeHBW;
     }
 }

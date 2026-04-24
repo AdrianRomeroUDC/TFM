@@ -13,7 +13,7 @@ public class HBWPositionData
 public class ControladorHBWposition_mqtt : MonoBehaviour
 {
     private float lastH, lastV, lastE;
-    private bool hayNuevaOrdenEstirar = false; // Bandera para el hilo principal
+    private bool hayNuevaOrdenEstirar = false;
 
     [Header("Referencias de los Ejes")]
     public Transform ejeHorizontal;
@@ -24,7 +24,7 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public float plcH_Min = 0;
     public float plcH_Max = 1985;
     public float plcV_Min = 0;
-    public float plcV_Max = 850;
+    public float plcV_Max = 845;
 
     [Header("Calibración Unity")]
     [ContextMenuItem("Capturar", "CapturarHMin")] public float unityH_Min;
@@ -38,16 +38,44 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public float lerpSpeed = 5f;
     public float tiempoAnimacion = 4f;
 
+    [Header("Agarre de Objetos")]
+    private Transform objetoEnganchado = null;
+    private Transform padreOriginalObjeto = null;
+
     private Coroutine corrutinaExtension;
 
-    // --- CAPTURAS ---
-    void CapturarHMin() { if (ejeHorizontal) unityH_Min = ejeHorizontal.localPosition.z; }
-    void CapturarHMax() { if (ejeHorizontal) unityH_Max = ejeHorizontal.localPosition.z; }
-    void CapturarVMin() { if (ejeVertical) unityV_Min = ejeVertical.localPosition.y; }
-    void CapturarVMax() { if (ejeVertical) unityV_Max = ejeVertical.localPosition.y; }
-    void CapturarE_Estirado() { if (ejeExtension) unityE_Estirado = ejeExtension.localPosition.x; }
-    void CapturarE_Recogido() { if (ejeExtension) unityE_Recogido = ejeExtension.localPosition.x; }
+    // --- LOGICA DE AGARRE ---
+    // Detectamos cuando la plataforma del brazo toca el cajón
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Si el objeto tocado es un cajón y el brazo está estirado (o estirándose)
+        if (collision.gameObject.name.Contains("container") && objetoEnganchado == null)
+        {
+            objetoEnganchado = collision.transform;
+            padreOriginalObjeto = objetoEnganchado.parent; // Guardamos el ColXFilX
 
+            // Hacemos que el cajón sea hijo del eje de extensión
+            objetoEnganchado.SetParent(ejeExtension);
+
+            // Si tiene Rigidbody, lo ponemos en Kinematic para que no vibre
+            if (objetoEnganchado.TryGetComponent<Rigidbody>(out Rigidbody rb))
+                rb.isKinematic = true;
+
+            Debug.Log("Cajón enganchado: " + objetoEnganchado.name);
+        }
+    }
+
+    // Detectamos cuando el brazo suelta el objeto (ej: al dejarlo en el estante y bajar el eje vertical)
+    private void OnCollisionExit(Collision collision)
+    {
+        if (objetoEnganchado != null && collision.transform == objetoEnganchado)
+        {
+            // Opcional: Podrías implementar una lógica para soltarlo aquí 
+            // o basarte en la posición del PLC
+        }
+    }
+
+    // --- RESTO DEL SCRIPT ORIGINAL ---
     void Start() { InvokeRepeating("IntentarSuscripcion", 0f, 1f); }
 
     void IntentarSuscripcion()
@@ -65,7 +93,6 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             MQTTClient.Instance.OnHBWPositionUpdateEvent -= ActualizarPosicionDesdeMQTT;
     }
 
-    // Este método corre en un HILO SECUNDARIO
     private void ActualizarPosicionDesdeMQTT(string json)
     {
         try
@@ -74,7 +101,6 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             lastH = data.horizontal;
             lastV = data.vertical;
 
-            // Si el valor cambia, activamos la bandera para que el Update la vea
             if (data.estirar != lastE && (data.estirar == -512 || data.estirar == 512))
             {
                 lastE = data.estirar;
@@ -82,28 +108,23 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             }
             else if (data.estirar == 0)
             {
-                lastE = 0; // Guardamos el 0 pero no activamos bandera
+                lastE = 0;
             }
         }
-        catch (Exception ex)
-        {
-            // Ya no dará error de Main Thread aquí
-        }
+        catch (Exception) { }
     }
 
     void Update()
     {
-        // 1. REVISAR SI HAY ORDENES DE EXTENSIÓN (Hilo Principal)
         if (hayNuevaOrdenEstirar)
         {
-            hayNuevaOrdenEstirar = false; // Reset de bandera
+            hayNuevaOrdenEstirar = false;
             if (lastE == -512) IniciarAnimacionExtension(unityE_Estirado);
             else if (lastE == 512) IniciarAnimacionExtension(unityE_Recogido);
         }
 
         float dt = Time.deltaTime;
 
-        // 2. MOVIMIENTO HORIZONTAL
         if (ejeHorizontal)
         {
             float tH = Mathf.InverseLerp(plcH_Min, plcH_Max, lastH);
@@ -113,7 +134,6 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             ejeHorizontal.localPosition = p;
         }
 
-        // 3. MOVIMIENTO VERTICAL
         if (ejeVertical)
         {
             float tV = Mathf.InverseLerp(plcV_Min, plcV_Max, lastV);
@@ -121,6 +141,12 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             Vector3 p = ejeVertical.localPosition;
             p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);
             ejeVertical.localPosition = p;
+
+            // SI EL BRAZO BAJA Y TENEMOS ALGO, SOLTAMOS
+            if (objetoEnganchado != null && lastV < plcV_Min + 10) // Umbral pequeño
+            {
+                // Aquí podrías devolverlo a su padre original si es necesario
+            }
         }
     }
 
