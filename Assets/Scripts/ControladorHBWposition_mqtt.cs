@@ -27,55 +27,61 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public float plcV_Max = 845;
 
     [Header("Calibración Unity")]
-    [ContextMenuItem("Capturar", "CapturarHMin")] public float unityH_Min;
-    [ContextMenuItem("Capturar", "CapturarHMax")] public float unityH_Max;
-    [ContextMenuItem("Capturar", "CapturarVMin")] public float unityV_Min;
-    [ContextMenuItem("Capturar", "CapturarVMax")] public float unityV_Max;
-    [ContextMenuItem("Capturar", "CapturarE_Estirado")] public float unityE_Estirado;
-    [ContextMenuItem("Capturar", "CapturarE_Recogido")] public float unityE_Recogido;
+    public float unityH_Min;
+    public float unityH_Max;
+    public float unityV_Min;
+    public float unityV_Max;
+    public float unityE_Estirado;
+    public float unityE_Recogido;
 
     [Header("Ajustes de Animación")]
     public float lerpSpeed = 5f;
     public float tiempoAnimacion = 4f;
 
-    [Header("Agarre de Objetos")]
-    private Transform objetoEnganchado = null;
-    private Transform padreOriginalObjeto = null;
-
+    [Header("Estado del Agarre")]
+    public Transform objetoEnganchado = null;
+    private Transform padreOriginalEstante = null;
     private Coroutine corrutinaExtension;
 
-    // --- LOGICA DE AGARRE ---
-    // Detectamos cuando la plataforma del brazo toca el cajón
-    private void OnCollisionEnter(Collision collision)
+    // --- FUNCIÓN DE CAPTURA (Llamada por el Proxy) ---
+    public void ProcesarCaptura(Transform cajon, Transform plataformaBrazo)
     {
-        // Si el objeto tocado es un cajón y el brazo está estirado (o estirándose)
-        if (collision.gameObject.name.Contains("container") && objetoEnganchado == null)
+        if (objetoEnganchado == null)
         {
-            objetoEnganchado = collision.transform;
-            padreOriginalObjeto = objetoEnganchado.parent; // Guardamos el ColXFilX
+            objetoEnganchado = cajon;
+            padreOriginalEstante = cajon.parent; // Guarda "Col1Fil1"
 
-            // Hacemos que el cajón sea hijo del eje de extensión
-            objetoEnganchado.SetParent(ejeExtension);
+            // TRASPLANTE: Cambia el padre del cajón a la plataforma roja
+            cajon.SetParent(plataformaBrazo, true);
 
-            // Si tiene Rigidbody, lo ponemos en Kinematic para que no vibre
-            if (objetoEnganchado.TryGetComponent<Rigidbody>(out Rigidbody rb))
+            // DESACTIVAR FÍSICA: Evita que el cajón se caiga o vibre al moverse
+            if (cajon.TryGetComponent<Rigidbody>(out Rigidbody rb))
+            {
                 rb.isKinematic = true;
-
-            Debug.Log("Cajón enganchado: " + objetoEnganchado.name);
+                rb.useGravity = false;
+            }
+            Debug.Log("<color=green><b>[ÉXITO]</b></color> Cajón unido a PlataformaBrazo.");
         }
     }
 
-    // Detectamos cuando el brazo suelta el objeto (ej: al dejarlo en el estante y bajar el eje vertical)
-    private void OnCollisionExit(Collision collision)
+    private void SoltarCajon()
     {
-        if (objetoEnganchado != null && collision.transform == objetoEnganchado)
+        if (objetoEnganchado != null)
         {
-            // Opcional: Podrías implementar una lógica para soltarlo aquí 
-            // o basarte en la posición del PLC
+            // Devuelve el cajón a su hueco original en el estante
+            objetoEnganchado.SetParent(padreOriginalEstante, true);
+
+            if (objetoEnganchado.TryGetComponent<Rigidbody>(out Rigidbody rb))
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+            }
+            objetoEnganchado = null;
+            Debug.Log("<color=yellow>Cajón devuelto al estante.</color>");
         }
     }
 
-    // --- RESTO DEL SCRIPT ORIGINAL ---
+    // --- LÓGICA MQTT ---
     void Start() { InvokeRepeating("IntentarSuscripcion", 0f, 1f); }
 
     void IntentarSuscripcion()
@@ -85,12 +91,6 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             MQTTClient.Instance.OnHBWPositionUpdateEvent += ActualizarPosicionDesdeMQTT;
             CancelInvoke("IntentarSuscripcion");
         }
-    }
-
-    private void OnDisable()
-    {
-        if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnHBWPositionUpdateEvent -= ActualizarPosicionDesdeMQTT;
     }
 
     private void ActualizarPosicionDesdeMQTT(string json)
@@ -106,21 +106,18 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
                 lastE = data.estirar;
                 hayNuevaOrdenEstirar = true;
             }
-            else if (data.estirar == 0)
-            {
-                lastE = 0;
-            }
+            else if (data.estirar == 0) lastE = 0;
         }
-        catch (Exception) { }
+        catch { }
     }
 
+    // --- MOVIMIENTO ---
     void Update()
     {
         if (hayNuevaOrdenEstirar)
         {
             hayNuevaOrdenEstirar = false;
-            if (lastE == -512) IniciarAnimacionExtension(unityE_Estirado);
-            else if (lastE == 512) IniciarAnimacionExtension(unityE_Recogido);
+            IniciarAnimacionExtension(lastE == -512 ? unityE_Estirado : unityE_Recogido);
         }
 
         float dt = Time.deltaTime;
@@ -142,33 +139,29 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);
             ejeVertical.localPosition = p;
 
-            // SI EL BRAZO BAJA Y TENEMOS ALGO, SOLTAMOS
-            if (objetoEnganchado != null && lastV < plcV_Min + 10) // Umbral pequeño
-            {
-                // Aquí podrías devolverlo a su padre original si es necesario
-            }
+            // Condición para soltar (cuando el eje vertical baja al mínimo)
+            if (objetoEnganchado != null && lastV < plcV_Min + 20) SoltarCajon();
         }
     }
 
-    void IniciarAnimacionExtension(float destinoX)
+    void IniciarAnimacionExtension(float d)
     {
         if (corrutinaExtension != null) StopCoroutine(corrutinaExtension);
-        corrutinaExtension = StartCoroutine(AnimarBrazo(destinoX));
+        corrutinaExtension = StartCoroutine(AnimarBrazo(d));
     }
 
-    IEnumerator AnimarBrazo(float destinoX)
+    IEnumerator AnimarBrazo(float d)
     {
-        float tiempoTranscurrido = 0;
+        float t = 0;
         float inicioX = ejeExtension.localPosition.x;
-
-        while (tiempoTranscurrido < tiempoAnimacion)
+        while (t < tiempoAnimacion)
         {
-            tiempoTranscurrido += Time.deltaTime;
-            float progreso = tiempoTranscurrido / tiempoAnimacion;
-            float valorX = Mathf.Lerp(inicioX, destinoX, Mathf.SmoothStep(0, 1, progreso));
-            ejeExtension.localPosition = new Vector3(valorX, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
+            t += Time.deltaTime;
+            float progreso = t / tiempoAnimacion;
+            float vX = Mathf.Lerp(inicioX, d, Mathf.SmoothStep(0, 1, progreso));
+            ejeExtension.localPosition = new Vector3(vX, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
             yield return null;
         }
-        ejeExtension.localPosition = new Vector3(destinoX, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
+        ejeExtension.localPosition = new Vector3(d, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
     }
 }
