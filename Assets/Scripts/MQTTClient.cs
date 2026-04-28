@@ -4,6 +4,9 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 using System;
 using System.Text;
 
+[Serializable]
+public class HBWStockPayload { public string[] piezas; }
+
 public class MQTTClient : MonoBehaviour
 {
     private static MQTTClient instance;
@@ -39,7 +42,7 @@ public class MQTTClient : MonoBehaviour
     //public delegate void OnDPSUpdate(string topic, string message);
     //public event OnDPSUpdate OnDPSUpdateEvent;
 
-    public delegate void OnHBWPiecesUpdate(string json);
+    public delegate void OnHBWPiecesUpdate(string[] piezas);
     public event OnHBWPiecesUpdate OnHBWUpdatePiecesEvent;
 
     public delegate void OnVGRUpdate(string json);
@@ -102,10 +105,12 @@ public class MQTTClient : MonoBehaviour
         {
             OnVGRGripEvent?.Invoke(msg == "1");
         }
-        else if (topic == "f/pieces_hbw")
-        {
-            lastHBWJson = msg; // Guardamos para suscriptores tardíos
-            OnHBWUpdatePiecesEvent?.Invoke(msg);
+        else if (topic == "f/pieces_hbw") {
+            lastHBWJson = msg;
+            try {
+                HBWStockPayload data = JsonUtility.FromJson<HBWStockPayload>(msg);
+                OnHBWUpdatePiecesEvent?.Invoke(data.piezas);
+            } catch { Debug.LogWarning("Error al parsear piezas HBW"); }
         }
         else if (topic == "f/pos_vgr")
         {

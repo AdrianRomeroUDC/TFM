@@ -1479,12 +1479,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GestorDPS_mqtt
   puntoEntrada: {fileID: 1163600023}
   pinzaVGR: {fileID: 1770509447237504354}
-  posicionEnPinza: {x: 0, y: 0, z: -0.0002}
-  rotacionEnPinza: {x: 90, y: 0, z: 0}
   prefabBaseGris: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
   prefabBlanco: {fileID: 1874647114658911321, guid: 3775355192241ee428b71c8509c3b32f, type: 3}
   prefabRojo: {fileID: 3690905493317575458, guid: 13e4a19f76c20da4daecd8f64b375192, type: 3}
   prefabAzul: {fileID: 7526143996119949718, guid: 2468ee2bfb7b6824bb18807c3e693e04, type: 3}
+  posicionEnPinza: {x: 0, y: 0, z: -0.0002}
+  rotacionEnPinza: {x: 90, y: 0, z: 0}
 --- !u!4 &384571947
 Transform:
   m_ObjectHideFlags: 0
