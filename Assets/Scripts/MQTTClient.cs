@@ -7,6 +7,9 @@ using System.Text;
 [Serializable]
 public class HBWStockPayload { public string[] piezas; }
 
+[Serializable]
+public class VGRData { public float estirar; public float rotacion; public float vertical; }
+
 public class MQTTClient : MonoBehaviour
 {
     private static MQTTClient instance;
@@ -45,8 +48,8 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnHBWPiecesUpdate(string[] piezas);
     public event OnHBWPiecesUpdate OnHBWUpdatePiecesEvent;
 
-    public delegate void OnVGRUpdate(string json);
-    public event OnVGRUpdate OnVGRUpdateEvent;
+    public delegate void OnVGRPositionUpdate(float rot, float vert, float ext);
+    public event OnVGRPositionUpdate OnVGRPositionUpdateEvent;
 
     public delegate void OnHBWPositionUpdate(string json);
     public event OnHBWPositionUpdate OnHBWPositionUpdateEvent;
@@ -114,7 +117,13 @@ public class MQTTClient : MonoBehaviour
         }
         else if (topic == "f/pos_vgr")
         {
-            OnVGRUpdateEvent?.Invoke(msg);
+            try
+            {
+                VGRData data = JsonUtility.FromJson<VGRData>(msg);
+                // ENVIAR EN EL ORDEN QUE ESPERA EL CONTROLADOR: rot, vert, ext
+                OnVGRPositionUpdateEvent?.Invoke(data.rotacion, data.vertical, data.estirar);
+            }
+            catch { Debug.LogWarning("Error en JSON VGR"); }
         }
         else if (topic == "f/pos_hbw")
         {
