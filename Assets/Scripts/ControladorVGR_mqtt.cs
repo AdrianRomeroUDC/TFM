@@ -15,13 +15,23 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public float plcVert_Min = 20; public float plcVert_Max = 1272;
     public float plcExt_Min = 40; public float plcExt_Max = 1210;
 
-    [Header("Calibración Unity")]
-    public float unityRot_Min; public float unityRot_Max;
-    public float unityVert_Min; public float unityVert_Max;
-    public float unityExt_Min; public float unityExt_Max;
+    [Header("Calibración Unity (Click Derecho para Capturar)")]
+    [ContextMenuItem("Capturar", "CapturarRotMin")] public float unityRot_Min;
+    [ContextMenuItem("Capturar", "CapturarRotMax")] public float unityRot_Max;
+    [ContextMenuItem("Capturar", "CapturarVertMin")] public float unityVert_Min;
+    [ContextMenuItem("Capturar", "CapturarVertMax")] public float unityVert_Max;
+    [ContextMenuItem("Capturar", "CapturarExtMin")] public float unityExt_Min;
+    [ContextMenuItem("Capturar", "CapturarExtMax")] public float unityExt_Max;
 
     [Header("Ajustes")]
     public float lerpSpeed = 5f;
+
+    void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
+    void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
+    void CapturarVertMin() => unityVert_Min = ejeVertical.localPosition.y;
+    void CapturarVertMax() => unityVert_Max = ejeVertical.localPosition.y;
+    void CapturarExtMin() => unityExt_Min = ejeExtension.localPosition.x;
+    void CapturarExtMax() => unityExt_Max = ejeExtension.localPosition.x;
 
     void Start()
     {

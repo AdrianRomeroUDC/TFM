@@ -8,7 +8,10 @@ using System.Text;
 public class HBWStockPayload { public string[] piezas; }
 
 [Serializable]
-public class VGRData { public float estirar; public float rotacion; public float vertical; }
+public class VGRPositionData { public float estirar; public float rotacion; public float vertical; }
+
+[Serializable]
+public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
 
 public class MQTTClient : MonoBehaviour
 {
@@ -42,16 +45,13 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnVGRGripUpdate(bool activo);
     public event OnVGRGripUpdate OnVGRGripEvent;
 
-    //public delegate void OnDPSUpdate(string topic, string message);
-    //public event OnDPSUpdate OnDPSUpdateEvent;
-
     public delegate void OnHBWPiecesUpdate(string[] piezas);
     public event OnHBWPiecesUpdate OnHBWUpdatePiecesEvent;
 
     public delegate void OnVGRPositionUpdate(float rot, float vert, float ext);
     public event OnVGRPositionUpdate OnVGRPositionUpdateEvent;
 
-    public delegate void OnHBWPositionUpdate(string json);
+    public delegate void OnHBWPositionUpdate(float hor, float vert, float ext);
     public event OnHBWPositionUpdate OnHBWPositionUpdateEvent;
 
     void Awake()
@@ -119,7 +119,7 @@ public class MQTTClient : MonoBehaviour
         {
             try
             {
-                VGRData data = JsonUtility.FromJson<VGRData>(msg);
+                VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
                 // ENVIAR EN EL ORDEN QUE ESPERA EL CONTROLADOR: rot, vert, ext
                 OnVGRPositionUpdateEvent?.Invoke(data.rotacion, data.vertical, data.estirar);
             }
@@ -127,7 +127,13 @@ public class MQTTClient : MonoBehaviour
         }
         else if (topic == "f/pos_hbw")
         {
-            OnHBWPositionUpdateEvent?.Invoke(msg);
+            try
+            {
+                HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
+                // Enviamos los datos procesados al controlador
+                OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.estirar);
+            }
+            catch { Debug.LogWarning("Error parseando f/pos_hbw"); }
         }
     }
 

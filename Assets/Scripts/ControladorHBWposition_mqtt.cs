@@ -1,14 +1,5 @@
 using UnityEngine;
-using System;
 using System.Collections;
-
-[Serializable]
-public class HBWPositionData
-{
-    public float estirar;
-    public float horizontal;
-    public float vertical;
-}
 
 public class ControladorHBWposition_mqtt : MonoBehaviour
 {
@@ -26,13 +17,13 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public float plcV_Min = 0;
     public float plcV_Max = 845;
 
-    [Header("Calibración Unity")]
-    public float unityH_Min;
-    public float unityH_Max;
-    public float unityV_Min;
-    public float unityV_Max;
-    public float unityE_Estirado;
-    public float unityE_Recogido;
+    [Header("Calibración Unity (Click Derecho -> Capturar)")]
+    [ContextMenuItem("Capturar", "CapturarHMin")] public float unityH_Min;
+    [ContextMenuItem("Capturar", "CapturarHMax")] public float unityH_Max;
+    [ContextMenuItem("Capturar", "CapturarVMin")] public float unityV_Min;
+    [ContextMenuItem("Capturar", "CapturarVMax")] public float unityV_Max;
+    [ContextMenuItem("Capturar", "CapturarExtEst")] public float unityE_Estirado;
+    [ContextMenuItem("Capturar", "CapturarExtRec")] public float unityE_Recogido;
 
     [Header("Ajustes de Animación")]
     public float lerpSpeed = 5f;
@@ -43,75 +34,37 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     private Transform padreOriginalEstante = null;
     private Coroutine corrutinaExtension;
 
-    // --- FUNCIÓN DE CAPTURA (Llamada por el Proxy) ---
-    public void ProcesarCaptura(Transform cajon, Transform plataformaBrazo)
+    // --- FUNCIONES DE CAPTURA PARA EL INSPECTOR ---
+    void CapturarHMin() => unityH_Min = ejeHorizontal.localPosition.z;
+    void CapturarHMax() => unityH_Max = ejeHorizontal.localPosition.z;
+    void CapturarVMin() => unityV_Min = ejeVertical.localPosition.y;
+    void CapturarVMax() => unityV_Max = ejeVertical.localPosition.y;
+    void CapturarExtEst() => unityE_Estirado = ejeExtension.localPosition.x;
+    void CapturarExtRec() => unityE_Recogido = ejeExtension.localPosition.x;
+
+    void Start() { StartCoroutine(SuscripcionSegura()); }
+
+    IEnumerator SuscripcionSegura()
     {
-        if (objetoEnganchado == null)
-        {
-            objetoEnganchado = cajon;
-            padreOriginalEstante = cajon.parent; // Guarda "Col1Fil1"
-
-            // TRASPLANTE: Cambia el padre del cajón a la plataforma roja
-            cajon.SetParent(plataformaBrazo, true);
-
-            // DESACTIVAR FÍSICA: Evita que el cajón se caiga o vibre al moverse
-            if (cajon.TryGetComponent<Rigidbody>(out Rigidbody rb))
-            {
-                rb.isKinematic = true;
-                rb.useGravity = false;
-            }
-            Debug.Log("<color=green><b>[ÉXITO]</b></color> Cajón unido a PlataformaBrazo.");
-        }
+        while (MQTTClient.Instance == null) yield return null;
+        MQTTClient.Instance.OnHBWPositionUpdateEvent += ActualizarPosicionDesdeMQTT;
+        Debug.Log("<color=green>HBW suscrito correctamente</color>");
     }
 
-    private void SoltarCajon()
+    private void ActualizarPosicionDesdeMQTT(float hor, float vert, float ext)
     {
-        if (objetoEnganchado != null)
-        {
-            // Devuelve el cajón a su hueco original en el estante
-            objetoEnganchado.SetParent(padreOriginalEstante, true);
+        lastH = hor;
+        lastV = vert;
 
-            if (objetoEnganchado.TryGetComponent<Rigidbody>(out Rigidbody rb))
-            {
-                rb.isKinematic = false;
-                rb.useGravity = true;
-            }
-            objetoEnganchado = null;
-            Debug.Log("<color=yellow>Cajón devuelto al estante.</color>");
+        // Detección de movimiento para el brazo extractor
+        if (ext != lastE && (ext == -512 || ext == 512))
+        {
+            lastE = ext;
+            hayNuevaOrdenEstirar = true;
         }
+        else if (ext == 0) lastE = 0;
     }
 
-    // --- LÓGICA MQTT ---
-    void Start() { InvokeRepeating("IntentarSuscripcion", 0f, 1f); }
-
-    void IntentarSuscripcion()
-    {
-        if (MQTTClient.Instance != null)
-        {
-            MQTTClient.Instance.OnHBWPositionUpdateEvent += ActualizarPosicionDesdeMQTT;
-            CancelInvoke("IntentarSuscripcion");
-        }
-    }
-
-    private void ActualizarPosicionDesdeMQTT(string json)
-    {
-        try
-        {
-            HBWPositionData data = JsonUtility.FromJson<HBWPositionData>(json);
-            lastH = data.horizontal;
-            lastV = data.vertical;
-
-            if (data.estirar != lastE && (data.estirar == -512 || data.estirar == 512))
-            {
-                lastE = data.estirar;
-                hayNuevaOrdenEstirar = true;
-            }
-            else if (data.estirar == 0) lastE = 0;
-        }
-        catch { }
-    }
-
-    // --- MOVIMIENTO ---
     void Update()
     {
         if (hayNuevaOrdenEstirar)
@@ -139,8 +92,37 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);
             ejeVertical.localPosition = p;
 
-            // Condición para soltar (cuando el eje vertical baja al mínimo)
-            if (objetoEnganchado != null && lastV < plcV_Min + 20) SoltarCajon();
+            if (objetoEnganchado != null && lastV < plcV_Min + 5) SoltarCajon();
+        }
+    }
+
+    // --- MÉTODOS DE CAPTURA Y ANIMACIÓN ---
+    public void ProcesarCaptura(Transform cajon, Transform plataformaBrazo)
+    {
+        if (objetoEnganchado == null)
+        {
+            objetoEnganchado = cajon;
+            padreOriginalEstante = cajon.parent;
+            cajon.SetParent(plataformaBrazo, true);
+            if (cajon.TryGetComponent<Rigidbody>(out Rigidbody rb))
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+        }
+    }
+
+    private void SoltarCajon()
+    {
+        if (objetoEnganchado != null)
+        {
+            objetoEnganchado.SetParent(padreOriginalEstante, true);
+            if (objetoEnganchado.TryGetComponent<Rigidbody>(out Rigidbody rb))
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+            }
+            objetoEnganchado = null;
         }
     }
 
