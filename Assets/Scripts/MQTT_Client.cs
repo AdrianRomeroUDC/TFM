@@ -27,11 +27,20 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnCylinderUpdate(string color, int state);
     public event OnCylinderUpdate OnCylinderUpdateEvent;
 
-    public delegate void OnDPSUpdate(string topic, string message);
-    public event OnDPSUpdate OnDPSUpdateEvent;
+    public delegate void OnDPSPiezaUpdate(bool detectada);
+    public event OnDPSPiezaUpdate OnDPSPiezaEvent;
 
-    public delegate void OnHBWUpdate(string json);
-    public event OnHBWUpdate OnHBWUpdateEvent;
+    public delegate void OnDPSColorUpdate(string color);
+    public event OnDPSColorUpdate OnDPSColorEvent;
+
+    public delegate void OnVGRGripUpdate(bool activo);
+    public event OnVGRGripUpdate OnVGRGripEvent;
+
+    //public delegate void OnDPSUpdate(string topic, string message);
+    //public event OnDPSUpdate OnDPSUpdateEvent;
+
+    public delegate void OnHBWPiecesUpdate(string json);
+    public event OnHBWPiecesUpdate OnHBWUpdatePiecesEvent;
 
     public delegate void OnVGRUpdate(string json);
     public event OnVGRUpdate OnVGRUpdateEvent;
@@ -80,14 +89,23 @@ public class MQTTClient : MonoBehaviour
             if (partes.Length == 2 && int.TryParse(partes[1], out int state))
                 OnCylinderUpdateEvent?.Invoke(partes[0].ToUpper(), state);
         }
-        else if (topic.StartsWith("f/dps/") || topic == "f/vgr/grip")
+        // Aquí procesamos los datos antes de enviarlos (msg == "1" devuelve un bool)
+        if (topic == "f/dps/pieza")
         {
-            OnDPSUpdateEvent?.Invoke(topic, msg);
+            OnDPSPiezaEvent?.Invoke(msg == "1");
+        }
+        else if (topic == "f/dps/color")
+        {
+            OnDPSColorEvent?.Invoke(msg.ToUpper());
+        }
+        else if (topic == "f/vgr/grip")
+        {
+            OnVGRGripEvent?.Invoke(msg == "1");
         }
         else if (topic == "f/pieces_hbw")
         {
             lastHBWJson = msg; // Guardamos para suscriptores tardíos
-            OnHBWUpdateEvent?.Invoke(msg);
+            OnHBWUpdatePiecesEvent?.Invoke(msg);
         }
         else if (topic == "f/pos_vgr")
         {

@@ -28,7 +28,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     {
         if (MQTTClient.Instance != null)
         {
-            MQTTClient.Instance.OnHBWUpdateEvent += ProcesarMensajeHBW;
+            MQTTClient.Instance.OnHBWUpdatePiecesEvent += ProcesarMensajeHBW;
             string inicial = MQTTClient.Instance.GetLastHBWStatus();
             if (!string.IsNullOrEmpty(inicial)) ProcesarMensajeHBW(inicial);
             Debug.Log("<color=green>HBW Conectado</color>");
@@ -110,6 +110,6 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     private void OnDisable()
     {
         if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnHBWUpdateEvent -= ProcesarMensajeHBW;
+            MQTTClient.Instance.OnHBWUpdatePiecesEvent -= ProcesarMensajeHBW;
     }
 }

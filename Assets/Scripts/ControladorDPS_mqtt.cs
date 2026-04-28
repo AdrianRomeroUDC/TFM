@@ -1,15 +1,11 @@
 using UnityEngine;
-using System;
+using System.Collections; // Necesario para las Corrutinas
 
 public class ControladorDPS_mqtt : MonoBehaviour
 {
-    [Header("Posiciones y Referencias")]
+    [Header("Referencias")]
     public Transform puntoEntrada;
     public Transform pinzaVGR;
-
-    [Header("Valores de Calibración")]
-    public Vector3 posicionEnPinza = new Vector3(0f, 0f, -0.0002f);
-    public Vector3 rotacionEnPinza = new Vector3(90f, 0f, 0f);
 
     [Header("Prefabs")]
     public GameObject prefabBaseGris;
@@ -17,84 +13,80 @@ public class ControladorDPS_mqtt : MonoBehaviour
     public GameObject prefabRojo;
     public GameObject prefabAzul;
 
+    [Header("Ajustes Pinza")]
+    public Vector3 posicionEnPinza = new Vector3(0f, 0f, -0.0002f);
+    public Vector3 rotacionEnPinza = new Vector3(90f, 0f, 0f);
+
     private GameObject piezaActual;
     private string modoPendiente = "";
     private bool gripActivo = false;
 
-    // --- CICLO DE VIDA Y SUSCRIPCIÓN ---
-
-    void Awake()
-    {
-        LimpiarEscenaInmediata();
-    }
+    // --- SUSCRIPCIÓN SEGURA ---
 
     void Start()
     {
-        // Intentamos suscribirnos cada segundo hasta que MQTTClient.Instance no sea null
-        InvokeRepeating("IntentarSuscripcion", 0f, 1f);
+        // En lugar de OnEnable, usamos una corrutina para asegurar que MQTTClient existe
+        StartCoroutine(IntentarSuscripcionSegura());
     }
 
-    void IntentarSuscripcion()
+    IEnumerator IntentarSuscripcionSegura()
     {
-        if (MQTTClient.Instance != null)
+        // Esperamos hasta que la instancia de MQTT esté disponible
+        while (MQTTClient.Instance == null)
         {
-            MQTTClient.Instance.OnDPSUpdateEvent += ProcesarMensajeMqtt;
-            Debug.Log("<color=green><b>DPS:</b> Conectado con éxito al sistema central.</color>");
-            CancelInvoke("IntentarSuscripcion");
+            yield return null; // Espera al siguiente frame
         }
+
+        // Una vez que existe, nos suscribimos
+        MQTTClient.Instance.OnDPSPiezaEvent += ActualizarPieza;
+        MQTTClient.Instance.OnDPSColorEvent += ActualizarColor;
+        MQTTClient.Instance.OnVGRGripEvent += ActualizarGrip;
+
+        Debug.Log("<color=green><b>DPS:</b> Suscripción completada con éxito.</color>");
     }
 
     private void OnDisable()
     {
-        // Desvincular el evento para evitar errores de referencia nula al cerrar
+        // Importante: Desvincular siempre al destruir el objeto para evitar errores
         if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnDPSUpdateEvent -= ProcesarMensajeMqtt;
+        {
+            MQTTClient.Instance.OnDPSPiezaEvent -= ActualizarPieza;
+            MQTTClient.Instance.OnDPSColorEvent -= ActualizarColor;
+            MQTTClient.Instance.OnVGRGripEvent -= ActualizarGrip;
+        }
     }
 
-    // --- PROCESAMIENTO DE DATOS ---
-
-    private void ProcesarMensajeMqtt(string topic, string message)
+    // --- REACCIÓN A EVENTOS ---
+    private void ActualizarPieza(bool detectada)
     {
-        string msg = message.Trim().ToUpper();
+        Debug.Log("Mensaje MQTT recibido - Pieza: " + detectada);
+        if (detectada) modoPendiente = "SPAWN_BASE";
+        else if (!gripActivo) modoPendiente = "DELETE";
+    }
 
-        if (topic == "f/dps/pieza")
-        {
-            if (msg == "1") modoPendiente = "SPAWN_BASE";
-            else if (msg == "0" && !gripActivo) modoPendiente = "DELETE";
-        }
-        else if (topic == "f/dps/color")
-        {
-            if (gripActivo && (msg == "BLUE" || msg == "RED" || msg == "WHITE"))
-                modoPendiente = msg;
-        }
-        else if (topic == "f/vgr/grip")
-        {
-            if (msg == "1")
-            {
-                gripActivo = true;
-            }
-            else
-            {
-                gripActivo = false;
-                modoPendiente = "DROP";
-            }
-        }
+    private void ActualizarColor(string color)
+    {
+        Debug.Log("Mensaje MQTT recibido - Color: " + color);
+        if (gripActivo && (color == "BLUE" || color == "RED" || color == "WHITE"))
+            modoPendiente = color;
+    }
+
+    private void ActualizarGrip(bool activo)
+    {
+        Debug.Log("Mensaje MQTT recibido - Grip: " + activo);
+        gripActivo = activo;
+        if (!activo) modoPendiente = "DROP";
     }
 
     void Update()
     {
-        // Ejecución de órdenes en el Hilo Principal (Seguro para Unity)
         if (modoPendiente != "")
         {
-            if (modoPendiente == "SPAWN_BASE") SpawnBase();
-            else if (modoPendiente == "DELETE") { if (piezaActual != null) Destroy(piezaActual); }
-            else if (modoPendiente == "DROP") EjecutarSoltarFisico();
-            else CambiarColorEnVGR(modoPendiente);
-
+            EjecutarOrden();
             modoPendiente = "";
         }
 
-        // Mantener la pieza pegada a la pinza si el grip está activo
+        // Mantener pegado al VGR (esta lógica se ejecuta cada frame si hay grip)
         if (gripActivo && piezaActual != null)
         {
             if (piezaActual.transform.parent != pinzaVGR)
@@ -102,68 +94,57 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 piezaActual.transform.SetParent(pinzaVGR);
                 piezaActual.transform.localPosition = posicionEnPinza;
                 piezaActual.transform.localEulerAngles = rotacionEnPinza;
-
-                Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
-                if (rb != null) rb.isKinematic = true;
+                if (piezaActual.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
             }
         }
     }
 
-    // --- ACCIONES FÍSICAS ---
-
-    void EjecutarSoltarFisico()
+    void EjecutarOrden()
     {
-        if (piezaActual != null)
+        switch (modoPendiente)
         {
-            piezaActual.transform.SetParent(null);
-            Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
-            if (rb == null) rb = piezaActual.AddComponent<Rigidbody>();
-
-            rb.isKinematic = false;
-            rb.useGravity = true;
-            Debug.Log("Pieza soltada físicamente.");
+            case "SPAWN_BASE":
+                if (piezaActual != null) Destroy(piezaActual);
+                piezaActual = Instantiate(prefabBaseGris, puntoEntrada.position, puntoEntrada.rotation);
+                ConfigurarFisicas(piezaActual);
+                break;
+            case "DELETE":
+                if (piezaActual != null) Destroy(piezaActual);
+                break;
+            case "DROP":
+                if (piezaActual != null)
+                {
+                    piezaActual.transform.SetParent(null);
+                    Rigidbody rb = piezaActual.GetComponent<Rigidbody>() ?? piezaActual.AddComponent<Rigidbody>();
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+                }
+                break;
+            case "WHITE":
+            case "RED":
+            case "BLUE":
+                CambiarColor(modoPendiente);
+                break;
         }
     }
 
-    void CambiarColorEnVGR(string color)
+    void CambiarColor(string color)
     {
         if (piezaActual == null) return;
+        GameObject prefab = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : prefabAzul;
 
-        GameObject prefab = null;
-        if (color == "WHITE") prefab = prefabBlanco;
-        else if (color == "RED") prefab = prefabRojo;
-        else if (color == "BLUE") prefab = prefabAzul;
+        // Guardamos posición actual antes de destruir
+        Vector3 posActual = piezaActual.transform.position;
+        Quaternion rotActual = piezaActual.transform.rotation;
 
-        if (prefab != null)
-        {
-            Destroy(piezaActual);
-            piezaActual = Instantiate(prefab);
-            piezaActual.transform.SetParent(pinzaVGR);
-            piezaActual.transform.localPosition = posicionEnPinza;
-            piezaActual.transform.localEulerAngles = rotacionEnPinza;
-            ConfigurarPieza(piezaActual);
-        }
+        Destroy(piezaActual);
+        piezaActual = Instantiate(prefab, posActual, rotActual);
+        ConfigurarFisicas(piezaActual);
     }
 
-    void SpawnBase()
+    void ConfigurarFisicas(GameObject p)
     {
-        if (piezaActual != null) Destroy(piezaActual);
-        piezaActual = Instantiate(prefabBaseGris, puntoEntrada.position, puntoEntrada.rotation);
-        ConfigurarPieza(piezaActual);
-        Debug.Log("Base Gris instanciada en punto de entrada.");
-    }
-
-    void ConfigurarPieza(GameObject pieza)
-    {
-        if (pieza.GetComponent<Rigidbody>() == null) pieza.AddComponent<Rigidbody>().isKinematic = true;
-        if (pieza.GetComponent<Collider>() == null) pieza.AddComponent<MeshCollider>().convex = true;
-    }
-
-    void LimpiarEscenaInmediata()
-    {
-        foreach (GameObject obj in GameObject.FindObjectsByType<GameObject>(FindObjectsSortMode.None))
-        {
-            if (obj.name.Contains("(Clone)")) DestroyImmediate(obj);
-        }
+        if (!p.GetComponent<Rigidbody>()) p.AddComponent<Rigidbody>().isKinematic = true;
+        if (!p.GetComponent<Collider>()) p.AddComponent<MeshCollider>().convex = true;
     }
 }
