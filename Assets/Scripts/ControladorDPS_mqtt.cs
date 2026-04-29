@@ -144,7 +144,26 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
     void ConfigurarFisicas(GameObject p)
     {
-        if (!p.GetComponent<Rigidbody>()) p.AddComponent<Rigidbody>().isKinematic = true;
-        if (!p.GetComponent<Collider>()) p.AddComponent<MeshCollider>().convex = true;
+        // 1. Rigidbody: Lo configuramos como Kinematic inicialmente para que no se caiga al aparecer
+        Rigidbody rb = p.GetComponent<Rigidbody>();
+        if (rb == null) rb = p.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+
+        // 2. Limpieza de colliders antiguos (para evitar conflictos)
+        foreach (var oldCol in p.GetComponents<Collider>())
+        {
+            Destroy(oldCol);
+        }
+
+        // 3. AÑADIR COLLIDER FÍSICO (Sólido para que no se atraviesen)
+        BoxCollider colFisico = p.AddComponent<BoxCollider>();
+        colFisico.isTrigger = false;
+        // colFisico.size = new Vector3(0.05f, 0.05f, 0.05f); // Ajusta según tu pieza
+
+        // 4. AÑADIR COLLIDER TRIGGER (Para que el VGR lo detecte)
+        BoxCollider colTrigger = p.AddComponent<BoxCollider>();
+        colTrigger.isTrigger = true;
+
     }
 }
