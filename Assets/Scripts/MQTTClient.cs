@@ -12,6 +12,8 @@ public class VGRPositionData { public float estirar; public float rotacion; publ
 
 [Serializable]
 public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
+[Serializable]
+public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
 
 public class MQTTClient : MonoBehaviour
 {
@@ -54,6 +56,9 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnHBWPositionUpdate(float hor, float vert, float ext);
     public event OnHBWPositionUpdate OnHBWPositionUpdateEvent;
 
+    public delegate void OnBeltHBWUpdate(float speed, string direction);
+    public event OnBeltHBWUpdate OnBeltHBWUpdateEvent;
+
     void Awake()
     {
         if (instance == null) instance = this;
@@ -72,8 +77,8 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw"};
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0 };
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta"};
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
@@ -134,6 +139,15 @@ public class MQTTClient : MonoBehaviour
                 OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.estirar);
             }
             catch { Debug.LogWarning("Error parseando f/pos_hbw"); }
+        }
+        else if (topic == "f/hbw/cinta")
+        {
+            try
+            {
+                HBWBeltPayload data = JsonUtility.FromJson<HBWBeltPayload>(msg);
+                OnBeltHBWUpdateEvent?.Invoke(data.cintaHBWspeed, data.sentidoGiro);
+            }
+            catch { Debug.LogWarning("Error al parsear f/hbw/cinta"); }
         }
     }
 
