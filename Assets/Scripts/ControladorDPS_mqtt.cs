@@ -94,7 +94,10 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 piezaActual.transform.SetParent(pinzaVGR);
                 piezaActual.transform.localPosition = posicionEnPinza;
                 piezaActual.transform.localEulerAngles = rotacionEnPinza;
-                if (piezaActual.TryGetComponent<Rigidbody>(out Rigidbody rb)) rb.isKinematic = true;
+                if (piezaActual.TryGetComponent<Rigidbody>(out Rigidbody rb))
+                {
+                    rb.isKinematic = true;
+                }
             }
         }
     }
@@ -109,15 +112,20 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 ConfigurarFisicas(piezaActual);
                 break;
             case "DELETE":
-                if (piezaActual != null) Destroy(piezaActual);
+                // Comentamos o eliminamos el Destroy para que la pieza persista en el almacén
+                // if (piezaActual != null) Destroy(piezaActual); 
+                piezaActual = null; // Perder la referencia para poder spawnear la siguiente base gris
                 break;
             case "DROP":
                 if (piezaActual != null)
                 {
                     piezaActual.transform.SetParent(null);
-                    Rigidbody rb = piezaActual.GetComponent<Rigidbody>() ?? piezaActual.AddComponent<Rigidbody>();
-                    rb.isKinematic = false;
-                    rb.useGravity = true;
+                    Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
+                    if (rb != null)
+                    {
+                        rb.isKinematic = false;
+                        rb.useGravity = true;
+                    }
                 }
                 break;
             case "WHITE":

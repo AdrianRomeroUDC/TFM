@@ -103,12 +103,19 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         {
             objetoEnganchado = cajon;
             padreOriginalEstante = cajon.parent;
+
+            // 1. ANCLAJE: Emparentamos
             cajon.SetParent(plataformaBrazo, true);
-            if (cajon.TryGetComponent<Rigidbody>(out Rigidbody rb))
+
+            // 2. LIMPIEZA TOTAL: Esto es lo que soluciona que "no siga al brazo"
+            Rigidbody[] rbs = cajon.GetComponentsInChildren<Rigidbody>();
+            foreach (Rigidbody rb in rbs)
             {
-                rb.isKinematic = true;
-                rb.useGravity = false;
+                rb.isKinematic = true;      // Impide fuerzas externas
+                rb.useGravity = false;      // Anula gravedad
             }
+
+            Debug.Log("<color=green>Captura limpia realizada, inercia eliminada.</color>");
         }
     }
 

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7928163329306760073}
   - component: {fileID: 5623237133636424613}
   - component: {fileID: 7169880983438579942}
-  - component: {fileID: -7243111500837670095}
+  - component: {fileID: 8979706948424121467}
   m_Layer: 0
   m_Name: 9V_nfc_weiss_id14638_step_____piezaBlanca
   m_TagString: Untagged
@@ -91,7 +91,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &-7243111500837670095
+--- !u!65 &8979706948424121467
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

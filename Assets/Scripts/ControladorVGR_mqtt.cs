@@ -127,44 +127,66 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 piezaEnganchada = piezaCercana;
 
-                if (piezaEnganchada.TryGetComponent<Rigidbody>(out Rigidbody rb))
-                {
-                    rb.isKinematic = true;
-                    rb.useGravity = false;
-                }
+                Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
+                if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
 
-                // 1. Emparentamos
+                // Mientras la llevas: quieta y fantasma
+                rb.isKinematic = true;
+                rb.useGravity = false;
+
+                if (piezaEnganchada.TryGetComponent<BoxCollider>(out BoxCollider col))
+                    col.isTrigger = true;
+
                 piezaEnganchada.SetParent(puntoAnclajeVentosa);
-
-                // 2. POSICIÓN GLOBAL: La pega exactamente al punto
                 piezaEnganchada.position = puntoAnclajeVentosa.position;
-
-                // 3. ROTACIÓN GLOBAL: Ignora la inclinación de la ventosa 
-                // Usamos Quaternion.Euler(0,0,0) para que la pieza nazca "derecha" en el mundo
-                // O usa 'rotacionEnPinza' si necesitas que tenga un ángulo específico
                 piezaEnganchada.rotation = Quaternion.Euler(rotacionEnPinza);
-
-                // 4. ESCALA GLOBAL: Evita que se estire
                 piezaEnganchada.localScale = Vector3.one;
-
-                // 5. Ajuste fino local (opcional)
-                // Si después de estar recta necesitas subirla o bajarla un poco:
                 piezaEnganchada.Translate(posicionEnPinza, Space.Self);
             }
         }
         else
         {
-            // Lógica de soltar (Drop)
             if (piezaEnganchada != null)
             {
+                // 1. Soltamos la pieza
                 piezaEnganchada.SetParent(null);
+
+                // 2. ¡CAÍDA INMEDIATA!
                 if (piezaEnganchada.TryGetComponent<Rigidbody>(out Rigidbody rb))
                 {
-                    rb.isKinematic = false;
-                    rb.useGravity = true;
+                    rb.isKinematic = false; // Permite que caiga ya
+                    rb.useGravity = true;   // Activa la gravedad
                 }
+
+                // 3. Mantenemos 'isTrigger = true' para que caiga atravesando el cajón sin chocar
+                // pero lanzamos una pequeña rutina para que se vuelva sólida en medio segundo
+                StartCoroutine(VolverSolidaTrasCaida(piezaEnganchada));
+
                 piezaEnganchada = null;
             }
+        }
+    }
+
+    // Esta rutina hace que la pieza sea sólida poco después de soltarla
+    IEnumerator VolverSolidaTrasCaida(Transform pieza)
+    {
+        // Esperamos 0.5 segundos (suficiente para salir del área del cajón/brazo)
+        yield return new WaitForSeconds(0.5f);
+
+        if (pieza != null && pieza.TryGetComponent<BoxCollider>(out BoxCollider col))
+        {
+            col.isTrigger = false; // Ahora ya puede chocar con el suelo
+            Debug.Log("<color=green>Pieza ahora es sólida.</color>");
+        }
+    }
+
+    // Mantén el OnTriggerExit si quieres una seguridad extra por si el brazo se mueve rápido
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.name.Contains("cajon"))
+        {
+            // Si por algún motivo la pieza sigue siendo trigger, la forzamos a sólida
+            // Esto sirve de "red de seguridad"
         }
     }
 }
