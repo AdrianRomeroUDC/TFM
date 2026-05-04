@@ -14,6 +14,26 @@ public class VGRPositionData { public float estirar; public float rotacion; publ
 public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
 [Serializable]
 public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
+[Serializable]
+public class MPOHornoPayload
+{
+    public int closeDoor;
+    public int openDoor;
+    public int lights;
+    public int move2Ref5; // Meter
+    public int move2Ref6; // Sacar
+    public string ts;
+}
+[Serializable]
+public class MPOTurntablePayload
+{
+    public int eject;
+    public int move2Ref10; // Posición sierra
+    public int move2Ref7;  // Posición horno
+    public int move2Ref9;  // Posición cinta
+    public int saw;        // 1=Dcha, -1=Izq, 0=Stop
+    public string ts;
+}
 
 public class MQTTClient : MonoBehaviour
 {
@@ -59,6 +79,12 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnBeltHBWUpdate(float speed, string direction);
     public event OnBeltHBWUpdate OnBeltHBWUpdateEvent;
 
+    public delegate void OnHornoUpdate(MPOHornoPayload data);
+    public event OnHornoUpdate OnHornoUpdateEvent;
+
+    public delegate void OnTurntableUpdate(MPOTurntablePayload data);
+    public event OnTurntableUpdate OnTurntableUpdateEvent;
+
     void Awake()
     {
         if (instance == null) instance = this;
@@ -77,8 +103,8 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta"};
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable" };
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
@@ -100,8 +126,7 @@ public class MQTTClient : MonoBehaviour
             if (partes.Length == 2 && int.TryParse(partes[1], out int state))
                 OnCylinderUpdateEvent?.Invoke(partes[0].ToUpper(), state);
         }
-        // Aquí procesamos los datos antes de enviarlos (msg == "1" devuelve un bool)
-        if (topic == "f/dps/pieza")
+        if (topic == "f/dps/piezaDSI")
         {
             OnDPSPiezaEvent?.Invoke(msg == "1");
         }
@@ -148,6 +173,30 @@ public class MQTTClient : MonoBehaviour
                 OnBeltHBWUpdateEvent?.Invoke(data.cintaHBWspeed, data.sentidoGiro);
             }
             catch { Debug.LogWarning("Error al parsear f/hbw/cinta"); }
+        }
+        else if (topic == "f/mpo/horno")
+        {
+            try
+            {
+                MPOHornoPayload data = JsonUtility.FromJson<MPOHornoPayload>(msg);
+                if (data != null)
+                {
+                    OnHornoUpdateEvent?.Invoke(data);
+                }
+            }
+            catch (Exception ex) { Debug.LogWarning("Error al parsear horno: " + ex.Message); }
+        }
+        else if (topic == "f/mpo/turntable")
+        {
+            try
+            {
+                MPOTurntablePayload data = JsonUtility.FromJson<MPOTurntablePayload>(msg);
+                if (data != null)
+                {
+                    OnTurntableUpdateEvent?.Invoke(data);
+                }
+            }
+            catch (Exception ex) { Debug.LogWarning("Error al parsear turntable: " + ex.Message); }
         }
     }
 
