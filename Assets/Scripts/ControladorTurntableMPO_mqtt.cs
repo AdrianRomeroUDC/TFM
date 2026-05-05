@@ -5,14 +5,15 @@ using System.Collections.Generic;
 public class ControladorTurntable_mqtt : MonoBehaviour
 {
     [Header("Componentes")]
-    public Transform mesaGiratoria; // Rota sobre Y
-    public Transform ejector;       // Movimiento local
-    public Transform sierraDisco;   // Rota sobre Y
+    public Transform mesaGiratoria;  // El objeto que rotará (PivotRotacion)
+    public Transform referenciaEje; // El objeto con el centro geométrico (Engranaje)
+    public Transform ejector;
+    public Transform sierraDisco;
 
-    [Header("Ángulos Y (Grados) - Clic derecho para capturar")]
-    [ContextMenuItem("Capturar Horno (Ref7)", "CapturarRef7")] public float rotY_Ref7;
-    [ContextMenuItem("Capturar Cinta (Ref9)", "CapturarRef9")] public float rotY_Ref9;
-    [ContextMenuItem("Capturar Sierra (Ref10)", "CapturarRef10")] public float rotY_Ref10;
+    [Header("Ángulos Y (Grados)")]
+    [ContextMenuItem("Capturar Horno (Ref7)", "CapturarRef7")] public float PosBrazo;
+    [ContextMenuItem("Capturar Cinta (Ref9)", "CapturarRef9")] public float PosCinta;
+    [ContextMenuItem("Capturar Sierra (Ref10)", "CapturarRef10")] public float PosSierra;
 
     [Header("Posiciones Ejector")]
     [ContextMenuItem("Capturar Retraído", "CapturarEject0")] public Vector3 posEjectRetraido;
@@ -25,11 +26,28 @@ public class ControladorTurntable_mqtt : MonoBehaviour
     private Queue<MPOTurntablePayload> colaMensajes = new Queue<MPOTurntablePayload>();
     private float sawDir = 0f;
 
-    void CapturarRef7() => rotY_Ref7 = mesaGiratoria.localEulerAngles.y;
-    void CapturarRef9() => rotY_Ref9 = mesaGiratoria.localEulerAngles.y;
-    void CapturarRef10() => rotY_Ref10 = mesaGiratoria.localEulerAngles.y;
+    // Métodos para el ContextMenu (Clic derecho en el inspector)
+    void CapturarRef7() => PosBrazo = mesaGiratoria.localEulerAngles.y;
+    void CapturarRef9() => PosCinta = mesaGiratoria.localEulerAngles.y;
+    void CapturarRef10() => PosSierra = mesaGiratoria.localEulerAngles.y;
     void CapturarEject0() => posEjectRetraido = ejector.localPosition;
     void CapturarEject1() => posEjectExtendido = ejector.localPosition;
+
+    [ContextMenu("Centrar Pivote en Eje")]
+    public void CentrarPivoteEnEje()
+    {
+        if (referenciaEje != null && mesaGiratoria != null)
+        {
+            // Alineamos posición y rotación al centro geométrico del engranaje
+            mesaGiratoria.position = referenciaEje.position;
+            mesaGiratoria.rotation = referenciaEje.rotation;
+            Debug.Log("Pivote alineado correctamente con: " + referenciaEje.name);
+        }
+        else
+        {
+            Debug.LogWarning("Asigna Mesa Giratoria y Referencia Eje en el inspector primero.");
+        }
+    }
 
     private void Start() => StartCoroutine(SuscripcionSegura());
 
@@ -45,31 +63,33 @@ public class ControladorTurntable_mqtt : MonoBehaviour
     {
         lock (colaMensajes) { while (colaMensajes.Count > 0) ProcesarMensaje(colaMensajes.Dequeue()); }
 
-        float step = lerpSpeed * Time.deltaTime;
-
         // 1. ROTACIÓN SIERRA (Giro continuo sobre eje Y local)
         if (sawDir != 0f && sierraDisco != null)
         {
-            // Rotación pura sobre el eje Y local
-            sierraDisco.Rotate(0, sawDir * (velocidadSierraRpm * 6f) * Time.deltaTime, 0, Space.Self);
+            float gradosPorSegundo = velocidadSierraRpm * 6f;
+            sierraDisco.Rotate(0, sawDir * gradosPorSegundo * Time.deltaTime, 0, Space.Self);
         }
     }
 
     private void ProcesarMensaje(MPOTurntablePayload data)
     {
-        // 2. ROTACIÓN MESA (Interpolación al ángulo objetivo en Y)
+        // 2. ROTACIÓN MESA (Interpolación al ángulo objetivo en Y local)
         float targetY = mesaGiratoria.localEulerAngles.y;
-        if (data.move2Ref7 == 1) targetY = rotY_Ref7;
-        else if (data.move2Ref9 == 1) targetY = rotY_Ref9;
-        else if (data.move2Ref10 == 1) targetY = rotY_Ref10;
+        if (data.move2Ref7 == 1) targetY = PosBrazo;
+        else if (data.move2Ref9 == 1) targetY = PosCinta;
+        else if (data.move2Ref10 == 1) targetY = PosSierra;
 
-        mesaGiratoria.localRotation = Quaternion.Slerp(mesaGiratoria.localRotation,
-                                     Quaternion.Euler(0, targetY, 0),
-                                     lerpSpeed * Time.deltaTime);
+        float currentY = mesaGiratoria.localEulerAngles.y;
+        float newY = Mathf.LerpAngle(currentY, targetY, lerpSpeed * Time.deltaTime);
+
+        mesaGiratoria.localEulerAngles = new Vector3(mesaGiratoria.localEulerAngles.x, newY, mesaGiratoria.localEulerAngles.z);
 
         // 3. EJECTOR
-        Vector3 targetPos = (data.eject == 1) ? posEjectExtendido : posEjectRetraido;
-        ejector.localPosition = Vector3.Lerp(ejector.localPosition, targetPos, lerpSpeed * Time.deltaTime);
+        if (ejector != null)
+        {
+            Vector3 targetPos = (data.eject == 1) ? posEjectExtendido : posEjectRetraido;
+            ejector.localPosition = Vector3.Lerp(ejector.localPosition, targetPos, lerpSpeed * Time.deltaTime);
+        }
 
         sawDir = (float)data.saw;
     }
