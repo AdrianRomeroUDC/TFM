@@ -85,6 +85,9 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnTurntableUpdate(MPOTurntablePayload data);
     public event OnTurntableUpdate OnTurntableUpdateEvent;
 
+    public delegate void OnMPOBeltUpdate(bool activo);
+    public event OnMPOBeltUpdate OnMPOBeltUpdateEvent;
+
     void Awake()
     {
         if (instance == null) instance = this;
@@ -103,8 +106,8 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable" };
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt" };
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
@@ -126,7 +129,7 @@ public class MQTTClient : MonoBehaviour
             if (partes.Length == 2 && int.TryParse(partes[1], out int state))
                 OnCylinderUpdateEvent?.Invoke(partes[0].ToUpper(), state);
         }
-        if (topic == "f/dps/piezaDSI")
+        else if (topic == "f/dps/piezaDSI")
         {
             OnDPSPiezaEvent?.Invoke(msg == "1");
         }
@@ -197,6 +200,10 @@ public class MQTTClient : MonoBehaviour
                 }
             }
             catch (Exception ex) { Debug.LogWarning("Error al parsear turntable: " + ex.Message); }
+        }
+        else if (topic == "f/mpo/belt")
+        {
+            OnMPOBeltUpdateEvent?.Invoke(msg == "1");
         }
     }
 
