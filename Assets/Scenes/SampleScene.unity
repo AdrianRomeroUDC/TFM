@@ -143,8 +143,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7405335}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.000000029802322, z: -0.7071068, w: 0.7071067}
-  m_LocalPosition: {x: 0.0009338068, y: 0.0015329651, z: 0.0008160009}
+  m_LocalRotation: {x: -0.6561314, y: 0.656131, z: -0.263613, w: 0.2636131}
+  m_LocalPosition: {x: 0.0005030851, y: 0.0015329651, z: 0.00078294525}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -152,7 +152,7 @@ Transform:
   - {fileID: 5007846046021772773}
   - {fileID: 5761829262197425446}
   m_Father: {fileID: 2663353302877492516}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 136.223, z: -90}
 --- !u!1 &22816312
 GameObject:
   m_ObjectHideFlags: 0
@@ -575,7 +575,7 @@ Transform:
   m_GameObject: {fileID: 101639472}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071069, y: 0.7071067, z: -0.0000002440065, w: -0.000000029802319}
-  m_LocalPosition: {x: -0.0002999978, y: -0.00010500144, z: 0.00048250024}
+  m_LocalPosition: {x: -0.000296, y: -0.000106, z: 0.000483}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3003,16 +3003,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6fd61e6ff6868bd4296e95f542be0a2d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ControladorTurntable_mqtt
-  mesaGiratoria: {fileID: 863856912}
-  referenciaEje: {fileID: 7793847390518036435}
+  m_EditorClassIdentifier: Assembly-CSharp::ControladorTurntableMPO_mqtt
+  pivotMesaGiratoria: {fileID: 1160481906}
   ejector: {fileID: 101639473}
   sierraDisco: {fileID: 7405336}
-  PosBrazo: 188.23209
-  PosCinta: 77.976135
-  PosSierra: 348.8692
-  posEjectRetraido: {x: -0.00020884942, y: 0.0005000001, z: 0.0015641281}
-  posEjectExtendido: {x: -0.00048, y: 0.0005, z: 0.001593}
+  unityRot_Ref7: 0
+  unityRot_Ref9: 264.50748
+  unityRot_Ref10: 175.6715
+  posEjectRetraido: {x: -0.000296, y: -0.000106, z: 0.000483}
+  posEjectExtendido: {x: -0.000044, y: -0.000104, z: 0.000483}
   velocidadSierraRpm: 300
   lerpSpeed: 5
 --- !u!1 &832575517
@@ -3276,15 +3275,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 863856911}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.050753824, y: 0.70528305, z: 0.7052829, w: -0.05075389}
-  m_LocalPosition: {x: -0.00018297588, y: 0.00057546096, z: 0.0010369363}
+  m_LocalRotation: {x: 0.0045958753, y: 0.707092, z: 0.70709175, w: -0.0045958455}
+  m_LocalPosition: {x: -0.0003980003, y: -0.00011900015, z: 0.00034699985}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 101639473}
   - {fileID: 851484482}
-  m_Father: {fileID: 2663353302877492516}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Father: {fileID: 1160481906}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: -179.255}
 --- !u!1 &865253550
 GameObject:
   m_ObjectHideFlags: 0
@@ -4111,6 +4110,38 @@ Transform:
   - {fileID: 7647667616142345562}
   m_Father: {fileID: 1247284088095143067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1160481905
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1160481906}
+  m_Layer: 0
+  m_Name: PivotTurntable
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1160481906
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1160481905}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.000000099449124, y: 0.74017423, z: -2.8421706e-14, w: -0.67241514}
+  m_LocalPosition: {x: 0.000096040414, y: 0.0006939997, z: 0.0010142006}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 863856912}
+  m_Father: {fileID: 2663353302877492516}
+  m_LocalEulerAnglesHint: {x: 0, y: 264.50702, z: 0}
 --- !u!1 &1163600022
 GameObject:
   m_ObjectHideFlags: 0
@@ -4502,6 +4533,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ControladorCintaMPO_mqtt
   objetoCintaPadre: {fileID: 898376971}
   multiplicadorVelocidad: 0.01
+  velocidadActual: 0
 --- !u!1 &1378674611
 GameObject:
   m_ObjectHideFlags: 0
@@ -89115,7 +89147,7 @@ Transform:
   - {fileID: 1707541693}
   - {fileID: 1662057814}
   - {fileID: 7405336}
-  - {fileID: 863856912}
+  - {fileID: 1160481906}
   - {fileID: 1955133130}
   - {fileID: 177732133}
   - {fileID: 734051633}
