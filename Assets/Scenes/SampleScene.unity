@@ -1834,7 +1834,7 @@ Transform:
   m_GameObject: {fileID: 470763144}
   serializedVersion: 2
   m_LocalRotation: {x: -0.50000006, y: 0.5, z: -0.5, w: 0.49999997}
-  m_LocalPosition: {x: -0.000155, y: 0.0010819654, z: 0.001695}
+  m_LocalPosition: {x: -0.000155, y: 0.0010819654, z: 0.001729}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4502,8 +4502,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ControladorBrazoMPO
   ejeHorizontal: {fileID: 470763145}
   ejeVertical: {fileID: 1202329174}
-  posHorno: {x: -0.000155, y: 0.0010819654, z: 0.003759}
-  posTurntable: {x: -0.000155, y: 0.0010819654, z: 0.001693}
+  posHorno: {x: -0.000155, y: 0.0010819654, z: 0.003761}
+  posTurntable: {x: -0.000155, y: 0.0010819654, z: 0.001695}
   yReposo: 0.0006319999
   yPickup: 0.000915
   velocidadH: 2
@@ -32782,7 +32782,7 @@ Transform:
   m_GameObject: {fileID: 5190072271089379665}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000010686474, y: -0.7071068, z: 0.70710677, w: 0.00000010686474}
-  m_LocalPosition: {x: 0.0001409999, y: 0.0008140014, z: -0.000376}
+  m_LocalPosition: {x: 0.000141, y: 0.000572, z: -0.000376}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
