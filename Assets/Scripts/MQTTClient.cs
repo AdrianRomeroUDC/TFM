@@ -1,37 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
-using System;
-using System.Text;
 
-[Serializable]
-public class HBWStockPayload { public string[] piezas; }
-
-[Serializable]
-public class VGRPositionData { public float estirar; public float rotacion; public float vertical; }
-
-[Serializable]
-public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
-[Serializable]
-public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
+[Serializable] public class HBWStockPayload { public string[] piezas; }
+[Serializable] public class VGRPositionData { public float estirar; public float rotacion; public float vertical; }
+[Serializable] public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
+[Serializable] public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
 [Serializable]
 public class MPOHornoPayload
 {
     public int closeDoor;
     public int openDoor;
     public int lights;
-    public int move2Ref5; // Meter
-    public int move2Ref6; // Sacar
+    public int move2Ref5;
+    public int move2Ref6;
     public string ts;
 }
+
 [Serializable]
 public class MPOTurntablePayload
 {
     public int eject;
-    public int move2Ref10; // Posición sierra
-    public int move2Ref7;  // Posición horno
-    public int move2Ref9;  // Posición cinta
-    public int saw;        // 1=Dcha, -1=Izq, 0=Stop
+    public int move2Ref10;
+    public int move2Ref7;
+    public int move2Ref9;
+    public int saw;
+    public int rotation;
+    public string ts;
+}
+
+[Serializable]
+public class MPOBrazoPayload
+{
+    public int move2Ref3;
+    public int move2Ref4;
+    public int pickup;
     public string ts;
 }
 
@@ -41,7 +47,7 @@ public class MQTTClient : MonoBehaviour
     public static MQTTClient Instance { get { return instance; } }
 
     private MqttClient client;
-    private string lastHBWJson = ""; // Almacena el último estado del almacén
+    private string lastHBWJson = "";
 
     [Header("Configuración del Broker")]
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
@@ -82,11 +88,20 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnHornoUpdate(MPOHornoPayload data);
     public event OnHornoUpdate OnHornoUpdateEvent;
 
-    public delegate void OnTurntableUpdate(MPOTurntablePayload data);
-    public event OnTurntableUpdate OnTurntableUpdateEvent;
+    // No lo utilizamos como evento porque el turntable es un caso especial: puede recibir comandos
+    // muy seguidos y queremos procesarlos en orden sin perder ninguno, por eso los guardamos en una cola.
+
+    //public delegate void OnTurntableUpdate(MPOTurntablePayload data);
+    //public event OnTurntableUpdate OnTurntableUpdateEvent;
 
     public delegate void OnMPOBeltUpdate(bool activo);
     public event OnMPOBeltUpdate OnMPOBeltUpdateEvent;
+
+    public delegate void OnBrazoUpdate(MPOBrazoPayload data);
+    public event OnBrazoUpdate OnBrazoUpdateEvent;
+
+
+    public Queue<MPOTurntablePayload> colaMensajes = new Queue<MPOTurntablePayload>();
 
     void Awake()
     {
@@ -106,7 +121,7 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt" };
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo" };
                 byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
@@ -141,19 +156,21 @@ public class MQTTClient : MonoBehaviour
         {
             OnVGRGripEvent?.Invoke(msg == "1");
         }
-        else if (topic == "f/pieces_hbw") {
+        else if (topic == "f/pieces_hbw")
+        {
             lastHBWJson = msg;
-            try {
+            try
+            {
                 HBWStockPayload data = JsonUtility.FromJson<HBWStockPayload>(msg);
                 OnHBWUpdatePiecesEvent?.Invoke(data.piezas);
-            } catch { Debug.LogWarning("Error al parsear piezas HBW"); }
+            }
+            catch { Debug.LogWarning("Error al parsear piezas HBW"); }
         }
         else if (topic == "f/pos_vgr")
         {
             try
             {
                 VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
-                // ENVIAR EN EL ORDEN QUE ESPERA EL CONTROLADOR: rot, vert, ext
                 OnVGRPositionUpdateEvent?.Invoke(data.rotacion, data.vertical, data.estirar);
             }
             catch { Debug.LogWarning("Error en JSON VGR"); }
@@ -163,7 +180,6 @@ public class MQTTClient : MonoBehaviour
             try
             {
                 HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
-                // Enviamos los datos procesados al controlador
                 OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.estirar);
             }
             catch { Debug.LogWarning("Error parseando f/pos_hbw"); }
@@ -182,10 +198,7 @@ public class MQTTClient : MonoBehaviour
             try
             {
                 MPOHornoPayload data = JsonUtility.FromJson<MPOHornoPayload>(msg);
-                if (data != null)
-                {
-                    OnHornoUpdateEvent?.Invoke(data);
-                }
+                if (data != null) OnHornoUpdateEvent?.Invoke(data);
             }
             catch (Exception ex) { Debug.LogWarning("Error al parsear horno: " + ex.Message); }
         }
@@ -193,10 +206,11 @@ public class MQTTClient : MonoBehaviour
         {
             try
             {
-                MPOTurntablePayload data = JsonUtility.FromJson<MPOTurntablePayload>(msg);
-                if (data != null)
+                var data = JsonUtility.FromJson<MPOTurntablePayload>(Encoding.UTF8.GetString(e.Message));
+                // Usamos lock para evitar errores al añadir a la cola desde el hilo de MQTT
+                lock (colaMensajes)
                 {
-                    OnTurntableUpdateEvent?.Invoke(data);
+                    colaMensajes.Enqueue(data);
                 }
             }
             catch (Exception ex) { Debug.LogWarning("Error al parsear turntable: " + ex.Message); }
@@ -204,6 +218,23 @@ public class MQTTClient : MonoBehaviour
         else if (topic == "f/mpo/belt")
         {
             OnMPOBeltUpdateEvent?.Invoke(msg == "1");
+        }
+        else if (topic == "f/mpo/brazo")
+        {
+            try
+            {
+                // Usamos e.Message convirtiéndolo a string en la misma línea
+                MPOBrazoPayload data = JsonUtility.FromJson<MPOBrazoPayload>(Encoding.UTF8.GetString(e.Message));
+
+                if (data != null)
+                {
+                    OnBrazoUpdateEvent?.Invoke(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Error al parsear brazo MPO: " + ex.Message);
+            }
         }
     }
 

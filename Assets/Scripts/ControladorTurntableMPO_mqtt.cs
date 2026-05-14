@@ -8,109 +8,127 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
     public Transform ejector;
     public Transform sierraDisco;
 
-    [Header("Calibración Unity (Eje Y Local)")]
-    [ContextMenuItem("Capturar", "CapturarRef7")] public float unityRot_Ref7;    // Brazo (Horno)
-    [ContextMenuItem("Capturar", "CapturarRef9")] public float unityRot_Ref9;    // Cinta
-    [ContextMenuItem("Capturar", "CapturarRef10")] public float unityRot_Ref10; // Sierra
+    [Header("Calibración")]
+    [ContextMenuItem("Capturar", "CapturarRef7")] public float TurntableBrazo;
+    [ContextMenuItem("Capturar", "CapturarRef9")] public float TurntableCinta;
+    [ContextMenuItem("Capturar", "CapturarRef10")] public float TurntableSierra;
+    [ContextMenuItem("Capturar Eject Extendido", "CapturarEjectExtendido")] public Vector3 posEjectExtendido;
+    [ContextMenuItem("Capturar Eject Retraido", "CapturarEjectRetraido")] public Vector3 posEjectRetraido;
 
-    [Header("Posiciones Ejector")]
-    [ContextMenuItem("Capturar", "CapturarEject0")] public Vector3 posEjectRetraido;
-    [ContextMenuItem("Capturar", "CapturarEject1")] public Vector3 posEjectExtendido;
+    // --- MÉTODOS DE CALIBRACIÓN ---
+    float Normalizar(float angulo) => (angulo % 360 + 360) % 360;
+
+    void CapturarRef7() => TurntableBrazo = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
+    void CapturarRef9() => TurntableCinta = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
+    void CapturarRef10() => TurntableSierra = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
+
+    void CapturarEjectExtendido() => posEjectExtendido = ejector.localPosition;
+    void CapturarEjectRetraido() => posEjectRetraido = ejector.localPosition;
 
     [Header("Configuración")]
-    public float lerpSpeed = 5f;
-    public float velocidadSierraRpm = 512f;
+    public float SpeedTurntable = 100f;
+    public float VelocidadSierra = 512f;
 
-    // --- VARIABLES DE CONTROL DE TRAYECTORIA ---
-    private float targetAngleY;       // El ángulo al que se mueve la mesa AHORA
-    private float finalTargetAngleY;  // El destino final real (Brazo)
-    private int ultimoRef = -1;       // Guarda la última posición confirmada (7, 9 o 10)
-    private bool pasoIntermedioActivo = false;
-
-    private Vector3 targetPosEjector;
+    private float targetAngleY;
+    private float anguloVirtualActual;
+    private float targetVirtual;
+    private int sentidoGiro = 0;
+    private bool estaOcupado = false;
     private float sawDir = 0f;
-
-    // Métodos de captura (Context Menu)
-    void CapturarRef7() => unityRot_Ref7 = pivotMesaGiratoria.localEulerAngles.y;
-    void CapturarRef9() => unityRot_Ref9 = pivotMesaGiratoria.localEulerAngles.y;
-    void CapturarRef10() => unityRot_Ref10 = pivotMesaGiratoria.localEulerAngles.y;
-    void CapturarEject0() => posEjectRetraido = ejector.localPosition;
-    void CapturarEject1() => posEjectExtendido = ejector.localPosition;
+    private Vector3 targetPosEjector;
 
     void Start()
     {
-        if (pivotMesaGiratoria)
-        {
-            targetAngleY = pivotMesaGiratoria.localEulerAngles.y;
-            finalTargetAngleY = targetAngleY;
-        }
-        if (ejector) targetPosEjector = ejector.localPosition;
-
-        StartCoroutine(SuscripcionSegura());
-    }
-
-    IEnumerator SuscripcionSegura()
-    {
-        while (MQTTClient.Instance == null) yield return null;
-        MQTTClient.Instance.OnTurntableUpdateEvent += (data) =>
-        {
-            int nuevoRef = -1;
-            float nuevoAngulo = 0f;
-
-            // Identificamos a qué referencia nos mandan
-            if (data.move2Ref7 == 1) { nuevoRef = 7; nuevoAngulo = unityRot_Ref7; }
-            else if (data.move2Ref9 == 1) { nuevoRef = 9; nuevoAngulo = unityRot_Ref9; }
-            else if (data.move2Ref10 == 1) { nuevoRef = 10; nuevoAngulo = unityRot_Ref10; }
-
-            if (nuevoRef != -1)
-            {
-                // LÓGICA ESPECIAL: De Cinta (9) a Brazo (7)
-                if (ultimoRef == 9 && nuevoRef == 7)
-                {
-                    pasoIntermedioActivo = true;
-                    targetAngleY = unityRot_Ref10;  // Primero ve a la Sierra
-                    finalTargetAngleY = unityRot_Ref7; // Destino final guardado
-                }
-                else
-                {
-                    pasoIntermedioActivo = false;
-                    targetAngleY = nuevoAngulo;
-                    finalTargetAngleY = nuevoAngulo;
-                }
-
-                ultimoRef = nuevoRef; // Actualizamos nuestra posición lógica
-            }
-
-            targetPosEjector = (data.eject == 1) ? posEjectExtendido : posEjectRetraido;
-            sawDir = (float)data.saw;
-        };
+        anguloVirtualActual = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
+        targetAngleY = anguloVirtualActual;
+        targetPosEjector = (ejector != null) ? ejector.localPosition : Vector3.zero;
     }
 
     void Update()
     {
-        if (pivotMesaGiratoria)
+        // 1. MQTT - PROCESAMIENTO MEJORADO
+        if (MQTTClient.Instance != null)
         {
-            float currentY = pivotMesaGiratoria.localEulerAngles.y;
-
-            // Si estamos haciendo el desvío por la Sierra
-            if (pasoIntermedioActivo)
+            lock (MQTTClient.Instance.colaMensajes)
             {
-                // Comprobamos si ya casi llegamos a la Sierra (margen de 1 grado)
-                if (Mathf.Abs(Mathf.DeltaAngle(currentY, unityRot_Ref10)) < 1.0f)
+                // Leemos los mensajes siempre para actualizar la sierra/ejector al instante
+                if (MQTTClient.Instance.colaMensajes.Count > 0)
                 {
-                    targetAngleY = finalTargetAngleY; // Cambiamos objetivo al Brazo
-                    pasoIntermedioActivo = false;     // Fin del desvío
+                    // Si estamos moviendo la mesa, solo procesamos si NO es una orden de movimiento
+                    // o si queremos que la nueva orden interrumpa la actual.
+                    var data = MQTTClient.Instance.colaMensajes.Peek();
+
+                    bool esSoloActuador = (data.move2Ref7 == 0 && data.move2Ref9 == 0 && data.move2Ref10 == 0);
+
+                    if (!estaOcupado || esSoloActuador)
+                    {
+                        ProcesarComando(MQTTClient.Instance.colaMensajes.Dequeue());
+                    }
                 }
             }
-
-            float nextY = Mathf.LerpAngle(currentY, targetAngleY, lerpSpeed * Time.deltaTime);
-            pivotMesaGiratoria.localRotation = Quaternion.Euler(0, nextY, 0);
         }
 
-        if (ejector)
-            ejector.localPosition = Vector3.Lerp(ejector.localPosition, targetPosEjector, lerpSpeed * Time.deltaTime);
+        // 2. Movimiento de Mesa
+        if (estaOcupado)
+        {
+            anguloVirtualActual = Mathf.MoveTowards(anguloVirtualActual, targetVirtual, SpeedTurntable * Time.deltaTime);
+            pivotMesaGiratoria.localRotation = Quaternion.Euler(0, anguloVirtualActual, 0);
 
-        if (sawDir != 0f && sierraDisco != null)
-            sierraDisco.Rotate(0, sawDir * (velocidadSierraRpm * 6f) * Time.deltaTime, 0, Space.Self);
+            if (Mathf.Abs(anguloVirtualActual - targetVirtual) < 0.01f)
+            {
+                float anguloFinal = Normalizar(targetAngleY);
+                pivotMesaGiratoria.localRotation = Quaternion.Euler(0, anguloFinal, 0);
+                anguloVirtualActual = anguloFinal;
+                estaOcupado = false;
+                sentidoGiro = 0;
+            }
+        }
+
+        // 3. Ejector
+        if (ejector)
+            ejector.localPosition = Vector3.Lerp(ejector.localPosition, targetPosEjector, 5f * Time.deltaTime);
+
+        // 4. SIERRA - Giro sobre eje Y local (Flecha Verde)
+        if (sierraDisco != null && sawDir != 0f)
+        {
+            // Multiplicamos por sawDir (1 o -1) para el sentido
+            sierraDisco.Rotate(Vector3.up, sawDir * VelocidadSierra * Time.deltaTime, Space.Self);
+        }
+    }
+
+    void ProcesarComando(MPOTurntablePayload data)
+    {
+        // Esto se actualiza SIEMPRE, incluso con la mesa moviéndose
+        targetPosEjector = (data.eject == 1) ? posEjectExtendido : posEjectRetraido;
+        sawDir = (float)data.saw;
+
+        bool tieneOrdenDeReferencia = (data.move2Ref7 == 1 || data.move2Ref9 == 1 || data.move2Ref10 == 1);
+
+        if (tieneOrdenDeReferencia)
+        {
+            float nuevoAngulo = -1;
+            if (data.move2Ref7 == 1) nuevoAngulo = TurntableBrazo;
+            else if (data.move2Ref9 == 1) nuevoAngulo = TurntableCinta;
+            else if (data.move2Ref10 == 1) nuevoAngulo = TurntableSierra;
+
+            if (nuevoAngulo != -1)
+            {
+                targetAngleY = Normalizar(nuevoAngulo);
+                anguloVirtualActual = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
+
+                if (data.rotation != 0)
+                    sentidoGiro = data.rotation;
+                else
+                    sentidoGiro = (Mathf.DeltaAngle(anguloVirtualActual, targetAngleY) > 0) ? 1 : -1;
+
+                float diff = Mathf.DeltaAngle(anguloVirtualActual, targetAngleY);
+
+                if (sentidoGiro == 1 && diff < 0) targetVirtual = anguloVirtualActual + (diff + 360);
+                else if (sentidoGiro == -1 && diff > 0) targetVirtual = anguloVirtualActual + (diff - 360);
+                else targetVirtual = anguloVirtualActual + diff;
+
+                estaOcupado = true;
+            }
+        }
     }
 }
