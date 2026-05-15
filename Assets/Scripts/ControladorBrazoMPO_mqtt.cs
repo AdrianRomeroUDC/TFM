@@ -1,108 +1,148 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class ControladorBrazoMPO : MonoBehaviour
 {
     [Header("Componentes")]
     public Transform ejeHorizontal;
     public Transform ejeVertical;
+    public Transform puntoAgarre;
 
-    [Header("Posiciones Guardadas (Vector3)")]
-    [ContextMenuItem("Capturar Posicion Actual", "CapturarPosHorno")]
-    public Vector3 posHorno;
-    [ContextMenuItem("Capturar Posicion Actual", "CapturarPosTurntable")]
-    public Vector3 posTurntable;
+    [Header("Posiciones Guardadas (Eje Horizontal Z)")]
+    public float zHorno;
+    public float zTurntable;
 
-    [Header("Ajustes Verticales (Local Y)")]
-    [ContextMenuItem("Capturar Altura Actual", "CapturarReposo")]
-    public float yReposo = 0f;
-    [ContextMenuItem("Capturar Altura Actual", "CapturarPickup")]
-    public float yPickup = -0.05f;
+    [Header("Ajustes Verticales (Local X)")]
+    public float xReposo = 0f;
+    public float xPickup = -0.05f;
 
-    [Header("Configuración de Velocidad")]
-    public float velocidadH = 2f;
-    public float velocidadV = 1.5f;
+    [Header("Configuración de Tiempos")]
+    public float tiempoRecorridoHorizontal = 2.0f;
+    public float tiempoRecorridoVertical = 1.0f;
 
-    private Vector3 targetPosH;
-    private float targetYV;
-    private bool ejecutandoPickup = false;
+    private float targetZH;
+    private bool estaOcupado = false;
+    private bool tienePieza = false;
+    private Transform piezaAgarrada = null;
 
-    // --- MÉTODOS DE CAPTURA ---
-    void CapturarPosHorno() { if (ejeHorizontal != null) posHorno = ejeHorizontal.localPosition; Debug.Log("Pos Horno Capturada: " + posHorno); }
-    void CapturarPosTurntable() { if (ejeHorizontal != null) posTurntable = ejeHorizontal.localPosition; Debug.Log("Pos Turntable Capturada: " + posTurntable); }
-    void CapturarReposo() { if (ejeVertical != null) yReposo = ejeVertical.localPosition.y; Debug.Log("Y Reposo Capturada: " + yReposo); }
-    void CapturarPickup() { if (ejeVertical != null) yPickup = ejeVertical.localPosition.y; Debug.Log("Y Pickup Capturada: " + yPickup); }
+    private Queue<MPOBrazoPayload> colaComandos = new Queue<MPOBrazoPayload>();
 
     void Start()
     {
         if (MQTTClient.Instance != null)
-        {
-            MQTTClient.Instance.OnBrazoUpdateEvent += AlRecibirComandoBrazo;
-            Debug.Log("<color=cyan>Brazo suscrito a eventos MQTT</color>");
-        }
-        else
-        {
-            Debug.LogError("No se encontró MQTTClient.Instance en la escena.");
-        }
+            MQTTClient.Instance.OnBrazoUpdateEvent += EncolarComando;
 
-        targetPosH = ejeHorizontal.localPosition;
-        targetYV = yReposo;
+        if (ejeHorizontal) targetZH = ejeHorizontal.localPosition.z;
     }
 
-    void AlRecibirComandoBrazo(MPOBrazoPayload data)
+    void EncolarComando(MPOBrazoPayload data)
     {
-        Debug.Log($"MQTT recibido en Brazo - Ref3: {data.move2Ref3}, Ref4: {data.move2Ref4}, Pickup: {data.pickup}");
-
-        if (data.move2Ref4 == 1)
-        {
-            targetPosH = posHorno;
-            Debug.Log("Moviendo a Horno: " + posHorno);
-        }
-        else if (data.move2Ref3 == 1)
-        {
-            targetPosH = posTurntable;
-            Debug.Log("Moviendo a Turntable: " + posTurntable);
-        }
-
-        if (data.pickup == 1 && !ejecutandoPickup)
-        {
-            Debug.Log("Iniciando secuencia Pickup");
-            StartCoroutine(SecuenciaVertical());
-        }
-    }
-
-    IEnumerator SecuenciaVertical()
-    {
-        ejecutandoPickup = true;
-        targetYV = yPickup;
-        // Esperar a que baje
-        while (Mathf.Abs(ejeVertical.localPosition.y - targetYV) > 0.001f) yield return null;
-
-        Debug.Log("Brazo abajo, esperando...");
-        yield return new WaitForSeconds(0.6f);
-
-        targetYV = yReposo;
-        // Esperar a que suba
-        while (Mathf.Abs(ejeVertical.localPosition.y - targetYV) > 0.001f) yield return null;
-
-        Debug.Log("Brazo arriba, secuencia terminada.");
-        ejecutandoPickup = false;
+        lock (colaComandos) { colaComandos.Enqueue(data); }
     }
 
     void Update()
     {
-        // Movimiento horizontal
-        ejeHorizontal.localPosition = Vector3.MoveTowards(ejeHorizontal.localPosition, targetPosH, velocidadH * Time.deltaTime);
-
-        // Movimiento vertical
-        Vector3 posV = ejeVertical.localPosition;
-        posV.y = Mathf.MoveTowards(posV.y, targetYV, velocidadV * Time.deltaTime);
-        ejeVertical.localPosition = posV;
+        if (!estaOcupado)
+        {
+            lock (colaComandos)
+            {
+                if (colaComandos.Count > 0)
+                {
+                    // Sacamos el último mensaje de la cola para tener el estado más reciente
+                    MPOBrazoPayload proximoComando = colaComandos.Dequeue();
+                    StartCoroutine(EjecutarSecuencia(proximoComando));
+                }
+            }
+        }
     }
+
+    IEnumerator EjecutarSecuencia(MPOBrazoPayload data)
+    {
+        estaOcupado = true;
+
+        // 1. DETERMINAR DESTINO HORIZONTAL
+        float inicioZ = ejeHorizontal.localPosition.z;
+        float destinoZ = inicioZ;
+
+        if (data.move2Ref4 == 1) destinoZ = zHorno;
+        else if (data.move2Ref3 == 1) destinoZ = zTurntable;
+
+        // Solo movemos si el destino es diferente a la posición actual
+        if (Mathf.Abs(inicioZ - destinoZ) > 0.001f)
+        {
+            float tiempoPasadoH = 0;
+            while (tiempoPasadoH < tiempoRecorridoHorizontal)
+            {
+                tiempoPasadoH += Time.deltaTime;
+                float t = Mathf.SmoothStep(0, 1, tiempoPasadoH / tiempoRecorridoHorizontal);
+                float nz = Mathf.Lerp(inicioZ, destinoZ, t);
+                ejeHorizontal.localPosition = new Vector3(ejeHorizontal.localPosition.x, ejeHorizontal.localPosition.y, nz);
+                yield return null;
+            }
+            ejeHorizontal.localPosition = new Vector3(ejeHorizontal.localPosition.x, ejeHorizontal.localPosition.y, destinoZ);
+        }
+
+        // 2. LÓGICA DE MOVIMIENTO VERTICAL INMEDIATO
+        // Si al llegar a la posición (o si ya estaba ahí) la señal de pickup o release está activa:
+
+        if (data.pickup == 1 && !tienePieza)
+        {
+            Debug.Log("Ejecutando Pickup...");
+            yield return StartCoroutine(SecuenciaFisicaVertical(true));
+        }
+        else if (data.release == 1 && tienePieza)
+        {
+            Debug.Log("Ejecutando Release...");
+            yield return StartCoroutine(SecuenciaFisicaVertical(false));
+        }
+
+        estaOcupado = false;
+    }
+
+    IEnumerator SecuenciaFisicaVertical(bool agarrar)
+    {
+        float inicioX = ejeVertical.localPosition.x;
+
+        // BAJAR
+        float tiempoPasadoV = 0;
+        while (tiempoPasadoV < tiempoRecorridoVertical)
+        {
+            tiempoPasadoV += Time.deltaTime;
+            float t = tiempoPasadoV / tiempoRecorridoVertical;
+            float nx = Mathf.Lerp(inicioX, xPickup, t);
+            ejeVertical.localPosition = new Vector3(nx, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
+            yield return null;
+        }
+        ejeVertical.localPosition = new Vector3(xPickup, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
+
+        // ACCIÓN (Simulada para tus pruebas)
+        if (agarrar) { tienePieza = true; Debug.Log("Pieza Agarrada (Simulado)"); }
+        else { tienePieza = false; Debug.Log("Pieza Soltada (Simulado)"); }
+
+        yield return new WaitForSeconds(0.3f);
+
+        // SUBIR
+        inicioX = ejeVertical.localPosition.x;
+        float tiempoPasadoSubir = 0;
+        while (tiempoPasadoSubir < tiempoRecorridoVertical)
+        {
+            tiempoPasadoSubir += Time.deltaTime;
+            float t = tiempoPasadoSubir / tiempoRecorridoVertical;
+            float nx = Mathf.Lerp(inicioX, xReposo, t);
+            ejeVertical.localPosition = new Vector3(nx, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
+            yield return null;
+        }
+        ejeVertical.localPosition = new Vector3(xReposo, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
+    }
+
+    // Funciones de soltar físicas (comentadas como pediste)
+    void AgarrarObjeto() { }
+    void SoltarObjeto() { if (piezaAgarrada != null) { piezaAgarrada.SetParent(null); piezaAgarrada = null; } }
 
     private void OnDestroy()
     {
         if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnBrazoUpdateEvent -= AlRecibirComandoBrazo;
+            MQTTClient.Instance.OnBrazoUpdateEvent -= EncolarComando;
     }
 }

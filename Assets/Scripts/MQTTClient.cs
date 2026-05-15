@@ -38,6 +38,7 @@ public class MPOBrazoPayload
     public int move2Ref3;
     public int move2Ref4;
     public int pickup;
+    public int release; // <--- AÑADIR ESTO
     public string ts;
 }
 
@@ -121,8 +122,8 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/pieza", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo" };
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo" };
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
