@@ -180,13 +180,37 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
-    // Mantén el OnTriggerExit si quieres una seguridad extra por si el brazo se mueve rápido
+    //// Mantén el OnTriggerExit si quieres una seguridad extra por si el brazo se mueve rápido
+    //private void OnTriggerExit(Collider other)
+    //{
+    //    if (other.name.Contains("cajon"))
+    //    {
+    //        // Si por algún motivo la pieza sigue siendo trigger, la forzamos a sólida
+    //        // Esto sirve de "red de seguridad"
+    //    }
+    //}
+
+    private void OnTriggerEnter(Collider other)
+    {
+        // Si el sensor de la ventosa toca algo que se llame pieza o tenga el tag Pieza
+        if (other.name.ToLower().Contains("pieza") || other.CompareTag("Pieza"))
+        {
+            SetPiezaCercana(other.transform);
+            Debug.Log("<color=yellow><b>[VGR Ventosa]:</b> Pieza detectada en rango: </color>" + other.name);
+        }
+    }
+
     private void OnTriggerExit(Collider other)
     {
-        if (other.name.Contains("cajon"))
+        // Si nos alejamos de la pieza y NO la tenemos enganchada, limpiamos la referencia
+        if (other.name.ToLower().Contains("pieza") || other.CompareTag("Pieza"))
         {
-            // Si por algún motivo la pieza sigue siendo trigger, la forzamos a sólida
-            // Esto sirve de "red de seguridad"
+            if (piezaEnganchada == null)
+            {
+                SetPiezaCercana(null);
+                Debug.Log("<color=orange><b>[VGR Ventosa]:</b> Pieza fuera de rango.</color>");
+            }
         }
     }
 }
+
