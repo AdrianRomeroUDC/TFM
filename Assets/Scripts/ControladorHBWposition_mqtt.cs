@@ -92,31 +92,32 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);
             ejeVertical.localPosition = p;
 
-            if (objetoEnganchado != null && lastV < plcV_Min + 5) SoltarCajon();
+            //if (objetoEnganchado != null && lastV < plcV_Min + 5) SoltarCajon();
         }
     }
 
     // --- MÉTODOS DE CAPTURA Y ANIMACIÓN ---
-    public void ProcesarCaptura(Transform cajon, Transform plataformaBrazo)
+    public void ProcesarCaptura(Transform contenedor, Transform plataforma)
     {
-        if (objetoEnganchado == null)
+        // ASIGNACIÓN CRUCIAL: Guardamos la referencia para saber qué tenemos cargado
+        objetoEnganchado = contenedor;
+
+        // Forzamos a que el contenedor sea hijo directo de la plataforma móvil
+        contenedor.SetParent(plataforma);
+
+        if (contenedor.TryGetComponent<Rigidbody>(out Rigidbody rb))
         {
-            objetoEnganchado = cajon;
-            padreOriginalEstante = cajon.parent;
-
-            // 1. ANCLAJE: Emparentamos
-            cajon.SetParent(plataformaBrazo, true);
-
-            // 2. LIMPIEZA TOTAL: Esto es lo que soluciona que "no siga al brazo"
-            Rigidbody[] rbs = cajon.GetComponentsInChildren<Rigidbody>();
-            foreach (Rigidbody rb in rbs)
-            {
-                rb.isKinematic = true;      // Impide fuerzas externas
-                rb.useGravity = false;      // Anula gravedad
-            }
-
-            Debug.Log("<color=green>Captura limpia realizada, inercia eliminada.</color>");
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
         }
+    }
+
+    // Nuevo método público para que el cajón le avise al controlador que ya llegó a su estante
+    public void NotificarCajonLiberado()
+    {
+        objetoEnganchado = null;
+        Debug.Log("<color=yellow><b>[Controlador HBW]:</b> El transelevador registra que ya no lleva ningún cajón.</color>");
     }
 
     private void SoltarCajon()
