@@ -42,6 +42,21 @@ public class MPOBrazoPayload
     public string ts;
 }
 
+[Serializable]
+public class SSCLEDsPayload
+{
+    public int LED_online;
+    public int LEDs;
+}
+
+[Serializable]
+public class SSCCamaraPayload
+{
+    public float pan;
+    public float tilt;
+    public string ts;
+}
+
 public class MQTTClient : MonoBehaviour
 {
     private static MQTTClient instance;
@@ -101,6 +116,11 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnBrazoUpdate(MPOBrazoPayload data);
     public event OnBrazoUpdate OnBrazoUpdateEvent;
 
+    public delegate void OnSSCLEDsUpdate(int ledOnline, int ledsValor);
+    public event OnSSCLEDsUpdate OnSSCLEDsUpdateEvent;
+
+    public delegate void OnSSCCamaraUpdate(float pan, float tilt);
+    public event OnSSCCamaraUpdate OnSSCCamaraUpdateEvent;
 
     public Queue<MPOTurntablePayload> colaMensajes = new Queue<MPOTurntablePayload>();
 
@@ -122,8 +142,11 @@ public class MQTTClient : MonoBehaviour
             if (client.IsConnected)
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo" };
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", 
+                    "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo", "f/ssc/LEDs", "f/ssc/camara" };
+
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
@@ -235,6 +258,36 @@ public class MQTTClient : MonoBehaviour
             catch (Exception ex)
             {
                 Debug.LogWarning("Error al parsear brazo MPO: " + ex.Message);
+            }
+        }
+        else if (topic == "f/ssc/LEDs")
+        {
+            try
+            {
+                SSCLEDsPayload data = JsonUtility.FromJson<SSCLEDsPayload>(Encoding.UTF8.GetString(e.Message));
+                if (data != null)
+                {
+                    OnSSCLEDsUpdateEvent?.Invoke(data.LED_online, data.LEDs);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Error al parsear f/ssc/LEDs: " + ex.Message);
+            }
+        }
+        else if (topic == "f/ssc/camara")
+        {
+            try
+            {
+                SSCCamaraPayload data = JsonUtility.FromJson<SSCCamaraPayload>(Encoding.UTF8.GetString(e.Message));
+                if (data != null)
+                {
+                    OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Error al parsear f/ssc/camara: " + ex.Message);
             }
         }
     }
