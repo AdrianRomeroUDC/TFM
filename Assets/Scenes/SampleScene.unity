@@ -4869,7 +4869,7 @@ MonoBehaviour:
   plcVert_Min: 0
   plcVert_Max: 1152
   plcExt_Min: 0
-  plcExt_Max: 1210
+  plcExt_Max: 1020
   unityRot_Min: 267.6299
   unityRot_Max: -5.6261
   unityVert_Min: 0.002085
@@ -71917,6 +71917,7 @@ GameObject:
   - component: {fileID: 7675270555162180583}
   - component: {fileID: 7675270555162180582}
   - component: {fileID: 7675270555162180584}
+  - component: {fileID: 7675270555162180585}
   m_Layer: 0
   m_Name: 9V_container3_1_id14586_step001______cajon8
   m_TagString: Untagged
@@ -241169,8 +241170,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.00029999999, y: 0.00011908943, z: 0.00029999996}
-  m_Center: {x: -0.00014999999, y: 0.00009045514, z: 0.000093617025}
+  m_Size: {x: 0.00029999999, y: 0.00003030831, z: 0.00029999993}
+  m_Center: {x: -0.00014999999, y: 0.000046064626, z: 0.00009361704}
 --- !u!65 &7675270555162180582
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -241225,6 +241226,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3490cee4015e0a439fb1f192d35999d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AlmacenContenedor
+--- !u!65 &7675270555162180585
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2099641167255681227}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00029999999, y: 0.000118306656, z: 0.00029999996}
+  m_Center: {x: -0.00014999999, y: 0.00009084651, z: 0.000093617025}
 --- !u!33 &7676438769973648577
 MeshFilter:
   m_ObjectHideFlags: 0

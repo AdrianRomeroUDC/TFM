@@ -132,7 +132,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 Collider[] collidersCercanos = Physics.OverlapSphere(puntoAnclajeVentosa.position, 0.05f);
                 foreach (Collider col in collidersCercanos)
                 {
-                    if (col.name.ToLower().Contains("pieza") || col.CompareTag("Pieza"))
+                    if (col.name.ToLower().Contains("pieza"))
                     {
                         piezaCercana = col.transform;
                         Debug.Log("<color=cyan><b>[VGR Radar Emergencia]:</b> Pieza encontrada mediante OverlapSphere: </color>" + col.name);
@@ -217,8 +217,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // Si el sensor de la ventosa toca algo que se llame pieza o tenga el tag Pieza
-        if (other.name.ToLower().Contains("pieza") || other.CompareTag("Pieza"))
+        // Si el sensor de la ventosa toca algo que se llame pieza
+        if (other.name.ToLower().Contains("pieza"))
         {
             SetPiezaCercana(other.transform);
             Debug.Log("<color=yellow><b>[VGR Ventosa]:</b> Pieza detectada en rango: </color>" + other.name);
@@ -228,7 +228,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private void OnTriggerExit(Collider other)
     {
         // Si nos alejamos de la pieza y NO la tenemos enganchada, limpiamos la referencia
-        if (other.name.ToLower().Contains("pieza") || other.CompareTag("Pieza"))
+        if (other.name.ToLower().Contains("pieza"))
         {
             if (piezaEnganchada == null)
             {
