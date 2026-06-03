@@ -6900,7 +6900,7 @@ MonoBehaviour:
   plcH_Max: 1985
   plcV_Min: 0
   plcV_Max: 845
-  unityH_Min: 0.003685
+  unityH_Min: 0.003702
   unityH_Max: 0.006632
   unityV_Min: -0.00005
   unityV_Max: -0.001279
@@ -193827,7 +193827,7 @@ Transform:
   m_GameObject: {fileID: 6219390065692819774}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.70710677, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -0.001794, y: -0.000783, z: 0.003688}
+  m_LocalPosition: {x: -0.001794, y: -0.000783, z: 0.003702}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
