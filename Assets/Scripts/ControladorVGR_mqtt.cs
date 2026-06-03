@@ -5,7 +5,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
 {
     private float lastRot, lastVert, lastExt;
 
-    // Cambiamos a estas variables para manejar el hilo de Unity
+    // Variables para manejar el hilo de Unity
     private bool estadoGripPendiente = false;
     private bool cambioGripDetectado = false;
 
@@ -67,7 +67,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
-    // Este método sigue corriendo en el hilo de MQTT (segundo plano)
     private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
     {
         lastRot = rot;
@@ -75,7 +74,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
         lastExt = ext;
     }
 
-    // Solo guardamos el estado, no ejecutamos lógica de Unity aquí
     private void RecibirGripMQTT(bool activo)
     {
         estadoGripPendiente = activo;
@@ -118,42 +116,38 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
-    // Esta función ahora corre dentro del Update, por lo que SetParent funcionará
     private void ProcesarLogicaGrip(bool activo)
     {
         if (activo)
         {
-            // --- RADAR DE EMERGENCIA REFORZADO ---
-            // Si por tirones físicos 'piezaCercana' llegó vacía, forzamos un escaneo físico 
-            // real en el espacio 3D justo en la posición exacta del punto de anclaje de la ventosa.
-            if (piezaCercana == null && piezaEnganchada == null && puntoAnclajeVentosa != null)
+            // >>> RESTAURADO: BARRIDO INDUSTRIAL DE SUCCIÓN INMEDIATA <<<
+            // Al activarse el GRIP, escaneamos la punta de la ventosa mediante físicas tridimensionales
+            if (puntoAnclajeVentosa != null && piezaEnganchada == null)
             {
-                // Escanea un radio de 0.05 unidades (unos 5 centímetros) alrededor de la ventosa
-                Collider[] collidersCercanos = Physics.OverlapSphere(puntoAnclajeVentosa.position, 0.05f);
-                foreach (Collider col in collidersCercanos)
+                // Buscamos cualquier collider en un radio de 15 centímetros alrededor de la ventosa
+                Collider[] collidersEnVentosa = Physics.OverlapSphere(puntoAnclajeVentosa.position, 0.15f);
+                foreach (Collider col in collidersEnVentosa)
                 {
                     if (col.name.ToLower().Contains("pieza"))
                     {
-                        piezaCercana = col.transform;
-                        Debug.Log("<color=cyan><b>[VGR Radar Emergencia]:</b> Pieza encontrada mediante OverlapSphere: </color>" + col.name);
-                        break; // Salimos del bucle al encontrar la primera
+                        piezaEnganchada = col.transform;
+                        Debug.Log("<color=cyan><b>[VGR Vacío]:</b> Pieza succionada y asegurada con éxito: </color>" + col.name);
+                        break;
                     }
                 }
             }
 
-            // Lógica de enganche estándar
-            if (piezaCercana != null && piezaEnganchada == null)
+            // Si se detectó la pieza por el barrido o por los Triggers de proximidad
+            if (piezaEnganchada != null)
             {
-                piezaEnganchada = piezaCercana;
-
-                // Le añadimos o recuperamos el Rigidbody
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
                 if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
 
-                // La volvemos Kinematic para que viaje fija con el brazo sin caerse
+                // La volvemos Kinematic para que flote fija con el brazo
                 rb.isKinematic = true;
                 rb.useGravity = false;
 
+                // Cambiamos su colisionador a Trigger para que no genere fricciones raras con la ventosa al viajar
                 if (piezaEnganchada.TryGetComponent<BoxCollider>(out BoxCollider col))
                     col.isTrigger = true;
 
@@ -166,58 +160,47 @@ public class ControladorVGR_mqtt : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("<color=red><b>[VGR]:</b> El PLC ordenó GRIP, pero no se encontró ninguna pieza cerca de la ventosa.</color>");
+                Debug.LogWarning("<color=red><b>[VGR]:</b> El PLC ordenó GRIP, pero no hay ninguna pieza físicamente debajo de la ventosa.</color>");
             }
         }
         else
         {
+            // >>> LÓGICA DE SOLTAR (DROP) CON SOLIDEZ INMEDIATA <<<
             if (piezaEnganchada != null)
             {
-                // 1. Soltamos la pieza
+                // 1. Cortamos el parentesco con el VGR
                 piezaEnganchada.SetParent(null);
 
-                // 2. ¡CAÍDA INMEDIATA!
+                // 2. Restauramos las físicas de gravedad al instante
                 if (piezaEnganchada.TryGetComponent<Rigidbody>(out Rigidbody rb))
                 {
                     rb.isKinematic = false;
                     rb.useGravity = true;
+
+                    // Reseteamos velocidades residuales para evitar caídas desviadas
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
                 }
 
-                // 3. Volver a hacer sólida en medio segundo tras salir del rango del brazo
-                StartCoroutine(VolverSolidaTrasCaida(piezaEnganchada));
+                // 3. ¡SOLIDEZ INMEDIATA!
+                // Al apagar el Trigger en este mismo frame, la pieza recupera su solidez
+                // y chocará de golpe contra la plataforma o la cesta NiO sin traspasar nada.
+                if (piezaEnganchada.TryGetComponent<BoxCollider>(out BoxCollider col))
+                {
+                    col.isTrigger = false;
+                }
 
+                Debug.Log($"<color=orange><b>[VGR Drop]:</b> Pieza liberada y vuelta sólida inmediatamente sobre la superficie.</color>");
+
+                // Limpiamos referencias
                 piezaEnganchada = null;
-                piezaCercana = null; // Reseteamos también el radar para la siguiente pieza
+                piezaCercana = null;
             }
         }
     }
 
-    // Esta rutina hace que la pieza sea sólida poco después de soltarla
-    IEnumerator VolverSolidaTrasCaida(Transform pieza)
-    {
-        // Esperamos 0.5 segundos (suficiente para salir del área del cajón/brazo)
-        yield return new WaitForSeconds(0.5f);
-
-        if (pieza != null && pieza.TryGetComponent<BoxCollider>(out BoxCollider col))
-        {
-            col.isTrigger = false; // Ahora ya puede chocar con el suelo
-            Debug.Log("<color=green>Pieza ahora es sólida.</color>");
-        }
-    }
-
-    //// Mantén el OnTriggerExit si quieres una seguridad extra por si el brazo se mueve rápido
-    //private void OnTriggerExit(Collider other)
-    //{
-    //    if (other.name.Contains("cajon"))
-    //    {
-    //        // Si por algún motivo la pieza sigue siendo trigger, la forzamos a sólida
-    //        // Esto sirve de "red de seguridad"
-    //    }
-    //}
-
     private void OnTriggerEnter(Collider other)
     {
-        // Si el sensor de la ventosa toca algo que se llame pieza
         if (other.name.ToLower().Contains("pieza"))
         {
             SetPiezaCercana(other.transform);
@@ -227,7 +210,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        // Si nos alejamos de la pieza y NO la tenemos enganchada, limpiamos la referencia
         if (other.name.ToLower().Contains("pieza"))
         {
             if (piezaEnganchada == null)
@@ -238,4 +220,3 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 }
-

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4499313499849772743}
   - component: {fileID: 5927112218421684583}
   - component: {fileID: 7638166970497867669}
-  - component: {fileID: -4943775007805314917}
+  - component: {fileID: 4576186988254091016}
   m_Layer: 0
   m_Name: 9V_nfc_blau_id15690_step_____piezaAzul
   m_TagString: Untagged
@@ -91,7 +91,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &-4943775007805314917
+--- !u!65 &4576186988254091016
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

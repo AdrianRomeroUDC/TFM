@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections; // Necesario para las Corrutinas
+using System.Collections;
 
 public class ControladorDPS_mqtt : MonoBehaviour
 {
@@ -7,37 +7,25 @@ public class ControladorDPS_mqtt : MonoBehaviour
     public Transform puntoEntrada;
     public Transform pinzaVGR;
 
-    [Header("Prefabs")]
+    [Header("Prefabs Visuales")]
     public GameObject prefabBaseGris;
     public GameObject prefabBlanco;
     public GameObject prefabRojo;
     public GameObject prefabAzul;
 
-    [Header("Ajustes Pinza")]
-    public Vector3 posicionEnPinza = new Vector3(0f, 0f, -0.0002f);
-    public Vector3 rotacionEnPinza = new Vector3(90f, 0f, 0f);
-
     private GameObject piezaActual;
     private string modoPendiente = "";
     private bool gripActivo = false;
 
-    // --- SUSCRIPCIÓN SEGURA ---
-
     void Start()
     {
-        // En lugar de OnEnable, usamos una corrutina para asegurar que MQTTClient existe
         StartCoroutine(IntentarSuscripcionSegura());
     }
 
     IEnumerator IntentarSuscripcionSegura()
     {
-        // Esperamos hasta que la instancia de MQTT esté disponible
-        while (MQTTClient.Instance == null)
-        {
-            yield return null; // Espera al siguiente frame
-        }
+        while (MQTTClient.Instance == null) yield return null;
 
-        // Una vez que existe, nos suscribimos
         MQTTClient.Instance.OnDPSPiezaEvent += ActualizarPieza;
         MQTTClient.Instance.OnDPSColorEvent += ActualizarColor;
         MQTTClient.Instance.OnVGRGripEvent += ActualizarGrip;
@@ -47,7 +35,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
     private void OnDisable()
     {
-        // Importante: Desvincular siempre al destruir el objeto para evitar errores
         if (MQTTClient.Instance != null)
         {
             MQTTClient.Instance.OnDPSPiezaEvent -= ActualizarPieza;
@@ -56,24 +43,20 @@ public class ControladorDPS_mqtt : MonoBehaviour
         }
     }
 
-    // --- REACCIÓN A EVENTOS ---
     private void ActualizarPieza(bool detectada)
     {
-        Debug.Log("Mensaje MQTT recibido - Pieza: " + detectada);
         if (detectada) modoPendiente = "SPAWN_BASE";
         else if (!gripActivo) modoPendiente = "DELETE";
     }
 
     private void ActualizarColor(string color)
     {
-        Debug.Log("Mensaje MQTT recibido - Color: " + color);
-        if (gripActivo && (color == "BLUE" || color == "RED" || color == "WHITE"))
+        if (color == "BLUE" || color == "RED" || color == "WHITE")
             modoPendiente = color;
     }
 
     private void ActualizarGrip(bool activo)
     {
-        Debug.Log("Mensaje MQTT recibido - Grip: " + activo);
         gripActivo = activo;
         if (!activo) modoPendiente = "DROP";
     }
@@ -84,21 +67,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
         {
             EjecutarOrden();
             modoPendiente = "";
-        }
-
-        // Mantener pegado al VGR (esta lógica se ejecuta cada frame si hay grip)
-        if (gripActivo && piezaActual != null)
-        {
-            if (piezaActual.transform.parent != pinzaVGR)
-            {
-                piezaActual.transform.SetParent(pinzaVGR);
-                piezaActual.transform.localPosition = posicionEnPinza;
-                piezaActual.transform.localEulerAngles = rotacionEnPinza;
-                if (piezaActual.TryGetComponent<Rigidbody>(out Rigidbody rb))
-                {
-                    rb.isKinematic = true;
-                }
-            }
         }
     }
 
@@ -111,11 +79,15 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 piezaActual = Instantiate(prefabBaseGris, puntoEntrada.position, puntoEntrada.rotation);
                 ConfigurarFisicas(piezaActual);
                 break;
+
             case "DELETE":
-                // Comentamos o eliminamos el Destroy para que la pieza persista en el almacén
-                // if (piezaActual != null) Destroy(piezaActual); 
-                piezaActual = null; // Perder la referencia para poder spawnear la siguiente base gris
+                if (piezaActual != null && !gripActivo && piezaActual.transform.parent == null)
+                {
+                    Destroy(piezaActual);
+                }
+                piezaActual = null;
                 break;
+
             case "DROP":
                 if (piezaActual != null)
                 {
@@ -128,50 +100,79 @@ public class ControladorDPS_mqtt : MonoBehaviour
                     }
                 }
                 break;
+
             case "WHITE":
             case "RED":
             case "BLUE":
-                CambiarColor(modoPendiente);
+                MutarColorSinDestruir(modoPendiente);
                 break;
         }
     }
 
-    void CambiarColor(string color)
+    // >>> MUTACIÓN BLINDADA: PRESERVA Y REGENERA EL BOXCOLLIDER <<<
+    void MutarColorSinDestruir(string color)
     {
         if (piezaActual == null) return;
-        GameObject prefab = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : prefabAzul;
 
-        // Guardamos posición actual antes de destruir
-        Vector3 posActual = piezaActual.transform.position;
-        Quaternion rotActual = piezaActual.transform.rotation;
+        // 1. Identificamos el prefab destino
+        GameObject prefabDestino = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : prefabAzul;
+        if (prefabDestino == null) return;
 
-        Destroy(piezaActual);
-        piezaActual = Instantiate(prefab, posActual, rotActual);
-        ConfigurarFisicas(piezaActual);
+        // 2. Limpiamos cualquier elemento visual/malla anterior que tuviera la pieza base
+        foreach (var mesh in piezaActual.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (mesh.gameObject != piezaActual) Destroy(mesh.gameObject);
+        }
+        if (piezaActual.TryGetComponent<MeshFilter>(out MeshFilter mfRaiz)) Destroy(mfRaiz);
+        if (piezaActual.TryGetComponent<MeshRenderer>(out MeshRenderer mrRaiz)) Destroy(mrRaiz);
+
+        // 3. Clonamos el aspecto visual del nuevo prefab dentro de nuestra pieza viva
+        GameObject visualNuevo = Instantiate(prefabDestino, piezaActual.transform.position, piezaActual.transform.rotation, piezaActual.transform);
+        visualNuevo.transform.localPosition = Vector3.zero;
+        visualNuevo.transform.localRotation = Quaternion.identity;
+        visualNuevo.transform.localScale = Vector3.one;
+
+        // Renombramos el objeto raíz
+        piezaActual.name = "pieza_" + color.ToLower();
+
+        // >>> SOLUCIÓN AL BOXCOLLIDER ELIMINADO <<<
+        // Nos aseguramos de que la raíz de la pieza conserve o tenga un BoxCollider activo
+        BoxCollider colRaiz = piezaActual.GetComponent<BoxCollider>();
+        if (colRaiz == null)
+        {
+            colRaiz = piezaActual.AddComponent<BoxCollider>();
+        }
+
+        // Buscamos si el nuevo modelo clonado traía un colisionador interno para heredar sus medidas
+        BoxCollider colHijo = visualNuevo.GetComponentInChildren<BoxCollider>();
+        if (colHijo != null)
+        {
+            // Transferimos el tamaño exacto y el centro al colisionador de la raíz
+            colRaiz.center = colHijo.center;
+            colRaiz.size = colHijo.size;
+
+            // Destruimos el del hijo inmediatamente para que no haya colisiones duplicadas
+            Destroy(colHijo);
+        }
+
+        // IMPORTANTE: Mantenemos el colisionador de la raíz configurado correctamente
+        // Si el VGR lo tiene sujeto, el propio script del VGR se encargará de pasarlo temporalmente a Trigger,
+        // pero al mutar nos aseguramos de que el componente exista y esté listo.
+        colRaiz.isTrigger = gripActivo;
+
+        Debug.Log($"<color=cyan><b>[DPS Mutación]:</b> Pieza mutó a {color}. BoxCollider asegurado en la raíz con éxito.</color>");
     }
 
     void ConfigurarFisicas(GameObject p)
     {
-        // 1. Rigidbody: Lo configuramos como Kinematic inicialmente para que no se caiga al aparecer
+        p.name = "pieza_base";
         Rigidbody rb = p.GetComponent<Rigidbody>();
         if (rb == null) rb = p.AddComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity = false;
 
-        // 2. Limpieza de colliders antiguos (para evitar conflictos)
-        foreach (var oldCol in p.GetComponents<Collider>())
-        {
-            Destroy(oldCol);
-        }
-
-        // 3. AÑADIR COLLIDER FÍSICO (Sólido para que no se atraviesen)
-        BoxCollider colFisico = p.AddComponent<BoxCollider>();
+        BoxCollider colFisico = p.GetComponent<BoxCollider>();
+        if (colFisico == null) colFisico = p.AddComponent<BoxCollider>();
         colFisico.isTrigger = false;
-        // colFisico.size = new Vector3(0.05f, 0.05f, 0.05f); // Ajusta según tu pieza
-
-        // 4. AÑADIR COLLIDER TRIGGER (Para que el VGR lo detecte)
-        BoxCollider colTrigger = p.AddComponent<BoxCollider>();
-        colTrigger.isTrigger = true;
-
     }
 }
