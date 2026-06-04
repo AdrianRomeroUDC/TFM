@@ -1712,8 +1712,6 @@ MonoBehaviour:
   prefabBlanco: {fileID: 1874647114658911321, guid: 3775355192241ee428b71c8509c3b32f, type: 3}
   prefabRojo: {fileID: 3690905493317575458, guid: 13e4a19f76c20da4daecd8f64b375192, type: 3}
   prefabAzul: {fileID: 7526143996119949718, guid: 2468ee2bfb7b6824bb18807c3e693e04, type: 3}
-  posicionEnPinza: {x: 0, y: 0, z: -0.0002}
-  rotacionEnPinza: {x: 90, y: 0, z: 0}
 --- !u!4 &384571947
 Transform:
   m_ObjectHideFlags: 0
@@ -68917,6 +68915,8 @@ GameObject:
   - component: {fileID: 8501625825274219384}
   - component: {fileID: 4143004227872496083}
   - component: {fileID: 8501625825274219385}
+  - component: {fileID: 8501625825274219386}
+  - component: {fileID: 8501625825274219387}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step045
   m_TagString: Untagged
@@ -138817,6 +138817,8 @@ GameObject:
   - component: {fileID: 160239292514094261}
   - component: {fileID: 4007943951723648254}
   - component: {fileID: 4233387103613076558}
+  - component: {fileID: 4233387103613076559}
+  - component: {fileID: 4233387103613076560}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step011
   m_TagString: Untagged
@@ -138845,6 +138847,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.00007499999, y: 0.00014999996, z: 0.000037999995}
+--- !u!114 &4233387103613076559
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4233387103613076557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 669572056}
+--- !u!54 &4233387103613076560
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4233387103613076557}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!33 &4233444149162179571
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -141469,6 +141511,8 @@ GameObject:
   - component: {fileID: 392995242677932928}
   - component: {fileID: 3080356689950430399}
   - component: {fileID: 5803878128603393154}
+  - component: {fileID: 5803878128603393155}
+  - component: {fileID: 5803878128603393156}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step012
   m_TagString: Untagged
@@ -148103,6 +148147,8 @@ GameObject:
   - component: {fileID: 547752289591779201}
   - component: {fileID: 8570563813962959323}
   - component: {fileID: 8570563813962959324}
+  - component: {fileID: 8570563813962959325}
+  - component: {fileID: 8570563813962959326}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step043
   m_TagString: Untagged
@@ -161242,6 +161288,8 @@ GameObject:
   - component: {fileID: 8735975620186306643}
   - component: {fileID: 943496898749178786}
   - component: {fileID: 8735975620186306644}
+  - component: {fileID: 8735975620186306645}
+  - component: {fileID: 8735975620186306646}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step013
   m_TagString: Untagged
@@ -185690,6 +185738,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.00007500022, y: 0.0001499981, z: 0.000037998132}
+--- !u!114 &5803878128603393155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4311955171024100515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 380220788}
+--- !u!54 &5803878128603393156
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4311955171024100515}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!23 &5804287883464378205
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -212270,6 +212358,8 @@ GameObject:
   - component: {fileID: 475013373146699834}
   - component: {fileID: 6616426257691563700}
   - component: {fileID: 6724416030925861930}
+  - component: {fileID: 6724416030925861931}
+  - component: {fileID: 6724416030925861932}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step044
   m_TagString: Untagged
@@ -212298,6 +212388,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.00007499999, y: 0.0001499981, z: 0.000037999995}
+--- !u!114 &6724416030925861931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6724416030925861929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 592006260}
+--- !u!54 &6724416030925861932
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6724416030925861929}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!23 &6724619172008801659
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -255449,6 +255579,8 @@ GameObject:
   - component: {fileID: 4868144701160236862}
   - component: {fileID: 2822247130236901746}
   - component: {fileID: 8107240851086402409}
+  - component: {fileID: 8107240851086402410}
+  - component: {fileID: 8107240851086402411}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step039
   m_TagString: Untagged
@@ -255477,6 +255609,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.000074999756, y: 0.00014999996, z: 0.000037999995}
+--- !u!114 &8107240851086402410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8107240851086402408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 2083643509}
+--- !u!54 &8107240851086402411
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8107240851086402408}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!23 &8107555269624722568
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -258220,6 +258392,8 @@ GameObject:
   - component: {fileID: 6918792034513213117}
   - component: {fileID: 2586120986260623649}
   - component: {fileID: 8199847514789305568}
+  - component: {fileID: 8199847514789305569}
+  - component: {fileID: 8199847514789305570}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step009
   m_TagString: Untagged
@@ -258248,6 +258422,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.000075000105, y: 0.0001499981, z: 0.000037998132}
+--- !u!114 &8199847514789305569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8199847514789305567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 1056699170}
+--- !u!54 &8199847514789305570
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8199847514789305567}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!4 &8199896693968055306
 Transform:
   m_ObjectHideFlags: 0
@@ -261506,6 +261720,8 @@ GameObject:
   - component: {fileID: 1913890593630587412}
   - component: {fileID: 2920215368301312981}
   - component: {fileID: 8306951925232044855}
+  - component: {fileID: 8306951925232044856}
+  - component: {fileID: 8306951925232044857}
   m_Layer: 0
   m_Name: 9V_baustein_15_20_5_zapfen_id870_step010
   m_TagString: Untagged
@@ -261534,6 +261750,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.000075000105, y: 0.0001499981, z: 0.000037999995}
+--- !u!114 &8306951925232044856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8306951925232044854}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 32944616}
+--- !u!54 &8306951925232044857
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8306951925232044854}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!23 &8307821015735831774
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -267250,6 +267506,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.00007500022, y: 0.00014999996, z: 0.000037998132}
+--- !u!114 &8501625825274219386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2021097902150203257}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 1999249997}
+--- !u!54 &8501625825274219387
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2021097902150203257}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!23 &8501977393776154506
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -269032,6 +269328,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.00007500022, y: 0.0001499981, z: 0.000037999995}
+--- !u!114 &8570563813962959325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4516097606187057441}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 1756713559}
+--- !u!54 &8570563813962959326
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4516097606187057441}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &8573180766230691545
 GameObject:
   m_ObjectHideFlags: 0
@@ -274492,6 +274828,46 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00014999998, y: 0.00029999993, z: 0.00007599999}
   m_Center: {x: -0.00007499999, y: 0.0001499981, z: 0.000037998132}
+--- !u!114 &8735975620186306645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4946613601941295066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef08bd02a1baad9408bf18ff9b3f3fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SoporteHBW_proxy
+  casillaPadreCorrespondiente: {fileID: 857321320}
+--- !u!54 &8735975620186306646
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4946613601941295066}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!4 &8737822275940180426
 Transform:
   m_ObjectHideFlags: 0

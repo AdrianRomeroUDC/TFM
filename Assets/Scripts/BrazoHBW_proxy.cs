@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class HBW_proxy : MonoBehaviour
+public class BrazoHBW_proxy : MonoBehaviour
 {
     [Header("Referencia al Controlador")]
     public ControladorHBWposition_mqtt scriptPrincipal;

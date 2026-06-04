@@ -127,7 +127,7 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public void NotificarCajonLiberado()
     {
         objetoEnganchado = null; // Vaciamos la variable de custodia liberando el brazo mecánicamente
-        Debug.Log("<color=yellow><b>[Controlador HBW]:</b> El transelevador registra que ya no lleva ningún cajón.</color>");
+        Debug.Log("<color=yellow><b>[Controlador HBW]:</b> El transelevador registra que ya no lleva ningún cajón y se retirará solo.</color>");
     }
 
     // Método de seguridad para liberar forzadamente el cajón restableciendo sus componentes físicos nativos
