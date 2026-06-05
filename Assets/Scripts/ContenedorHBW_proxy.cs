@@ -2,21 +2,37 @@ using UnityEngine;
 
 public class ContenedorHBW_proxy : MonoBehaviour
 {
+    // Variables para almacenar magnéticamente la coordenada y la jerarquía de origen
     private Vector3 posicionInicialGlobal;
     private Quaternion rotacionInicialGlobal;
+    private Transform padreOriginalEstante; // <--- Nueva variable de memoria
 
     void Start()
     {
+        // Guardamos la posición, rotación y el padre exacto (ej: Col1Fil1) al iniciar la simulación
         posicionInicialGlobal = this.transform.position;
         rotacionInicialGlobal = this.transform.rotation;
+        padreOriginalEstante = this.transform.parent;
     }
 
+    // Función pública que llama el soporte para regresar el contenedor a su sitio exacto
     public void RetornarAPosicionInicial()
     {
-        this.transform.SetParent(null);
+        // En lugar de SetParent(null), lo devolvemos bajo el ala de su nodo ColxFilx original
+        if (padreOriginalEstante != null)
+        {
+            this.transform.SetParent(padreOriginalEstante, true);
+            Debug.Log($"<color=lime><b>[Memoria Contenedor]:</b> Contenedor {gameObject.name} reemparentado con éxito a su nodo lógico: {padreOriginalEstante.name}</color>");
+        }
+        else
+        {
+            this.transform.SetParent(null, true);
+            Debug.LogWarning($"<color=yellow><b>[Memoria Contenedor]:</b> {gameObject.name} no tenía padre al inicio del juego. Se queda en la raíz.</color>");
+        }
+
+        // Forzamos el regreso milimétrico a las coordenadas físicas de inicio
         this.transform.position = posicionInicialGlobal;
         this.transform.rotation = rotacionInicialGlobal;
-        Debug.Log($"<color=lime><b>[Memoria Contenedor]:</b> Contenedor {gameObject.name} devuelto a su posición de origen.</color>");
     }
 
     // Usamos OnTriggerEnter para detectar el momento exacto del impacto de la pieza
@@ -24,7 +40,6 @@ public class ContenedorHBW_proxy : MonoBehaviour
     {
         if (other.name.Contains("pieza"))
         {
-            // Si la pieza sigue sujeta por la grúa VGR (tiene de padre la ventosa), ignoramos para no interrumpir el viaje
             if (other.transform.parent != null && other.transform.parent.name.ToLower().Contains("ventosa"))
             {
                 return;
@@ -34,9 +49,6 @@ public class ContenedorHBW_proxy : MonoBehaviour
                 return;
             }
 
-            // 1. ELIMINACIÓN DE FÍSICAS INMEDIATA (Tu idea para evitar que atraviese)
-            // Al destruir el Rigidbody en este frame exacto, la pieza pierde la gravedad, 
-            // detiene su velocidad de caída en seco y se congela en la posición de contacto.
             Rigidbody rbPieza = other.GetComponent<Rigidbody>();
             if (rbPieza != null)
             {
@@ -44,13 +56,8 @@ public class ContenedorHBW_proxy : MonoBehaviour
                 Debug.Log($"<color=yellow><b>[Contenedor]:</b> Rigidbody eliminado de {other.name} para evitar traspaso.</color>");
             }
 
-            // 2. REEMPARENTAR
-            // Ahora que la pieza es estática y no tiene físicas que la empujen hacia abajo,
-            // la unimos de forma segura a la jerarquía del contenedor.
             other.transform.SetParent(this.transform);
 
-            // 3. PASAR COLLIDER A TRIGGER (Opcional)
-            // Volvemos su BoxCollider un trigger para que no choque con las paredes internas del propio cajón
             if (other.TryGetComponent<BoxCollider>(out BoxCollider col))
             {
                 col.isTrigger = true;
