@@ -84,14 +84,12 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
     void Update()
     {
-        // 1. PROCESAR CAMBIO DE GRIP (HILO PRINCIPAL)
         if (cambioGripDetectado)
         {
             ProcesarLogicaGrip(estadoGripPendiente);
             cambioGripDetectado = false;
         }
 
-        // 2. LÓGICA DE MOVIMIENTO
         float speed = lerpSpeed * Time.deltaTime;
 
         if (ejeRotacion)
@@ -120,38 +118,40 @@ public class ControladorVGR_mqtt : MonoBehaviour
     {
         if (activo)
         {
-            // >>> RESTAURADO: BARRIDO INDUSTRIAL DE SUCCIÓN INMEDIATA <<<
-            // Al activarse el GRIP, escaneamos la punta de la ventosa mediante físicas tridimensionales
             if (puntoAnclajeVentosa != null && piezaEnganchada == null)
             {
-                // Buscamos cualquier collider en un radio de 15 centímetros alrededor de la ventosa
                 Collider[] collidersEnVentosa = Physics.OverlapSphere(puntoAnclajeVentosa.position, 0.15f);
                 foreach (Collider col in collidersEnVentosa)
                 {
                     if (col.name.ToLower().Contains("pieza"))
                     {
-                        piezaEnganchada = col.transform;
-                        Debug.Log("<color=cyan><b>[VGR Vacío]:</b> Pieza succionada y asegurada con éxito: </color>" + col.name);
+                        Transform raizPieza = col.transform;
+                        while (raizPieza.parent != null && raizPieza.parent != puntoAnclajeVentosa && raizPieza.parent.name.ToLower().Contains("pieza"))
+                        {
+                            raizPieza = raizPieza.parent;
+                        }
+
+                        piezaEnganchada = raizPieza;
+                        Debug.Log("<color=cyan><b>[VGR Vacío]:</b> Pieza succionada con éxito: </color>" + piezaEnganchada.name);
                         break;
                     }
                 }
             }
 
-            // Si se detectó la pieza por el barrido o por los Triggers de proximidad
             if (piezaEnganchada != null)
             {
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
                 if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
 
-                // La volvemos Kinematic para que flote fija con el brazo
                 rb.isKinematic = true;
                 rb.useGravity = false;
 
-                // Cambiamos su colisionador a Trigger para que no genere fricciones raras con la ventosa al viajar
-                if (piezaEnganchada.TryGetComponent<BoxCollider>(out BoxCollider col))
+                BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                foreach (BoxCollider col in colliders)
+                {
                     col.isTrigger = true;
+                }
 
-                // Emparentamos físicamente al VGR
                 piezaEnganchada.SetParent(puntoAnclajeVentosa);
                 piezaEnganchada.position = puntoAnclajeVentosa.position;
                 piezaEnganchada.rotation = Quaternion.Euler(rotacionEnPinza);
@@ -160,39 +160,43 @@ public class ControladorVGR_mqtt : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("<color=red><b>[VGR]:</b> El PLC ordenó GRIP, pero no hay ninguna pieza físicamente debajo de la ventosa.</color>");
+                Debug.LogWarning("<color=red><b>[VGR]:</b> El PLC ordenó GRIP, pero no hay pieza bajo la ventosa.</color>");
             }
         }
         else
         {
-            // >>> LÓGICA DE SOLTAR (DROP) CON SOLIDEZ INMEDIATA <<<
+            // --- LÓGICA DE SUELTA BLINDADA CONTRA FILTRACIONES ---
             if (piezaEnganchada != null)
             {
-                // 1. Cortamos el parentesco con el VGR
+                // 1. La desvinculamos del robot
                 piezaEnganchada.SetParent(null);
 
-                // 2. Restauramos las físicas de gravedad al instante
-                if (piezaEnganchada.TryGetComponent<Rigidbody>(out Rigidbody rb))
-                {
-                    rb.isKinematic = false;
-                    rb.useGravity = true;
+                // 2. TRUCO DE SEGURIDAD: La subimos 2.5 centímetros en el espacio del mundo 
+                // para evitar que el desfase del Trigger la haga nacer empotrada en el suelo de la cesta
+                piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
 
-                    // Reseteamos velocidades residuales para evitar caídas desviadas
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
+                // 3. Forzamos a apagar el Trigger inmediatamente
+                BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                foreach (BoxCollider c in allCols)
+                {
+                    if (c != null) c.isTrigger = false;
                 }
 
-                // 3. ¡SOLIDEZ INMEDIATA!
-                // Al apagar el Trigger en este mismo frame, la pieza recupera su solidez
-                // y chocará de golpe contra la plataforma o la cesta NiO sin traspasar nada.
-                if (piezaEnganchada.TryGetComponent<BoxCollider>(out BoxCollider col))
-                {
-                    col.isTrigger = false;
-                }
+                // 4. Activamos físicas dinámicas en modo continuo
+                Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
+                if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
 
-                Debug.Log($"<color=orange><b>[VGR Drop]:</b> Pieza liberada y vuelta sólida inmediatamente sobre la superficie.</color>");
+                rb.isKinematic = false;
+                rb.useGravity = true;
 
-                // Limpiamos referencias
+                // Esto obliga a Unity a escanear milímetro a milímetro la caída para evitar el "efecto túnel"
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+
+                Debug.Log("<color=lime><b>[VGR BLINDAJE]:</b> Pieza reposicionada y soltada sólidamente de forma nativa.</color>");
+
                 piezaEnganchada = null;
                 piezaCercana = null;
             }
@@ -204,7 +208,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
         if (other.name.ToLower().Contains("pieza"))
         {
             SetPiezaCercana(other.transform);
-            Debug.Log("<color=yellow><b>[VGR Ventosa]:</b> Pieza detectada en rango: </color>" + other.name);
         }
     }
 
@@ -212,11 +215,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     {
         if (other.name.ToLower().Contains("pieza"))
         {
-            if (piezaEnganchada == null)
-            {
-                SetPiezaCercana(null);
-                Debug.Log("<color=orange><b>[VGR Ventosa]:</b> Pieza fuera de rango.</color>");
-            }
+            if (piezaEnganchada == null) SetPiezaCercana(null);
         }
     }
 }

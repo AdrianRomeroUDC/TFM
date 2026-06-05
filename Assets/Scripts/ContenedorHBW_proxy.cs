@@ -2,68 +2,71 @@ using UnityEngine;
 
 public class ContenedorHBW_proxy : MonoBehaviour
 {
-    // Variables para almacenar magnéticamente la coordenada y la jerarquía de origen
     private Vector3 posicionInicialGlobal;
     private Quaternion rotacionInicialGlobal;
-    private Transform padreOriginalEstante; // <--- Nueva variable de memoria
+    private Transform padreOriginalEstante;
+
+    // Variables de memoria para la pieza teórica
+    [HideInInspector] public Vector3 offsetLocalPieza;
+    [HideInInspector] public Quaternion offsetRotacionLocalPieza;
+    [HideInInspector] public bool tieneOffsetRegistrado = false;
 
     void Start()
     {
-        // Guardamos la posición, rotación y el padre exacto (ej: Col1Fil1) al iniciar la simulación
         posicionInicialGlobal = this.transform.position;
         rotacionInicialGlobal = this.transform.rotation;
         padreOriginalEstante = this.transform.parent;
     }
 
-    // Función pública que llama el soporte para regresar el contenedor a su sitio exacto
+    // Método para registrar la posición calculada por el script de Spawn
+    public void RegistrarOffsetTeorico(Vector3 localPos, Quaternion localRot)
+    {
+        offsetLocalPieza = localPos;
+        offsetRotacionLocalPieza = localRot;
+        tieneOffsetRegistrado = true;
+    }
+
     public void RetornarAPosicionInicial()
     {
-        // En lugar de SetParent(null), lo devolvemos bajo el ala de su nodo ColxFilx original
         if (padreOriginalEstante != null)
         {
             this.transform.SetParent(padreOriginalEstante, true);
-            Debug.Log($"<color=lime><b>[Memoria Contenedor]:</b> Contenedor {gameObject.name} reemparentado con éxito a su nodo lógico: {padreOriginalEstante.name}</color>");
         }
         else
         {
             this.transform.SetParent(null, true);
-            Debug.LogWarning($"<color=yellow><b>[Memoria Contenedor]:</b> {gameObject.name} no tenía padre al inicio del juego. Se queda en la raíz.</color>");
         }
 
-        // Forzamos el regreso milimétrico a las coordenadas físicas de inicio
         this.transform.position = posicionInicialGlobal;
         this.transform.rotation = rotacionInicialGlobal;
     }
 
-    // Usamos OnTriggerEnter para detectar el momento exacto del impacto de la pieza
     private void OnTriggerEnter(Collider other)
     {
         if (other.name.Contains("pieza"))
         {
-            if (other.transform.parent != null && other.transform.parent.name.ToLower().Contains("ventosa"))
-            {
-                return;
-            }
-            if (other.transform.parent == this.transform)
-            {
-                return;
-            }
+            if (other.transform.parent != null && other.transform.parent.name.ToLower().Contains("ventosa")) return;
+            if (other.transform.parent == this.transform) return;
 
             Rigidbody rbPieza = other.GetComponent<Rigidbody>();
-            if (rbPieza != null)
-            {
-                Destroy(rbPieza);
-                Debug.Log($"<color=yellow><b>[Contenedor]:</b> Rigidbody eliminado de {other.name} para evitar traspaso.</color>");
-            }
+            if (rbPieza != null) Destroy(rbPieza);
 
             other.transform.SetParent(this.transform);
 
-            if (other.TryGetComponent<BoxCollider>(out BoxCollider col))
+            // Si el VGR o las físicas sueltan una pieza aquí, aplicamos el offset memorizado al inicio
+            if (tieneOffsetRegistrado)
             {
-                col.isTrigger = true;
+                other.transform.localPosition = offsetLocalPieza;
+                other.transform.localRotation = offsetRotacionLocalPieza;
             }
 
-            Debug.Log($"<color=green><b>[Contenedor]:</b> Pieza bloqueada con éxito y almacenada en: {this.name}</color>");
+            // BLINDAJE: Forzamos que se mantenga sólido y no se vuelva trigger
+            if (other.TryGetComponent<BoxCollider>(out BoxCollider col))
+            {
+                col.isTrigger = false;
+            }
+
+            Debug.Log($"<color=green><b>[Contenedor Proxy]:</b> Pieza acoplada sólidamente en posición precalculada.</color>");
         }
     }
 }

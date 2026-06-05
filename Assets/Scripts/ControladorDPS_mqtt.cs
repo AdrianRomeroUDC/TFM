@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class ControladorDPS_mqtt : MonoBehaviour
 {
@@ -14,7 +15,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
     public GameObject prefabAzul;
 
     private GameObject piezaActual;
-    private string modoPendiente = "";
+    private Queue<string> colaDeOrdenes = new Queue<string>();
     private bool gripActivo = false;
 
     void Start()
@@ -45,39 +46,55 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
     private void ActualizarPieza(bool detectada)
     {
-        if (detectada) modoPendiente = "SPAWN_BASE";
-        else if (!gripActivo) modoPendiente = "DELETE";
+        lock (colaDeOrdenes)
+        {
+            if (detectada) colaDeOrdenes.Enqueue("SPAWN_BASE");
+            else if (!gripActivo) colaDeOrdenes.Enqueue("DELETE");
+        }
     }
 
     private void ActualizarColor(string color)
     {
-        if (color == "BLUE" || color == "RED" || color == "WHITE")
-            modoPendiente = color;
+        if (string.IsNullOrEmpty(color)) return;
+        string colorLimpio = color.Trim().ToUpper();
+
+        lock (colaDeOrdenes)
+        {
+            if (colorLimpio == "BLUE" || colorLimpio == "RED" || colorLimpio == "WHITE")
+            {
+                colaDeOrdenes.Enqueue(colorLimpio);
+            }
+        }
     }
 
     private void ActualizarGrip(bool activo)
     {
         gripActivo = activo;
-        if (!activo) modoPendiente = "DROP";
+        lock (colaDeOrdenes)
+        {
+            if (!activo) colaDeOrdenes.Enqueue("DROP");
+        }
     }
 
     void Update()
     {
-        if (modoPendiente != "")
+        string ordenActual = null;
+        lock (colaDeOrdenes)
         {
-            EjecutarOrden();
-            modoPendiente = "";
+            if (colaDeOrdenes.Count > 0) ordenActual = colaDeOrdenes.Dequeue();
         }
+
+        if (ordenActual != null) EjecutarOrden(ordenActual);
     }
 
-    void EjecutarOrden()
+    void EjecutarOrden(string orden)
     {
-        switch (modoPendiente)
+        switch (orden)
         {
             case "SPAWN_BASE":
                 if (piezaActual != null) Destroy(piezaActual);
                 piezaActual = Instantiate(prefabBaseGris, puntoEntrada.position, puntoEntrada.rotation);
-                ConfigurarFisicas(piezaActual);
+                ConfigurarFisicas(piezaActual, "pieza_base");
                 break;
 
             case "DELETE":
@@ -92,11 +109,20 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 if (piezaActual != null)
                 {
                     piezaActual.transform.SetParent(null);
+
+                    // CORRECCIÓN CRÍTICA: Apagar el trigger al soltar la pieza desde el DPS también
+                    BoxCollider[] colliders = piezaActual.GetComponentsInChildren<BoxCollider>();
+                    foreach (BoxCollider col in colliders)
+                    {
+                        if (col != null) col.isTrigger = false;
+                    }
+
                     Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
                     if (rb != null)
                     {
                         rb.isKinematic = false;
                         rb.useGravity = true;
+                        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
                     }
                 }
                 break;
@@ -104,75 +130,50 @@ public class ControladorDPS_mqtt : MonoBehaviour
             case "WHITE":
             case "RED":
             case "BLUE":
-                MutarColorSinDestruir(modoPendiente);
+                SustituirPorPrefabColor(orden);
                 break;
         }
     }
 
-    // >>> MUTACIÓN BLINDADA: PRESERVA Y REGENERA EL BOXCOLLIDER <<<
-    void MutarColorSinDestruir(string color)
+    void SustituirPorPrefabColor(string color)
     {
         if (piezaActual == null) return;
 
-        // 1. Identificamos el prefab destino
         GameObject prefabDestino = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : prefabAzul;
         if (prefabDestino == null) return;
 
-        // 2. Limpiamos cualquier elemento visual/malla anterior que tuviera la pieza base
-        foreach (var mesh in piezaActual.GetComponentsInChildren<MeshRenderer>())
+        Vector3 posicionVieja = piezaActual.transform.position;
+        Quaternion rotacionVieja = piezaActual.transform.rotation;
+        Transform padreViejo = piezaActual.transform.parent;
+
+        GameObject piezaNueva = Instantiate(prefabDestino, posicionVieja, rotacionVieja);
+
+        if (padreViejo != null)
         {
-            if (mesh.gameObject != piezaActual) Destroy(mesh.gameObject);
-        }
-        if (piezaActual.TryGetComponent<MeshFilter>(out MeshFilter mfRaiz)) Destroy(mfRaiz);
-        if (piezaActual.TryGetComponent<MeshRenderer>(out MeshRenderer mrRaiz)) Destroy(mrRaiz);
-
-        // 3. Clonamos el aspecto visual del nuevo prefab dentro de nuestra pieza viva
-        GameObject visualNuevo = Instantiate(prefabDestino, piezaActual.transform.position, piezaActual.transform.rotation, piezaActual.transform);
-        visualNuevo.transform.localPosition = Vector3.zero;
-        visualNuevo.transform.localRotation = Quaternion.identity;
-        visualNuevo.transform.localScale = Vector3.one;
-
-        // Renombramos el objeto raíz
-        piezaActual.name = "pieza_" + color.ToLower();
-
-        // >>> SOLUCIÓN AL BOXCOLLIDER ELIMINADO <<<
-        // Nos aseguramos de que la raíz de la pieza conserve o tenga un BoxCollider activo
-        BoxCollider colRaiz = piezaActual.GetComponent<BoxCollider>();
-        if (colRaiz == null)
-        {
-            colRaiz = piezaActual.AddComponent<BoxCollider>();
+            piezaNueva.transform.SetParent(padreViejo);
         }
 
-        // Buscamos si el nuevo modelo clonado traía un colisionador interno para heredar sus medidas
-        BoxCollider colHijo = visualNuevo.GetComponentInChildren<BoxCollider>();
-        if (colHijo != null)
-        {
-            // Transferimos el tamaño exacto y el centro al colisionador de la raíz
-            colRaiz.center = colHijo.center;
-            colRaiz.size = colHijo.size;
+        ConfigurarFisicas(piezaNueva, "pieza_" + color.ToLower());
 
-            // Destruimos el del hijo inmediatamente para que no haya colisiones duplicadas
-            Destroy(colHijo);
-        }
+        Destroy(piezaActual);
+        piezaActual = piezaNueva;
 
-        // IMPORTANTE: Mantenemos el colisionador de la raíz configurado correctamente
-        // Si el VGR lo tiene sujeto, el propio script del VGR se encargará de pasarlo temporalmente a Trigger,
-        // pero al mutar nos aseguramos de que el componente exista y esté listo.
-        colRaiz.isTrigger = gripActivo;
-
-        Debug.Log($"<color=cyan><b>[DPS Mutación]:</b> Pieza mutó a {color}. BoxCollider asegurado en la raíz con éxito.</color>");
+        Debug.Log($"<color=lime><b>[DPS Sustitución]:</b> Pieza directa '{piezaNueva.name}' sustituida con éxito.</color>");
     }
 
-    void ConfigurarFisicas(GameObject p)
+    void ConfigurarFisicas(GameObject p, string nombreDestino)
     {
-        p.name = "pieza_base";
+        p.name = nombreDestino;
+
         Rigidbody rb = p.GetComponent<Rigidbody>();
         if (rb == null) rb = p.AddComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity = false;
 
-        BoxCollider colFisico = p.GetComponent<BoxCollider>();
-        if (colFisico == null) colFisico = p.AddComponent<BoxCollider>();
-        colFisico.isTrigger = false;
+        BoxCollider[] colliders = p.GetComponentsInChildren<BoxCollider>();
+        foreach (BoxCollider col in colliders)
+        {
+            col.isTrigger = gripActivo;
+        }
     }
 }
