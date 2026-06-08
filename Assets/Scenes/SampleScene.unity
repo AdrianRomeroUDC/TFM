@@ -4984,7 +4984,7 @@ MonoBehaviour:
   zHorno: 0.003699
   zTurntable: 0.001729
   xReposo: 0.0006319999
-  xPickup: 0.000922
+  xPickup: 0.0008
   tiempoRecorridoHorizontal: 10
   tiempoRecorridoVertical: 0.1
 --- !u!1 &1302123921
@@ -94386,6 +94386,8 @@ GameObject:
   - component: {fileID: 8199434120701980569}
   - component: {fileID: 1226919982468700657}
   - component: {fileID: 8199434120701980570}
+  - component: {fileID: 8199434120701980571}
+  - component: {fileID: 8199434120701980572}
   m_Layer: 0
   m_Name: 9V_sauger_id2242_step001_____VacuumGripper
   m_TagString: Untagged
@@ -258628,6 +258630,45 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00011434446, y: 0.00011428062, z: 0.00015699996}
   m_Center: {x: 0.0000000018542357, y: -1.0281796e-12, z: 0.000011499881}
+--- !u!114 &8199434120701980571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2818989026385126125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf9dd925d3f93424eb37149a900e4220, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BrazoMPO_Gripper
+--- !u!54 &8199434120701980572
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2818989026385126125}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &8199847514789305567
 GameObject:
   m_ObjectHideFlags: 0
@@ -265450,6 +265491,7 @@ GameObject:
   - component: {fileID: 1048702773732300011}
   - component: {fileID: 1771100809666086729}
   - component: {fileID: 8429023597992903876}
+  - component: {fileID: 8429023597992903877}
   m_Layer: 0
   m_Name: 9V_31013_flachstein30_id9650_step001_____PlataformaPiezaTurntable
   m_TagString: Untagged
@@ -265478,6 +265520,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00035300004, y: 0.00030000007, z: 0.000041931966}
   m_Center: {x: -0.00015000095, y: -0.00015000004, z: -0.000018999885}
+--- !u!114 &8429023597992903877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8429023597992903875}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ae740bbfbc8b354b8480131db222920, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlataformaTurntable_proxy
 --- !u!33 &8429652470586159225
 MeshFilter:
   m_ObjectHideFlags: 0
