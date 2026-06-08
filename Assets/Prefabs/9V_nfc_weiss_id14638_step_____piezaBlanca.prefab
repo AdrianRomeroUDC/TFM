@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5623237133636424613}
   - component: {fileID: 7169880983438579942}
   - component: {fileID: 2979883079246676759}
+  - component: {fileID: 8539237373902693986}
   m_Layer: 0
   m_Name: 9V_nfc_weiss_id14638_step_____piezaBlanca
   m_TagString: Untagged
@@ -112,3 +113,15 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00008924376, y: 0.000132, z: 0.00010128612}
   m_Center: {x: 0.000006763177, y: 0.000066, z: -0.0000016550067}
+--- !u!114 &8539237373902693986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1874647114658911321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dcd833a6b37f4f438842f0c3bfdb364, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DetectarCambioPadre

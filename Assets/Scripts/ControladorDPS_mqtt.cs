@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-
 public class ControladorDPS_mqtt : MonoBehaviour
 {
     [Header("Referencias")]
@@ -108,21 +107,34 @@ public class ControladorDPS_mqtt : MonoBehaviour
             case "DROP":
                 if (piezaActual != null)
                 {
-                    piezaActual.transform.SetParent(null);
-
-                    // CORRECCIÓN CRÍTICA: Apagar el trigger al soltar la pieza desde el DPS también
-                    BoxCollider[] colliders = piezaActual.GetComponentsInChildren<BoxCollider>();
-                    foreach (BoxCollider col in colliders)
+                    // --- ESCUDO DE PROTECCIÓN INTER-ESTACIÓN ---
+                    // Si la pieza ya tiene un padre y ese padre es un cajón/contenedor, el DPS pierde el control y NO la desemparenta
+                    if (piezaActual.transform.parent != null &&
+                        (piezaActual.transform.parent.name.ToLower().Contains("cajon") ||
+                         piezaActual.transform.parent.name.ToLower().Contains("container") ||
+                         piezaActual.transform.parent.GetComponent<ContenedorHBW_proxy>() != null))
                     {
-                        if (col != null) col.isTrigger = false;
+                        Debug.Log("<color=cyan><b>[DPS PROTECCIÓN]:</b> Drop ignorado. La pieza ya pertenece de forma segura al contenedor HBW.</color>");
+                        piezaActual = null; // Liberamos la referencia local para los siguientes ciclos
                     }
-
-                    Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
-                    if (rb != null)
+                    else
                     {
-                        rb.isKinematic = false;
-                        rb.useGravity = true;
-                        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                        // Lógica original del DPS si se suelta de forma normal en su propia zona
+                        piezaActual.transform.SetParent(null);
+
+                        BoxCollider[] colliders = piezaActual.GetComponentsInChildren<BoxCollider>();
+                        foreach (BoxCollider col in colliders)
+                        {
+                            if (col != null) col.isTrigger = false;
+                        }
+
+                        Rigidbody rb = piezaActual.GetComponent<Rigidbody>();
+                        if (rb != null)
+                        {
+                            rb.isKinematic = false;
+                            rb.useGravity = true;
+                            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                        }
                     }
                 }
                 break;

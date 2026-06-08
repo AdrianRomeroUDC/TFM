@@ -4,13 +4,12 @@ using System.Collections;
 public class ControladorVGR_mqtt : MonoBehaviour
 {
     private float lastRot, lastVert, lastExt;
-
-    // Variables para manejar el hilo de Unity
     private bool estadoGripPendiente = false;
     private bool cambioGripDetectado = false;
 
     private Transform piezaCercana;
     private Transform piezaEnganchada;
+    private ContenedorHBW_proxy contenedorActual;
 
     [Header("Referencias")]
     public Transform ejeRotacion;
@@ -80,6 +79,13 @@ public class ControladorVGR_mqtt : MonoBehaviour
         cambioGripDetectado = true;
     }
 
+    public void RegistrarContenedorBajoVentosa(ContenedorHBW_proxy contenedor)
+    {
+        contenedorActual = contenedor;
+    }
+
+    public ContenedorHBW_proxy ObtenerContenedorActual() => contenedorActual;
+    public Transform ObtenerPiezaEnganchada() => piezaEnganchada;
     public void SetPiezaCercana(Transform pieza) => piezaCercana = pieza;
 
     void Update()
@@ -125,14 +131,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 {
                     if (col.name.ToLower().Contains("pieza"))
                     {
-                        Transform raizPieza = col.transform;
-                        while (raizPieza.parent != null && raizPieza.parent != puntoAnclajeVentosa && raizPieza.parent.name.ToLower().Contains("pieza"))
-                        {
-                            raizPieza = raizPieza.parent;
-                        }
-
-                        piezaEnganchada = raizPieza;
-                        Debug.Log("<color=cyan><b>[VGR Vacío]:</b> Pieza succionada con éxito: </color>" + piezaEnganchada.name);
+                        piezaEnganchada = col.transform;
+                        Debug.Log("<color=cyan><b>[VGR]:</b> Pieza detectada y fijada a la ventosa: </color>" + piezaEnganchada.name);
                         break;
                     }
                 }
@@ -158,45 +158,47 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 piezaEnganchada.localScale = Vector3.one;
                 piezaEnganchada.Translate(posicionEnPinza, Space.Self);
             }
-            else
-            {
-                Debug.LogWarning("<color=red><b>[VGR]:</b> El PLC ordenó GRIP, pero no hay pieza bajo la ventosa.</color>");
-            }
         }
         else
         {
-            // --- LÓGICA DE SUELTA BLINDADA CONTRA FILTRACIONES ---
             if (piezaEnganchada != null)
             {
-                // 1. La desvinculamos del robot
-                piezaEnganchada.SetParent(null);
+                ContenedorHBW_proxy destinoFinal = contenedorActual;
 
-                // 2. TRUCO DE SEGURIDAD: La subimos 2.5 centímetros en el espacio del mundo 
-                // para evitar que el desfase del Trigger la haga nacer empotrada en el suelo de la cesta
-                piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
-
-                // 3. Forzamos a apagar el Trigger inmediatamente
-                BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
-                foreach (BoxCollider c in allCols)
+                // PROTECCIÓN SEGURA: Solo quitamos el padre si nadie lo ha cambiado ya
+                if (piezaEnganchada.parent == puntoAnclajeVentosa)
                 {
-                    if (c != null) c.isTrigger = false;
+                    piezaEnganchada.SetParent(null);
                 }
 
-                // 4. Activamos físicas dinámicas en modo continuo
-                Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
-                if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
+                // Transferencia forzosa y limpia al contenedor
+                if (destinoFinal != null)
+                {
+                    destinoFinal.AcoplarPiezaDirecto(piezaEnganchada);
+                    Debug.Log($"<color=orange><b>[VGR MQTT]:</b> Entrega confirmada en [{destinoFinal.name}].</color>");
+                }
+                else
+                {
+                    // Caída libre segura si no hay contenedor abajo (Cintas/DPS)
+                    if (piezaEnganchada.parent == null)
+                    {
+                        piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
 
-                rb.isKinematic = false;
-                rb.useGravity = true;
+                        BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                        foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;
 
-                // Esto obliga a Unity a escanear milímetro a milímetro la caída para evitar el "efecto túnel"
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                        Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
+                        if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
 
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
+                        rb.isKinematic = false;
+                        rb.useGravity = true;
+                        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                        rb.linearVelocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                    }
+                }
 
-                Debug.Log("<color=lime><b>[VGR BLINDAJE]:</b> Pieza reposicionada y soltada sólidamente de forma nativa.</color>");
-
+                contenedorActual = null;
                 piezaEnganchada = null;
                 piezaCercana = null;
             }
@@ -205,17 +207,11 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.name.ToLower().Contains("pieza"))
-        {
-            SetPiezaCercana(other.transform);
-        }
+        if (other.name.ToLower().Contains("pieza")) SetPiezaCercana(other.transform);
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.name.ToLower().Contains("pieza"))
-        {
-            if (piezaEnganchada == null) SetPiezaCercana(null);
-        }
+        if (other.name.ToLower().Contains("pieza") && piezaEnganchada == null) SetPiezaCercana(null);
     }
 }
