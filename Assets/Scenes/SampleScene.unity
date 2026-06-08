@@ -8168,6 +8168,7 @@ GameObject:
   - component: {fileID: 1664517287888196032}
   - component: {fileID: 8338939325708183794}
   - component: {fileID: 4079533343088564189}
+  - component: {fileID: 8338939325708183795}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step_____PlataformaVGR
   m_TagString: Untagged
@@ -83112,8 +83113,10 @@ GameObject:
   - component: {fileID: 5194505733301100009}
   - component: {fileID: 5261569990587625133}
   - component: {fileID: 5167985613973879238}
+  - component: {fileID: 5261569990587625134}
+  - component: {fileID: 5261569990587625135}
   m_Layer: 0
-  m_Name: 9V_31013_flachstein30_id9650_step
+  m_Name: 9V_31013_flachstein30_id9650_step_______PlataformaPiezaHorno
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -94382,6 +94385,7 @@ GameObject:
   - component: {fileID: 4672518605949027983}
   - component: {fileID: 8199434120701980569}
   - component: {fileID: 1226919982468700657}
+  - component: {fileID: 8199434120701980570}
   m_Layer: 0
   m_Name: 9V_sauger_id2242_step001_____VacuumGripper
   m_TagString: Untagged
@@ -109362,6 +109366,7 @@ GameObject:
   - component: {fileID: 4524370324640853972}
   - component: {fileID: 6668987590392466317}
   - component: {fileID: 4805485347881978495}
+  - component: {fileID: 6668987590392466318}
   m_Layer: 0
   m_Name: 9V_35129_grundpl129_80_id2398_step001
   m_TagString: Untagged
@@ -122931,6 +122936,7 @@ GameObject:
   - component: {fileID: 9131300476289236845}
   - component: {fileID: 3194606627654958547}
   - component: {fileID: 2729608622240660971}
+  - component: {fileID: 9131300476289236846}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step001
   m_TagString: Untagged
@@ -154612,6 +154618,7 @@ GameObject:
   - component: {fileID: 6673840551780711884}
   - component: {fileID: 8188038252445430395}
   - component: {fileID: 5393176040930103520}
+  - component: {fileID: 8188038252445430396}
   m_Layer: 0
   m_Name: 9V_35129_grundpl129_80_id2398_step003
   m_TagString: Untagged
@@ -170880,6 +170887,40 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2471529611070007728}
   m_Mesh: {fileID: -4524196624261450059, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &5261569990587625134
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2471529611070007728}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.000353, y: 0.00029999999, z: 0.000041931904}
+  m_Center: {x: -0.00015, y: -0.00015000186, z: -0.000019000006}
+--- !u!114 &5261569990587625135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2471529611070007728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56f1eb65292e20b4399b506d707359cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlataformaHorno_proxy
+  elevacionGlobalY: 0.02
 --- !u!33 &5261581228953341233
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -174804,6 +174845,7 @@ GameObject:
   - component: {fileID: 8927624916190952233}
   - component: {fileID: 6823931219712881283}
   - component: {fileID: 557180442642600205}
+  - component: {fileID: 8927624916190952234}
   m_Layer: 0
   m_Name: 9V_35129_grundpl129_80_id2398_step
   m_TagString: Untagged
@@ -188803,6 +188845,7 @@ GameObject:
   - component: {fileID: 227443789024487288}
   - component: {fileID: 8072833323412901522}
   - component: {fileID: 1662166720624575861}
+  - component: {fileID: 8072833323412901523}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step007
   m_TagString: Untagged
@@ -196033,6 +196076,7 @@ GameObject:
   - component: {fileID: 108474867427785590}
   - component: {fileID: 3911472576516895764}
   - component: {fileID: 1937362349382274559}
+  - component: {fileID: 6162303965453038178}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step006
   m_TagString: Untagged
@@ -196040,6 +196084,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &6162303965453038178
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6162303965453038177}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018699999, y: 0.0025899997, z: 0.00007500012}
+  m_Center: {x: 0.0000000018637627, y: 0.002230001, z: 0.000037499987}
 --- !u!33 &6162328825546700644
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -210925,6 +210990,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3272202583745340887}
   m_Mesh: {fileID: -7309588982552685722, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &6668987590392466318
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3272202583745340887}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00059999997, y: 0.0011999997, z: 0.000075000054}
+  m_Center: {x: -0.00029999999, y: 0.00059999985, z: 0.00003749997}
 --- !u!23 &6669029072891726900
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -220181,6 +220267,7 @@ GameObject:
   - component: {fileID: 4426401811535184551}
   - component: {fileID: 6284250032502900984}
   - component: {fileID: 1696901013028860751}
+  - component: {fileID: 6995736454029417047}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step003
   m_TagString: Untagged
@@ -220188,6 +220275,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &6995736454029417047
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6995736454029417046}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018700002, y: 0.002589999, z: 0.000075000135}
+  m_Center: {x: -7.494406e-11, y: 0.0022299995, z: 0.000037500195}
 --- !u!4 &6996296343492563007
 Transform:
   m_ObjectHideFlags: 0
@@ -234198,6 +234306,7 @@ GameObject:
   - component: {fileID: 5222588082330400883}
   - component: {fileID: 7880515034608662552}
   - component: {fileID: 7785925114451683531}
+  - component: {fileID: 7880515034608662553}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step004
   m_TagString: Untagged
@@ -239752,6 +239861,7 @@ GameObject:
   - component: {fileID: 4870720142092261825}
   - component: {fileID: 3698723978107400442}
   - component: {fileID: 3829206814701658997}
+  - component: {fileID: 7639825179317999769}
   m_Layer: 0
   m_Name: 9V_35129_grundpl129_80_id2398_step002
   m_TagString: Untagged
@@ -239759,6 +239869,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &7639825179317999769
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7639825179317999768}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00059999997, y: 0.0011999997, z: 0.000075000054}
+  m_Center: {x: -0.00030000092, y: 0.00059999985, z: 0.00003749997}
 --- !u!33 &7640254771540991158
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -247747,6 +247878,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7460929073675566215}
   m_Mesh: {fileID: -6689982921780911113, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &7880515034608662553
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7460929073675566215}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018700002, y: 0.002589999, z: 0.000075000135}
+  m_Center: {x: 8.563785e-10, y: 0.0022299977, z: 0.000037500253}
 --- !u!1 &7880542331127626206
 GameObject:
   m_ObjectHideFlags: 0
@@ -254075,6 +254227,7 @@ GameObject:
   - component: {fileID: 63055357548572277}
   - component: {fileID: 5235696609129511566}
   - component: {fileID: 4745232644327052834}
+  - component: {fileID: 8067762160307550817}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step005
   m_TagString: Untagged
@@ -254082,6 +254235,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &8067762160307550817
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8067762160307550816}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018699999, y: 0.0025899997, z: 0.00007500012}
+  m_Center: {x: 1.1176182e-12, y: 0.00223, z: 0.000037500045}
 --- !u!4 &8068535207025659399
 Transform:
   m_ObjectHideFlags: 0
@@ -254198,6 +254372,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5901859029194848964}
   m_Mesh: {fileID: 7637518232857278527, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &8072833323412901523
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5901859029194848964}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018699999, y: 0.0025899997, z: 0.00007500012}
+  m_Center: {x: 0.0000000018637627, y: 0.002229999, z: 0.00003749993}
 --- !u!1 &8073199980736208447
 GameObject:
   m_ObjectHideFlags: 0
@@ -258009,6 +258204,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4737407593219237710}
   m_Mesh: {fileID: -1748284696231706386, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &8188038252445430396
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4737407593219237710}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00059999997, y: 0.0011999997, z: 0.000075000054}
+  m_Center: {x: -0.00030000092, y: 0.00059999985, z: 0.00003749991}
 --- !u!23 &8188171461699606245
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -258391,6 +258607,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2818989026385126125}
   m_Mesh: {fileID: -769624713449853749, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &8199434120701980570
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2818989026385126125}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00011434446, y: 0.00011428062, z: 0.00015699996}
+  m_Center: {x: 0.0000000018542357, y: -1.0281796e-12, z: 0.000011499881}
 --- !u!1 &8199847514789305567
 GameObject:
   m_ObjectHideFlags: 0
@@ -262477,6 +262714,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 21739621435721615}
   m_Mesh: {fileID: 8131907505963619824, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &8338939325708183795
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 21739621435721615}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018700002, y: 0.0025899997, z: 0.00007500007}
+  m_Center: {x: 6.6459185e-11, y: 0.00223, z: 0.00003750012}
 --- !u!33 &8339880703513123238
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -265191,13 +265449,35 @@ GameObject:
   - component: {fileID: 8023815707679192106}
   - component: {fileID: 1048702773732300011}
   - component: {fileID: 1771100809666086729}
+  - component: {fileID: 8429023597992903876}
   m_Layer: 0
-  m_Name: 9V_31013_flachstein30_id9650_step001_____PlataformaPieza
+  m_Name: 9V_31013_flachstein30_id9650_step001_____PlataformaPiezaTurntable
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &8429023597992903876
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8429023597992903875}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00035300004, y: 0.00030000007, z: 0.000041931966}
+  m_Center: {x: -0.00015000095, y: -0.00015000004, z: -0.000018999885}
 --- !u!33 &8429652470586159225
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -267228,6 +267508,7 @@ GameObject:
   - component: {fileID: 3403224067909529850}
   - component: {fileID: 550955063122281849}
   - component: {fileID: 4527035114114773133}
+  - component: {fileID: 8493139986226317531}
   m_Layer: 0
   m_Name: 9V_bauplatte gro\X\DF_id86_step002
   m_TagString: Untagged
@@ -267235,6 +267516,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &8493139986226317531
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8493139986226317530}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018699996, y: 0.0025899997, z: 0.00007499999}
+  m_Center: {x: 0.0000000018633202, y: 0.0022300018, z: 0.000037499824}
 --- !u!1 &8493476816176612588
 GameObject:
   m_ObjectHideFlags: 0
@@ -267643,6 +267945,7 @@ GameObject:
   - component: {fileID: 8047027787492126793}
   - component: {fileID: 1221895560617322291}
   - component: {fileID: 8055411913943566919}
+  - component: {fileID: 8512378231548240369}
   m_Layer: 0
   m_Name: 9V_Bodenplatte114_74____PLATAFORMA_MARRON
   m_TagString: Untagged
@@ -267650,6 +267953,27 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!65 &8512378231548240369
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8512378231548240368}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.011399999, y: 0.0073999995, z: 0.00017999997}
+  m_Center: {x: -0.0056999996, y: 0.0036999998, z: 0.00008999999}
 --- !u!1 &8512579951400557322
 GameObject:
   m_ObjectHideFlags: 0
@@ -280436,6 +280760,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 844610197}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &8927624916190952234
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5401474050188290835}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00059999997, y: 0.0011999997, z: 0.000075000054}
+  m_Center: {x: -0.00030000092, y: 0.0006000017, z: 0.00003749997}
 --- !u!4 &8927785708959207802
 Transform:
   m_ObjectHideFlags: 0
@@ -285773,6 +286118,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1520987830}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &9131300476289236846
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3713263356784602477}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.0018699996, y: 0.0025899997, z: 0.00007499999}
+  m_Center: {x: 0.0000000018633202, y: 0.0022300018, z: 0.000037499998}
 --- !u!4 &9132063482150530144
 Transform:
   m_ObjectHideFlags: 0

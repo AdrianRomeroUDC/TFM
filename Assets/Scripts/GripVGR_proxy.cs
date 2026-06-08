@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class VGR_Proxy_Grip : MonoBehaviour
+public class GripVGR_proxy : MonoBehaviour
 {
     public ControladorVGR_mqtt controlador;
 
