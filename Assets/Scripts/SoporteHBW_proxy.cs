@@ -20,7 +20,7 @@ public class SoporteHBW_proxy : MonoBehaviour
             ControladorHBWposition_mqtt transelevador = FindFirstObjectByType<ControladorHBWposition_mqtt>();
 
             // Verificamos si este contenedor en específico es el que lleva el brazo actualmente sujeto
-            if (transelevador != null && transelevador.objetoEnganchado == contenedorTransform)
+            if (transelevador != null && transelevador.objetoCogido == contenedorTransform)
             {
                 Debug.Log($"<color=cyan><b>[Soporte HBW]:</b> ¡Trigger Detectado! Ordenando retorno inmediato de: {contenedorTransform.name}</color>");
 

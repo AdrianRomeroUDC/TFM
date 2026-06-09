@@ -2492,7 +2492,7 @@ Transform:
   m_GameObject: {fileID: 592006259}
   serializedVersion: 2
   m_LocalRotation: {x: 6.1232435e-17, y: -1, z: -0, w: -0.00000004371139}
-  m_LocalPosition: {x: -0.00014904143, y: 0.0011790491, z: 0.000102615915}
+  m_LocalPosition: {x: -0.00014904143, y: 0.0011790491, z: 0.00009461399}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3618,7 +3618,7 @@ Transform:
   m_GameObject: {fileID: 857321319}
   serializedVersion: 2
   m_LocalRotation: {x: 6.1232435e-17, y: -1, z: -0, w: -0.00000004371139}
-  m_LocalPosition: {x: -0.00014904143, y: 0.00063354906, z: 0.00010161474}
+  m_LocalPosition: {x: -0.00014904143, y: 0.00063354906, z: 0.00009461399}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4984,9 +4984,11 @@ MonoBehaviour:
   zHorno: 0.003699
   zTurntable: 0.001729
   xReposo: 0.0006319999
-  xPickup: 0.0008
+  xPickup: 0.00085
   tiempoRecorridoHorizontal: 10
   tiempoRecorridoVertical: 0.1
+  proxyFisico: {fileID: 0}
+  tienePiezaReal: 0
 --- !u!1 &1302123921
 GameObject:
   m_ObjectHideFlags: 0
@@ -6906,7 +6908,8 @@ MonoBehaviour:
   unityE_Recogido: -0.001883
   lerpSpeed: 5
   tiempoAnimacion: 4
-  objetoEnganchado: {fileID: 0}
+  objetoCogido: {fileID: 0}
+  esOperacionDeEntrega: 0
 --- !u!1 &1936640050
 GameObject:
   m_ObjectHideFlags: 0
@@ -7221,8 +7224,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9de9c0eec693b07449b47663f377526e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MQTTClient
-  brokerHost: 4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud
-  puerto: 8883
+  brokerHost: 10.113.36.36
+  puerto: 1884
   usuario: LearningFactory
   contrasena: Fischertechnik1
 --- !u!4 &2076051687
@@ -83116,7 +83119,7 @@ GameObject:
   - component: {fileID: 5261569990587625134}
   - component: {fileID: 5261569990587625135}
   m_Layer: 0
-  m_Name: 9V_31013_flachstein30_id9650_step_______PlataformaPiezaHorno
+  m_Name: 9V_31013_flachstein30_id9650_step_______PlataformaHorno
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -252375,8 +252378,8 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 1
@@ -258640,6 +258643,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf9dd925d3f93424eb37149a900e4220, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BrazoMPO_Gripper
+  piezaActual: {fileID: 0}
   alcanceDeteccion: 0.06
 --- !u!1 &8199847514789305567
 GameObject:
@@ -265465,7 +265469,7 @@ GameObject:
   - component: {fileID: 8429023597992903876}
   - component: {fileID: 8429023597992903877}
   m_Layer: 0
-  m_Name: 9V_31013_flachstein30_id9650_step001_____PlataformaPiezaTurntable
+  m_Name: 9V_31013_flachstein30_id9650_step001_____PlataformaTurntable
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -286631,8 +286635,8 @@ GameObject:
   - component: {fileID: 8829241509438876480}
   - component: {fileID: 7586551194877270596}
   - component: {fileID: 326490395818329097}
-  - component: {fileID: 9152486041526557614}
   - component: {fileID: 9152486041526557613}
+  - component: {fileID: 9152486041526557614}
   - component: {fileID: 9152486041526557616}
   - component: {fileID: 9152486041526557615}
   - component: {fileID: 9152486041526557617}

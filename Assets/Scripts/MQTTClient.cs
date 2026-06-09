@@ -135,7 +135,8 @@ public class MQTTClient : MonoBehaviour
     {
         try
         {
-            client = new MqttClient(brokerHost, puerto, true, null, null, MqttSslProtocols.TLSv1_2);
+            //client = new MqttClient(brokerHost, puerto, true, null, null, MqttSslProtocols.TLSv1_2);    // esto es necesario para HIVEMQ
+            client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
             client.Connect(Guid.NewGuid().ToString(), usuario, contrasena);
 

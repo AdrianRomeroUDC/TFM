@@ -33,7 +33,8 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public float tiempoAnimacion = 4f;   // Tiempo en segundos que toma la extensión telescópica completa
 
     [Header("Estado del Agarre")]
-    public Transform objetoEnganchado = null;      // Guarda la referencia del contenedor que se desplaza con la máquina
+    public Transform objetoCogido = null;      // Guarda la referencia del contenedor que se desplaza con la máquina
+    public bool esOperacionDeEntrega = false;
     private Transform padreOriginalEstante = null;   // Almacén de respaldo para el padre en la estantería
     private Coroutine corrutinaExtension;          // Mantiene la referencia de la corrutina activa para evitar duplicidades
 
@@ -76,6 +77,14 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         if (hayNuevaOrdenEstirar)
         {
             hayNuevaOrdenEstirar = false;
+
+            // SI VAMOS A ESTIRAR: Si ya teníamos un objeto enganchado, es una ENTREGA. 
+            // Si no teníamos nada, es una RECOGIDA.
+            if (lastE == -512)
+            {
+                esOperacionDeEntrega = (objetoCogido != null);
+            }
+
             IniciarAnimacionExtension(lastE == -512 ? unityE_Estirado : unityE_Recogido);
         }
 
@@ -109,7 +118,7 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     public void ProcesarCaptura(Transform contenedor, Transform plataforma)
     {
         // ASIGNACIÓN CRUCIAL: Guardamos la referencia para saber qué objeto tenemos cargado bajo custodia
-        objetoEnganchado = contenedor;
+        objetoCogido = contenedor;
 
         // Forzamos a que el contenedor cambie de jerarquía y pase a ser hijo directo de la plataforma móvil (el proxy)
         contenedor.SetParent(plataforma);
@@ -126,22 +135,22 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     // Nuevo método público para que el cajón le avise al controlador que ya llegó a su estante
     public void NotificarCajonLiberado()
     {
-        objetoEnganchado = null; // Vaciamos la variable de custodia liberando el brazo mecánicamente
+        objetoCogido = null; // Vaciamos la variable de custodia liberando el brazo mecánicamente
         Debug.Log("<color=yellow><b>[Controlador HBW]:</b> El transelevador registra que ya no lleva ningún cajón y se retirará solo.</color>");
     }
 
     // Método de seguridad para liberar forzadamente el cajón restableciendo sus componentes físicos nativos
     private void SoltarCajon()
     {
-        if (objetoEnganchado != null)
+        if (objetoCogido != null)
         {
-            objetoEnganchado.SetParent(padreOriginalEstante, true);
-            if (objetoEnganchado.TryGetComponent<Rigidbody>(out Rigidbody rb))
+            objetoCogido.SetParent(padreOriginalEstante, true);
+            if (objetoCogido.TryGetComponent<Rigidbody>(out Rigidbody rb))
             {
                 rb.isKinematic = false;
                 rb.useGravity = true;
             }
-            objetoEnganchado = null;
+            objetoCogido = null;
         }
     }
 
