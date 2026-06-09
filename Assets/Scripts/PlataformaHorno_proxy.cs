@@ -2,25 +2,18 @@ using UnityEngine;
 
 public class PlataformaHorno_proxy : MonoBehaviour
 {
-    private BoxCollider miCollider;
-    public float elevacionGlobalY = 0.02f;
-
-    void Awake() => miCollider = GetComponent<BoxCollider>();
-
-    private void OnTriggerEnter(Collider other)
+    private void OnCollisionEnter(Collision collision)
     {
-        // Solo la acoplamos si viene del VGR (es decir, no tiene padre o viene suelta)
-        if (other.name.ToLower().Contains("pieza") && other.transform.parent == null)
+        // Solo se acopla si el impacto pertenece a la pieza y no tiene un padre activo
+        if (collision.gameObject.name.ToLower().Contains("pieza") && collision.transform.parent == null)
         {
-            AcoplarPiezaEnCentroGlobal(other.transform);
+            AcoplarPiezaEnPuntoDeContacto(collision.transform);
         }
     }
 
-    public void AcoplarPiezaEnCentroGlobal(Transform pieza)
+    public void AcoplarPiezaEnPuntoDeContacto(Transform pieza)
     {
-        if (miCollider == null) return;
-
-        // APAGAMOS FÍSICAS, PERO NO EL COMPONENTE (Mantenemos el Rigidbody vivo)
+        // Inmovilización del Rigidbody al impactar la superficie física
         Rigidbody rb = pieza.GetComponent<Rigidbody>();
         if (rb != null)
         {
@@ -28,12 +21,13 @@ public class PlataformaHorno_proxy : MonoBehaviour
             rb.useGravity = false;
         }
 
-        // Posicionamos y emparentamos
-        pieza.position = miCollider.bounds.center + (Vector3.up * elevacionGlobalY);
+        // Emparentado inicial respetando la posición global de la colisión
         pieza.SetParent(this.transform, true);
-        pieza.localRotation = Quaternion.Euler(90f, 0f, 0f);
-        pieza.localScale = Vector3.one;
 
-        Debug.Log($"[Horno]: Pieza {pieza.name} guardada y lista para el brazo MPO.");
+        // Desfase milimétrico de calibración en el eje Y local preservando X y Z del impacto
+        Vector3 posicionLocalActual = pieza.localPosition;
+        pieza.localPosition = new Vector3(posicionLocalActual.x, -0.000152f, posicionLocalActual.z);
+
+        Debug.Log($"[Horno]: Pieza {pieza.name} registrada en plataforma. Altura local Y fijada en -0.000152.");
     }
 }

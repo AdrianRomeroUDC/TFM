@@ -94387,7 +94387,6 @@ GameObject:
   - component: {fileID: 1226919982468700657}
   - component: {fileID: 8199434120701980570}
   - component: {fileID: 8199434120701980571}
-  - component: {fileID: 8199434120701980572}
   m_Layer: 0
   m_Name: 9V_sauger_id2242_step001_____VacuumGripper
   m_TagString: Untagged
@@ -170904,7 +170903,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -170922,7 +170921,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56f1eb65292e20b4399b506d707359cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlataformaHorno_proxy
-  elevacionGlobalY: 0.02
 --- !u!33 &5261581228953341233
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -258642,33 +258640,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf9dd925d3f93424eb37149a900e4220, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BrazoMPO_Gripper
---- !u!54 &8199434120701980572
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2818989026385126125}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
+  alcanceDeteccion: 0.06
 --- !u!1 &8199847514789305567
 GameObject:
   m_ObjectHideFlags: 0
