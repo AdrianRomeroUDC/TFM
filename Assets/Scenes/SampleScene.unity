@@ -4984,11 +4984,9 @@ MonoBehaviour:
   zHorno: 0.003699
   zTurntable: 0.001729
   xReposo: 0.0006319999
-  xPickup: 0.00085
+  xPickup: 0.00095
   tiempoRecorridoHorizontal: 10
   tiempoRecorridoVertical: 0.1
-  proxyFisico: {fileID: 0}
-  tienePiezaReal: 0
 --- !u!1 &1302123921
 GameObject:
   m_ObjectHideFlags: 0
@@ -258643,7 +258641,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf9dd925d3f93424eb37149a900e4220, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BrazoMPO_Gripper
-  piezaActual: {fileID: 0}
   alcanceDeteccion: 0.06
 --- !u!1 &8199847514789305567
 GameObject:
@@ -265508,6 +265505,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ae740bbfbc8b354b8480131db222920, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlataformaTurntable_proxy
+  posicionLocalObjetivo: {x: 0, y: 0.015, z: 0}
+  rotacionLocalObjetivo: {x: 0, y: 0, z: 0}
 --- !u!33 &8429652470586159225
 MeshFilter:
   m_ObjectHideFlags: 0
