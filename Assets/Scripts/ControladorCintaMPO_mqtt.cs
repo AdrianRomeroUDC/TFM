@@ -11,6 +11,9 @@ public class ControladorCintaMPO_mqtt : MonoBehaviour
     public float multiplicadorVelocidad = 0.001f;
     [SerializeField] private float velocidadActual = 0f;
 
+    [Header("Monitoreo de Sensores (Lectura)")]
+    public bool sensorSalida = false;
+
     private List<Transform> eslabonesOrdenados = new List<Transform>();
     private Vector3[] posRailes;
     private Quaternion[] rotRailes;
@@ -32,15 +35,30 @@ public class ControladorCintaMPO_mqtt : MonoBehaviour
     {
         if (MQTTClient.Instance != null)
         {
-            // Adaptado al evento MPO y la lógica de 512
-            MQTTClient.Instance.OnMPOBeltUpdateEvent += (activo) => {
-                velocidadActual = activo ? 512f : 0f;
-            };
-            Debug.Log("<color=cyan><b>Cinta MPO:</b> Conectado con éxito.</color>");
+            // 🔥 MODIFICADO: Nos suscribimos al nuevo método procesador de Payload completo
+            MQTTClient.Instance.OnMPOBeltUpdateEvent += ActualizarDatosCintaMPO;
+            Debug.Log("<color=cyan><b>Cinta MPO:</b> Conectado con éxito (Estado y Sensor habilitados).</color>");
             CancelInvoke("IntentarSuscripcion");
         }
     }
 
+    void OnDisable()
+    {
+        if (MQTTClient.Instance != null)
+            MQTTClient.Instance.OnMPOBeltUpdateEvent -= ActualizarDatosCintaMPO;
+    }
+
+    // --- RECEPCIÓN E INTERPRETACIÓN DEL PACK JSON ---
+    void ActualizarDatosCintaMPO(MPOBeltPayload data)
+    {
+        // 1. Replicamos la lógica original: si estado es 1 la velocidad es 512, si es 0 se congela
+        velocidadActual = (data.estado == 1) ? 512f : 0f;
+
+        // 2. Extraemos el sensor y convertimos el entero de Python a booleano de C#
+        sensorSalida = (data.sensorSalida == 1);
+    }
+
+    // --- LÓGICA DE LA CADENA ---
     void ConfigurarEslabones()
     {
         List<Transform> sinOrdenar = new List<Transform>();
@@ -86,7 +104,6 @@ public class ControladorCintaMPO_mqtt : MonoBehaviour
             {
                 int sigIdx = (i + 1) % eslabonesOrdenados.Count;
 
-                // ESTA ES LA LÓGICA QUE QUIERES REPLICAR:
                 eslabonesOrdenados[i].localPosition = Vector3.Lerp(posRailes[i], posRailes[sigIdx], progresoCiclo);
                 eslabonesOrdenados[i].localRotation = Quaternion.Slerp(rotRailes[i], rotRailes[sigIdx], progresoCiclo);
             }

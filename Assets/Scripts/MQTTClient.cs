@@ -9,6 +9,25 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class VGRPositionData { public float estirar; public float rotacion; public float vertical; }
 [Serializable] public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
 [Serializable] public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
+
+[Serializable]
+public class SLDBeltPayload
+{
+    public float velocidad;
+    public int SensorEntrada;
+    public int SensorCilindros;
+    public string z_ts;
+}
+
+// 🔥 NUEVO: Payload estructurado para recibir el JSON de f/mpo/belt
+[Serializable]
+public class MPOBeltPayload
+{
+    public int estado;
+    public int sensorSalida;
+    public string z_ts;
+}
+
 [Serializable]
 public class MPOHornoPayload
 {
@@ -38,7 +57,7 @@ public class MPOBrazoPayload
     public int move2Ref3;
     public int move2Ref4;
     public int pickup;
-    public int release; // <--- AÑADIR ESTO
+    public int release;
     public string ts;
 }
 
@@ -74,7 +93,7 @@ public class MQTTClient : MonoBehaviour
     public string contrasena = "Fischertechnik1";
 
     // --- EVENTOS (Delegados) ---
-    public delegate void OnBeltUpdate(float speed);
+    public delegate void OnBeltUpdate(SLDBeltPayload data);
     public event OnBeltUpdate OnBeltUpdateEvent;
 
     public delegate void OnCylinderUpdate(string color, int state);
@@ -104,13 +123,8 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnHornoUpdate(MPOHornoPayload data);
     public event OnHornoUpdate OnHornoUpdateEvent;
 
-    // No lo utilizamos como evento porque el turntable es un caso especial: puede recibir comandos
-    // muy seguidos y queremos procesarlos en orden sin perder ninguno, por eso los guardamos en una cola.
-
-    //public delegate void OnTurntableUpdate(MPOTurntablePayload data);
-    //public event OnTurntableUpdate OnTurntableUpdateEvent;
-
-    public delegate void OnMPOBeltUpdate(bool activo);
+    // 🔥 MODIFICADO: Ahora el delegado transmite el objeto estructurado MPOBeltPayload
+    public delegate void OnMPOBeltUpdate(MPOBeltPayload data);
     public event OnMPOBeltUpdate OnMPOBeltUpdateEvent;
 
     public delegate void OnBrazoUpdate(MPOBrazoPayload data);
@@ -135,7 +149,6 @@ public class MQTTClient : MonoBehaviour
     {
         try
         {
-            //client = new MqttClient(brokerHost, puerto, true, null, null, MqttSslProtocols.TLSv1_2);    // esto es necesario para HIVEMQ
             client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
             client.Connect(Guid.NewGuid().ToString(), usuario, contrasena);
@@ -144,7 +157,7 @@ public class MQTTClient : MonoBehaviour
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
 
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/color", "f/vgr/grip", "f/pieces_hbw", 
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/color", "f/vgr/grip", "f/pieces_hbw",
                     "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo", "f/ssc/LEDs", "f/ssc/camara" };
 
                 byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -161,7 +174,12 @@ public class MQTTClient : MonoBehaviour
 
         if (topic == "f/sld/belt")
         {
-            if (float.TryParse(msg, out float speed)) OnBeltUpdateEvent?.Invoke(speed);
+            try
+            {
+                SLDBeltPayload data = JsonUtility.FromJson<SLDBeltPayload>(msg);
+                if (data != null) OnBeltUpdateEvent?.Invoke(data);
+            }
+            catch (Exception ex) { Debug.LogWarning("Error al parsear JSON de f/sld/belt: " + ex.Message); }
         }
         else if (topic == "f/sld/cylinder")
         {
@@ -232,7 +250,6 @@ public class MQTTClient : MonoBehaviour
             try
             {
                 var data = JsonUtility.FromJson<MPOTurntablePayload>(Encoding.UTF8.GetString(e.Message));
-                // Usamos lock para evitar errores al añadir a la cola desde el hilo de MQTT
                 lock (colaMensajes)
                 {
                     colaMensajes.Enqueue(data);
@@ -240,56 +257,48 @@ public class MQTTClient : MonoBehaviour
             }
             catch (Exception ex) { Debug.LogWarning("Error al parsear turntable: " + ex.Message); }
         }
+        // 🔥 MODIFICADO: Procesamiento del nuevo formato JSON de f/mpo/belt
         else if (topic == "f/mpo/belt")
         {
-            OnMPOBeltUpdateEvent?.Invoke(msg == "1");
+            try
+            {
+                MPOBeltPayload data = JsonUtility.FromJson<MPOBeltPayload>(msg);
+                if (data != null)
+                {
+                    OnMPOBeltUpdateEvent?.Invoke(data);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Error al parsear JSON de f/mpo/belt: " + ex.Message);
+            }
         }
         else if (topic == "f/mpo/brazo")
         {
             try
             {
-                // Usamos e.Message convirtiéndolo a string en la misma línea
                 MPOBrazoPayload data = JsonUtility.FromJson<MPOBrazoPayload>(Encoding.UTF8.GetString(e.Message));
-
-                if (data != null)
-                {
-                    OnBrazoUpdateEvent?.Invoke(data);
-                }
+                if (data != null) OnBrazoUpdateEvent?.Invoke(data);
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning("Error al parsear brazo MPO: " + ex.Message);
-            }
+            catch (Exception ex) { Debug.LogWarning("Error al parsear brazo MPO: " + ex.Message); }
         }
         else if (topic == "f/ssc/LEDs")
         {
             try
             {
                 SSCLEDsPayload data = JsonUtility.FromJson<SSCLEDsPayload>(Encoding.UTF8.GetString(e.Message));
-                if (data != null)
-                {
-                    OnSSCLEDsUpdateEvent?.Invoke(data.LED_online, data.LEDs);
-                }
+                if (data != null) OnSSCLEDsUpdateEvent?.Invoke(data.LED_online, data.LEDs);
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning("Error al parsear f/ssc/LEDs: " + ex.Message);
-            }
+            catch (Exception ex) { Debug.LogWarning("Error al parsear f/ssc/LEDs: " + ex.Message); }
         }
         else if (topic == "f/ssc/camara")
         {
             try
             {
                 SSCCamaraPayload data = JsonUtility.FromJson<SSCCamaraPayload>(Encoding.UTF8.GetString(e.Message));
-                if (data != null)
-                {
-                    OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
-                }
+                if (data != null) OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning("Error al parsear f/ssc/camara: " + ex.Message);
-            }
+            catch (Exception ex) { Debug.LogWarning("Error al parsear f/ssc/camara: " + ex.Message); }
         }
     }
 

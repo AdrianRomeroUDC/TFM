@@ -11,12 +11,15 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public float multiplicadorVelocidad = 0.001f;
     [SerializeField] private float velocidadActual = 0f;
 
+    [Header("Monitoreo de Sensores (Lectura)")]
+    public bool sensorEntrada = false;
+    public bool sensorCilindros = false;
+
     private List<Transform> eslabonesOrdenados = new List<Transform>();
     private Vector3[] posRailes;
     private Quaternion[] rotRailes;
     private float progresoCiclo = 0f;
 
-    // --- CONEXIÓN ROBUSTA ---
     void Start()
     {
         if (objetoCintaPadre == null)
@@ -35,8 +38,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     {
         if (MQTTClient.Instance != null)
         {
-            MQTTClient.Instance.OnBeltUpdateEvent += ActualizarVelocidad;
-            Debug.Log("<color=green><b>Cinta SLD:</b> Conectado con éxito al sistema central.</color>");
+            // Nos suscribimos al nuevo método que acepta el Payload completo
+            MQTTClient.Instance.OnBeltUpdateEvent += ActualizarDatosCinta;
+            Debug.Log("<color=green><b>Cinta SLD:</b> Conectado con éxito al sistema central (Velocidad y Sensores habilitados).</color>");
             CancelInvoke("IntentarSuscripcion");
         }
     }
@@ -44,7 +48,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     void OnDisable()
     {
         if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnBeltUpdateEvent -= ActualizarVelocidad;
+            MQTTClient.Instance.OnBeltUpdateEvent -= ActualizarDatosCinta;
+    }
+
+    // --- RECEPCIÓN DE DATOS ---
+    void ActualizarDatosCinta(SLDBeltPayload data)
+    {
+        // 1. Actualizamos la velocidad para el movimiento de los eslabones
+        velocidadActual = data.velocidad;
+
+        // 2. Convertimos los enteros (0 o 1) de Python a booleanos de Unity
+        sensorEntrada = (data.SensorEntrada == 1);
+        sensorCilindros = (data.SensorCilindros == 1);
+
+        // Aquí puedes añadir lógica inmediata si un sensor se activa, por ejemplo:
+        // if (sensorEntrada) { DoSomething(); }
     }
 
     // --- LÓGICA DE LA CADENA ---
@@ -79,13 +97,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             posRailes[i] = eslabonesOrdenados[i].localPosition;
             rotRailes[i] = eslabonesOrdenados[i].localRotation;
         }
-    }
-
-    void ActualizarVelocidad(float nuevaVelocidad)
-    {
-        // Debug para confirmar que llegan datos
-        // Debug.Log("Velocidad recibida en cinta: " + nuevaVelocidad);
-        velocidadActual = nuevaVelocidad;
     }
 
     void Update()

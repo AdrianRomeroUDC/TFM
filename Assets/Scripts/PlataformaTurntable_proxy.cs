@@ -2,44 +2,52 @@ using UnityEngine;
 
 public class PlataformaTurntable_proxy : MonoBehaviour
 {
+    [Header("Referencias")]
+    [Tooltip("Arrastra aquí el objeto que contiene el script ControladorTurntableMPO_mqtt.")]
+    public ControladorTurntableMPO_mqtt controlador;
+
     [Header("Ajuste de Altura Global")]
     [Tooltip("Ajusta la altura en el eje Y global para que la pieza apoye perfectamente sobre el plato.")]
     public float offsetAlturaY = 0.05f;
 
+    private void Start()
+    {
+        // Intenta buscar el controlador automáticamente si no se arrastró en el Inspector
+        if (controlador == null)
+        {
+            controlador = Object.FindFirstObjectByType<ControladorTurntableMPO_mqtt>();
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
-        // Al colisionar con cualquier objeto que se llame "pieza"...
         if (other.name.ToLower().Contains("pieza"))
         {
-            Debug.Log($"[Turntable]: Pieza '{other.name}' detectada. Centrando con precisión matemática usando Bounds.");
+            // 🔥 FILTRO MAESTRO: Si el Pusher está activo o extendiéndose, la mesa se congela
+            // y no procesa la pieza, evitando la guerra de parentesco (Tug of War).
+            if (controlador != null && controlador.EjectorEstaActivo)
+            {
+                return;
+            }
 
-            // 1. GUARDAR ROTACIÓN: Almacenamos la rotación global exacta que trae del brazo
+            Debug.Log($"[Turntable]: Pieza '{other.name}' detectada de forma segura. Centrando en el plato.");
+
             Quaternion rotacionMundoOriginal = other.transform.rotation;
-
-            // 2. BUSCAR EL CENTRO REAL: Obtenemos el BoxCollider de la mesa
             BoxCollider miCollider = GetComponent<BoxCollider>();
 
             if (miCollider != null)
             {
-                // bounds.center nos da el centro del CUBO VERDE en coordenadas del mundo (olvida los pivotes del CAD)
                 Vector3 centroRealMundo = miCollider.bounds.center;
-
-                // 3. TELETRANSPORTE DE PRECISIÓN: Forzamos la posición global en X y Z de la mesa, y ajustamos la Y con el offset
                 other.transform.position = new Vector3(centroRealMundo.x, centroRealMundo.y + offsetAlturaY, centroRealMundo.z);
             }
             else
             {
-                // Fallback por si acaso el objeto no tuviera collider
                 other.transform.position = this.transform.position;
             }
 
-            // 4. RESTAURAR ROTACIÓN: Le devolvemos la rotación exacta que tenía al caer
             other.transform.rotation = rotacionMundoOriginal;
-
-            // 5. EMPARENTAR: La hacemos hija asegurando que preserve su posición global recién corregida (true)
             other.transform.SetParent(this.transform, true);
 
-            // 6. FIJAR FÍSICAS: Sincronizamos y congelamos para el giro
             Physics.SyncTransforms();
 
             Rigidbody rb = other.GetComponent<Rigidbody>();
@@ -47,8 +55,6 @@ public class PlataformaTurntable_proxy : MonoBehaviour
             {
                 rb.isKinematic = true;
                 rb.useGravity = false;
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
             }
         }
     }
