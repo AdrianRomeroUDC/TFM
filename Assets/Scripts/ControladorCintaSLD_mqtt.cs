@@ -10,13 +10,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     [Header("Referencias de Sensores Físicos (Arrastra el objeto 3D aquí)")]
     public Transform sensorEntradaObjeto;
 
-    [Header("Configuración de Movimiento")]
+    [Header("Ajuste Fino de Escaneo (¡Para el Gizmo!)")]
+    [Tooltip("Desfase local desde el sensor para centrar la búsqueda en la superficie útil superior de la cinta.")]
+    public Vector3 offsetBusqueda = Vector3.zero;
+    public bool mostrarGizmos = true;
+
+    [Header("Configuración de Movimiento Real de la Pieza")]
     public float multiplicadorVelocidad = 0.001f;
     [SerializeField] private float velocidadActual = 0f;
 
+    [Tooltip("Dirección local (del Padre) en la que se desplazará la pieza a lo largo de la cinta.")]
+    public Vector3 direccionAvanceLocal = new Vector3(0f, 0f, 1f);
+
     [Header("Monitoreo de Sensores (Lectura)")]
-    public bool sensorEntrada = false;
-    public bool sensorCilindros = false;
+    public bool SensorEntrada = false;
+    public bool SensorCilindros = false;
 
     // Hilo seguro: Bandera para avisarle a Update() que debe procesar la pieza
     private bool solicitarReaparicion = false;
@@ -26,11 +34,14 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     private Quaternion[] rotRailes;
     private float progresoCiclo = 0f;
 
+    // Referencia interna para mover la pieza de extremo a extremo sin saltos
+    private Transform piezaActivaEnCinta = null;
+
     void Start()
     {
         if (objetoCintaPadre == null)
         {
-            Debug.LogError("¡Falta asignar el Objeto Cinta Padre en el Inspector!");
+            Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> ¡Falta asignar el Objeto Cinta Padre en el Inspector!</color>");
             return;
         }
 
@@ -57,26 +68,28 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     void ActualizarDatosCinta(SLDBeltPayload data)
     {
         velocidadActual = data.velocidad;
-        sensorCilindros = (data.SensorCilindros == 1);
+        SensorCilindros = (data.SensorCilindros == 1);
 
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
 
         // Detección de flanco de bajada (Cambio de 1 a 0)
-        if (sensorEntrada && !nuevoSensorEntrada)
+        if (SensorEntrada && !nuevoSensorEntrada)
         {
-            // Levantamos la bandera de forma segura. El Update se encargará del resto.
+            Debug.Log("<color=orange><b>[DEBUG SLD]:</b> ¡Flanco de bajada detectado en Red! Levantando bandera de reaparición.</color>");
             solicitarReaparicion = true;
         }
 
-        sensorEntrada = nuevoSensorEntrada;
+        SensorEntrada = nuevoSensorEntrada;
     }
 
     void Update()
     {
-        // 1. Mover los eslabones si la cinta SLD está activa
+        float deltaMovimiento = velocidadActual * multiplicadorVelocidad * Time.deltaTime;
+
+        // 1. Mover los eslabones (Efecto visual continuo)
         if (velocidadActual > 0 && eslabonesOrdenados.Count > 0)
         {
-            progresoCiclo += velocidadActual * multiplicadorVelocidad * Time.deltaTime;
+            progresoCiclo += deltaMovimiento;
 
             if (progresoCiclo >= 1f)
             {
@@ -95,10 +108,16 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             }
         }
 
-        // 2. Ejecución segura en el Main Thread para hacer reaparecer la pieza
+        // 2. Desplazar la pieza físicamente por encima de la cinta completa sin saltos
+        if (velocidadActual > 0 && piezaActivaEnCinta != null)
+        {
+            piezaActivaEnCinta.localPosition += direccionAvanceLocal.normalized * deltaMovimiento;
+        }
+
+        // 3. Reaparición segura
         if (solicitarReaparicion)
         {
-            solicitarReaparicion = false; // Consumimos el evento
+            solicitarReaparicion = false;
             EjecutarReaparicionPieza();
         }
     }
@@ -107,48 +126,65 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     {
         Transform pieza = ControladorCintaMPO_mqtt.piezaEnTransito;
 
-        if (pieza != null)
+        if (pieza == null)
         {
-            if (sensorEntradaObjeto == null)
+            Debug.LogError("<color=red><b>[CINTA SLD - ALERTA CRÍTICA]:</b> 'piezaEnTransito' es NULL.</color>");
+            return;
+        }
+
+        if (sensorEntradaObjeto == null)
+        {
+            Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> Falta asignar 'sensorEntradaObjeto' en el Inspector.</color>");
+            return;
+        }
+
+        // 1. Encontrar la posición del haz de entrada en el mundo físico
+        Vector3 puntoDeBusquedaMundial = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
+
+        // 2. Buscar el eslabón de la cinta SLD más cercano para calibrar la altura (Y) de asentamiento
+        Transform eslabonMasCercano = null;
+        float distanciaMinima = float.MaxValue;
+        foreach (Transform eslabon in eslabonesOrdenados)
+        {
+            float distancia = Vector3.Distance(eslabon.position, puntoDeBusquedaMundial);
+            if (distancia < distanciaMinima)
             {
-                Debug.LogError("[CINTA SLD]: No se ha asignado el 'sensorEntradaObjeto' en el Inspector para calcular la cercanía.");
-                return;
+                distanciaMinima = distancia;
+                eslabonMasCercano = eslabon;
             }
+        }
 
-            Transform eslabonMasCercano = null;
-            float distanciaMinima = float.MaxValue;
+        if (eslabonMasCercano != null)
+        {
+            // --- TRUCO MATEMÁTICO DE ESPACIO DE ALINEACIÓN ---
+            // Primero la hacemos hija directa de la estructura global para aislarla de las rotaciones raras de los eslabones
+            pieza.SetParent(objetoCintaPadre, false);
 
-            // Buscamos el eslabón de SLD más cercano a la posición de la fotocélula de entrada
-            foreach (Transform eslabon in eslabonesOrdenados)
-            {
-                float distancia = Vector3.Distance(eslabon.position, sensorEntradaObjeto.position);
-                if (distancia < distanciaMinima)
-                {
-                    distanciaMinima = distancia;
-                    eslabonMasCercano = eslabon;
-                }
-            }
+            // Colocamos la pieza en la posición horizontal del haz, pero con la altura (Y) física exacta de la superficie del eslabón
+            Vector3 posicionAlineadaMundo = puntoDeBusquedaMundial;
+            posicionAlineadaMundo.y = eslabonMasCercano.position.y + 0.000154f; // Mantiene el desfase de altura útil que tenías
+            pieza.position = posicionAlineadaMundo;
 
-            if (eslabonMasCercano != null)
-            {
-                // Asignamos el nuevo eslabón de la cinta SLD como padre de la pieza
-                pieza.SetParent(eslabonMasCercano, true);
+            // CALIBRACIÓN DE ROTACIÓN RELATIVA SÍNCRONA:
+            // Forzamos a la pieza a mirar exactamente con la misma orientación relativa que tenía la cinta original, 
+            // pero alineada a los ejes estructurales de la nueva cinta SLD, compensando el desfase de 90 grados.
+            pieza.localRotation = Quaternion.Euler(0f, 0f, 0f);
 
-                // Ubicación milimétrica relativa al eslabón (Cifras del Inspector)
-                pieza.localPosition = new Vector3(0f, 0.000154f, -0.000238f);
-                pieza.localRotation = Quaternion.Euler(-2.818f, -90f, 90f);
+            // Activamos el objeto en la escena (Imagen 1 muestra que se clona correctamente en la jerarquía)
+            pieza.gameObject.SetActive(true);
 
-                // Hacemos visible la pieza de nuevo
-                pieza.gameObject.SetActive(true);
+            // Asignamos la referencia para el movimiento lineal continuo del Update
+            piezaActivaEnCinta = pieza;
 
-                // Vaciamos el tránsito para dejarlo disponible para la siguiente pieza
-                ControladorCintaMPO_mqtt.piezaEnTransito = null;
+            // Vaciamos el canal de tránsito
+            ControladorCintaMPO_mqtt.piezaEnTransito = null;
 
-                Debug.Log($"<color=green><b>[CINTA SLD]:</b> Pieza acoplada con éxito al eslabón ({eslabonMasCercano.name}) tras flanco de bajada.</color>");
-
-                // Sincroniza las físicas inmediatamente para evitar desfases de colisión
-                Physics.SyncTransforms();
-            }
+            Debug.Log($"<color=green><b>[CINTA SLD]:</b> ¡Pieza reposicionada y reorientada con éxito! Adaptada de MPO a SLD.</color>");
+            Physics.SyncTransforms();
+        }
+        else
+        {
+            Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> No se encontró eslabón de apoyo.</color>");
         }
     }
 
@@ -183,5 +219,19 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             posRailes[i] = eslabonesOrdenados[i].localPosition;
             rotRailes[i] = eslabonesOrdenados[i].localRotation;
         }
+    }
+
+    void OnDrawGizmos()
+    {
+        if (!mostrarGizmos || sensorEntradaObjeto == null) return;
+
+        Vector3 puntoDeBusqueda = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(puntoDeBusqueda, 0.012f);
+        Gizmos.DrawSphere(puntoDeBusqueda, 0.003f);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(sensorEntradaObjeto.position, puntoDeBusqueda);
     }
 }

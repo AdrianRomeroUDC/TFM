@@ -19,7 +19,6 @@ public class SLDBeltPayload
     public string z_ts;
 }
 
-// 🔥 NUEVO: Payload estructurado para recibir el JSON de f/mpo/belt
 [Serializable]
 public class MPOBeltPayload
 {
@@ -93,8 +92,8 @@ public class MQTTClient : MonoBehaviour
     public string contrasena = "Fischertechnik1";
 
     // --- EVENTOS (Delegados) ---
-    public delegate void OnBeltUpdate(SLDBeltPayload data);
-    public event OnBeltUpdate OnBeltUpdateEvent;
+    public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
+    public event OnSLDBeltUpdate OnBeltUpdateEvent;
 
     public delegate void OnCylinderUpdate(string color, int state);
     public event OnCylinderUpdate OnCylinderUpdateEvent;
@@ -123,7 +122,6 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnHornoUpdate(MPOHornoPayload data);
     public event OnHornoUpdate OnHornoUpdateEvent;
 
-    // 🔥 MODIFICADO: Ahora el delegado transmite el objeto estructurado MPOBeltPayload
     public delegate void OnMPOBeltUpdate(MPOBeltPayload data);
     public event OnMPOBeltUpdate OnMPOBeltUpdateEvent;
 
@@ -174,6 +172,9 @@ public class MQTTClient : MonoBehaviour
 
         if (topic == "f/sld/belt")
         {
+            // LÍNEA DE DIAGNÓSTICO: Te dirá exactamente cómo vienen escritas las llaves desde la red
+            Debug.Log($"<color=yellow>[RAW MQTT SLD]: {msg}</color>");
+
             try
             {
                 SLDBeltPayload data = JsonUtility.FromJson<SLDBeltPayload>(msg);
@@ -257,7 +258,6 @@ public class MQTTClient : MonoBehaviour
             }
             catch (Exception ex) { Debug.LogWarning("Error al parsear turntable: " + ex.Message); }
         }
-        // 🔥 MODIFICADO: Procesamiento del nuevo formato JSON de f/mpo/belt
         else if (topic == "f/mpo/belt")
         {
             try
