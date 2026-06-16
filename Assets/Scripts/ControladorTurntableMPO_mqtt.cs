@@ -109,7 +109,7 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 if (distanciaAlObjetivo < 0.000001f)
                 {
                     LiberarPiezaEnCinta();
-                    piezaLiberadaEnEsteCiclo = true; // Bloquea ejecuciones continuas en los siguientes frames
+                    piezaLiberadaEnEsteCiclo = true; // Enclava para evitar bucles repetitivos
                 }
             }
         }
@@ -197,18 +197,18 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 {
                     Debug.Log($"<color=green>[CINTA]: Transferida con éxito la pieza '{piezaSujeta.name}' al eslabón '{eslabonMasCercano.name}' (Distancia: {distanciaMinima:F5}).</color>");
 
-                    // 1. Asignamos el nuevo padre (el eslabón físico de la cinta)
+                    // 1. Asignamos el nuevo padre. Al usar 'true', Unity conserva intacta la orientación del mundo real.
                     piezaSujeta.SetParent(eslabonMasCercano, true);
 
-                    // 1. Definimos los valores exactos (Ajusta estos números según tu medición)
-                    Vector3 posDeseada = new Vector3(0f, 0.000352f, -0.000027f); // X, Y, Z
-                    Quaternion rotDeseada = Quaternion.Euler(0, 90, 0); // Ajusta los grados (X, Y, Z) según necesites
-
-                    // 2. Aplicamos la posición y rotación relativas al nuevo padre (eslabón)
+                    // 2. Centramos la pieza en la superficie del eslabón usando los valores reales del Pivot
+                    Vector3 posDeseada = new Vector3(0f, 0.000154f, 0.000178f);
                     piezaSujeta.localPosition = posDeseada;
-                    piezaSujeta.localRotation = rotDeseada;
 
-                    // 3. Aseguramos físicas estables
+                    // --- CORRECCIÓN CLAVE ---
+                    // Se elimina por completo la sobrescritura de 'localRotation'. 
+                    // Así, mantendrá la relación angular perfecta calculada por el SetParent original.
+
+                    // 3. Aseguramos físicas estables e inmóviles dentro de la cinta
                     Rigidbody rb = piezaSujeta.GetComponent<Rigidbody>();
                     if (rb != null)
                     {
