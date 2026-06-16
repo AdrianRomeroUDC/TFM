@@ -35,7 +35,6 @@ public class ControladorCintaMPO_mqtt : MonoBehaviour
     {
         if (MQTTClient.Instance != null)
         {
-            // 🔥 MODIFICADO: Nos suscribimos al nuevo método procesador de Payload completo
             MQTTClient.Instance.OnMPOBeltUpdateEvent += ActualizarDatosCintaMPO;
             Debug.Log("<color=cyan><b>Cinta MPO:</b> Conectado con éxito (Estado y Sensor habilitados).</color>");
             CancelInvoke("IntentarSuscripcion");
@@ -48,17 +47,12 @@ public class ControladorCintaMPO_mqtt : MonoBehaviour
             MQTTClient.Instance.OnMPOBeltUpdateEvent -= ActualizarDatosCintaMPO;
     }
 
-    // --- RECEPCIÓN E INTERPRETACIÓN DEL PACK JSON ---
     void ActualizarDatosCintaMPO(MPOBeltPayload data)
     {
-        // 1. Replicamos la lógica original: si estado es 1 la velocidad es 512, si es 0 se congela
         velocidadActual = (data.estado == 1) ? 512f : 0f;
-
-        // 2. Extraemos el sensor y convertimos el entero de Python a booleano de C#
         sensorSalida = (data.sensorSalida == 1);
     }
 
-    // --- LÓGICA DE LA CADENA ---
     void ConfigurarEslabones()
     {
         List<Transform> sinOrdenar = new List<Transform>();
@@ -98,12 +92,24 @@ public class ControladorCintaMPO_mqtt : MonoBehaviour
         {
             progresoCiclo += velocidadActual * multiplicadorVelocidad * Time.deltaTime;
 
-            if (progresoCiclo >= 1f) progresoCiclo -= 1f;
+            // CUANDO SE COMPLETA EL TRAMO ENTRE UN ESLABÓN Y EL SIGUIENTE
+            if (progresoCiclo >= 1f)
+            {
+                // ROTACIÓN INTERNA DE LA LISTA:
+                // Como cada eslabón ha llegado físicamente a la posición del siguiente,
+                // sacamos el último elemento de la lista y lo metemos en la primera posición (índice 0).
+                // De esta forma, en el siguiente frame todos los eslabones avanzarán al siguiente raíl de destino.
+                Transform ultimo = eslabonesOrdenados[eslabonesOrdenados.Count - 1];
+                eslabonesOrdenados.RemoveAt(eslabonesOrdenados.Count - 1);
+                eslabonesOrdenados.Insert(0, ultimo);
 
+                progresoCiclo -= 1f; // Restamos el ciclo de forma fluida
+            }
+
+            // Aplicar el movimiento continuo utilizando las posiciones de raíl fijas
             for (int i = 0; i < eslabonesOrdenados.Count; i++)
             {
                 int sigIdx = (i + 1) % eslabonesOrdenados.Count;
-
                 eslabonesOrdenados[i].localPosition = Vector3.Lerp(posRailes[i], posRailes[sigIdx], progresoCiclo);
                 eslabonesOrdenados[i].localRotation = Quaternion.Slerp(rotRailes[i], rotRailes[sigIdx], progresoCiclo);
             }

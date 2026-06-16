@@ -1595,6 +1595,8 @@ MonoBehaviour:
   objetoCintaPadre: {fileID: 2593961540105253669}
   multiplicadorVelocidad: 0.01
   velocidadActual: 0
+  sensorEntrada: 0
+  sensorCilindros: 0
 --- !u!4 &334509518
 Transform:
   m_ObjectHideFlags: 0
@@ -3418,6 +3420,7 @@ MonoBehaviour:
   posEjectRetraido: {x: 0, y: 0.00040799944, z: 0.00014901569}
   SpeedTurntable: 100
   VelocidadSierra: 512
+  velocidadEjector: 0.001
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -5068,6 +5071,7 @@ MonoBehaviour:
   objetoCintaPadre: {fileID: 898376971}
   multiplicadorVelocidad: 0.01
   velocidadActual: 0
+  sensorSalida: 0
 --- !u!1 &1378674611
 GameObject:
   m_ObjectHideFlags: 0
