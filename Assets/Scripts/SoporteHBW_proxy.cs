@@ -2,8 +2,6 @@ using UnityEngine;
 
 public class SoporteHBW_proxy : MonoBehaviour
 {
-    // Ya no hace falta la variable 'casillaPadreCorrespondiente' ya que el contenedor recuerda su posición solo.
-
     private void OnTriggerEnter(Collider other)
     {
         // 1. Buscamos si el objeto que entra es un contenedor
@@ -19,10 +17,11 @@ public class SoporteHBW_proxy : MonoBehaviour
             // 2. Localizamos el transelevador en la escena
             ControladorHBWposition_mqtt transelevador = FindFirstObjectByType<ControladorHBWposition_mqtt>();
 
-            // Verificamos si este contenedor en específico es el que lleva el brazo actualmente sujeto
-            if (transelevador != null && transelevador.objetoCogido == contenedorTransform)
+            // MODIFICACIÓN AQUÍ: Añadimos "&& transelevador.esOperacionDeEntrega"
+            // El soporte SOLO actuará si el transelevador viene con la orden explícita de DEJAR un cajón.
+            if (transelevador != null && transelevador.objetoCogido == contenedorTransform && transelevador.esOperacionDeEntrega)
             {
-                Debug.Log($"<color=cyan><b>[Soporte HBW]:</b> ¡Trigger Detectado! Ordenando retorno inmediato de: {contenedorTransform.name}</color>");
+                Debug.Log($"<color=cyan><b>[Soporte HBW]:</b> ¡Entrega Confirmada! Registrando retorno en estante de: {contenedorTransform.name}</color>");
 
                 // 3. MANDAR AL CONTENEDOR A SU POSICIÓN DE ORIGEN
                 if (contenedorTransform.TryGetComponent<ContenedorHBW_proxy>(out ContenedorHBW_proxy proxyContenedor))
