@@ -1593,6 +1593,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimacionCintaSLD
   objetoCintaPadre: {fileID: 2593961540105253669}
+  sensorEntradaObjeto: {fileID: 8836232917588539197}
   multiplicadorVelocidad: 0.01
   velocidadActual: 0
   sensorEntrada: 0
@@ -5069,6 +5070,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ControladorCintaMPO_mqtt
   objetoCintaPadre: {fileID: 898376971}
+  sensorSalidaObjeto: {fileID: 1154017732857660425}
+  rangoSensor: 0.07
   multiplicadorVelocidad: 0.01
   velocidadActual: 0
   sensorSalida: 0
