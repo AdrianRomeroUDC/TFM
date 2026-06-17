@@ -1606,6 +1606,7 @@ MonoBehaviour:
   finRampaRoja: {fileID: 4091309073054997913}
   finRampaAzul: {fileID: 8092191828404619852}
   velocidadTraslacion: 0.005
+  posicionZLocalEnRampa: -0.0001335999
 --- !u!4 &334509518
 Transform:
   m_ObjectHideFlags: 0
@@ -4996,6 +4997,8 @@ MonoBehaviour:
   xPickup: 0.0009
   tiempoRecorridoHorizontal: 10
   tiempoRecorridoVertical: 0.1
+  plataformaHorno: {fileID: 5194505733301100009}
+  plataformaTurntable: {fileID: 8023815707679192106}
 --- !u!1 &1302123921
 GameObject:
   m_ObjectHideFlags: 0

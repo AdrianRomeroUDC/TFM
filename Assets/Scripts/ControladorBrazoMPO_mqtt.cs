@@ -7,7 +7,7 @@ public class ControladorBrazoMPO : MonoBehaviour
     [Header("Componentes")]
     public Transform ejeHorizontal;
     public Transform ejeVertical;
-    public Transform puntoAgarre;
+    public Transform puntoAgarre; // Objeto Ventosa con el script BrazoMPO_proxy
 
     [Header("Posiciones Guardadas (Eje Horizontal Z)")]
     public float zHorno;
@@ -21,11 +21,13 @@ public class ControladorBrazoMPO : MonoBehaviour
     public float tiempoRecorridoHorizontal = 2.0f;
     public float tiempoRecorridoVertical = 1.0f;
 
+    [Header("Referencias de Destinos Reales (Arrastra aquí)")]
+    public Transform plataformaHorno;
+    public Transform plataformaTurntable;
+
     private float targetZH;
     private bool estaOcupado = false;
-    private bool tienePieza = false;
-    private Transform piezaAgarrada = null;
-
+    private BrazoMPO_proxy proxyFisico;
     private Queue<MPOBrazoPayload> colaComandos = new Queue<MPOBrazoPayload>();
 
     void Start()
@@ -34,6 +36,17 @@ public class ControladorBrazoMPO : MonoBehaviour
             MQTTClient.Instance.OnBrazoUpdateEvent += EncolarComando;
 
         if (ejeHorizontal) targetZH = ejeHorizontal.localPosition.z;
+
+        // Extraemos automáticamente el proxy del punto de agarre asignado
+        if (puntoAgarre != null)
+        {
+            proxyFisico = puntoAgarre.GetComponent<BrazoMPO_proxy>();
+        }
+
+        if (proxyFisico == null)
+        {
+            Debug.LogError("<color=red><b>[MPO]:</b> Falta el script 'BrazoMPO_proxy' en el objeto de la casilla 'Punto Agarre'.</color>");
+        }
     }
 
     void EncolarComando(MPOBrazoPayload data)
@@ -49,7 +62,6 @@ public class ControladorBrazoMPO : MonoBehaviour
             {
                 if (colaComandos.Count > 0)
                 {
-                    // Sacamos el último mensaje de la cola para tener el estado más reciente
                     MPOBrazoPayload proximoComando = colaComandos.Dequeue();
                     StartCoroutine(EjecutarSecuencia(proximoComando));
                 }
@@ -61,14 +73,14 @@ public class ControladorBrazoMPO : MonoBehaviour
     {
         estaOcupado = true;
 
-        // 1. DETERMINAR DESTINO HORIZONTAL
+        // 1. DETERMINAR DESTINO HORIZONTAL SEGÚN TELEMETRÍA MQTT
         float inicioZ = ejeHorizontal.localPosition.z;
         float destinoZ = inicioZ;
 
         if (data.move2Ref4 == 1) destinoZ = zHorno;
         else if (data.move2Ref3 == 1) destinoZ = zTurntable;
 
-        // Solo movemos si el destino es diferente a la posición actual
+        // Mover horizontalmente si es necesario
         if (Mathf.Abs(inicioZ - destinoZ) > 0.001f)
         {
             float tiempoPasadoH = 0;
@@ -76,31 +88,41 @@ public class ControladorBrazoMPO : MonoBehaviour
             {
                 tiempoPasadoH += Time.deltaTime;
                 float t = Mathf.SmoothStep(0, 1, tiempoPasadoH / tiempoRecorridoHorizontal);
-                float nz = Mathf.Lerp(inicioZ, destinoZ, t);
+                float nz = Mathf.Lerp(inicioZ, destinoZ, t); // <-- CORREGIDO AQUÍ
                 ejeHorizontal.localPosition = new Vector3(ejeHorizontal.localPosition.x, ejeHorizontal.localPosition.y, nz);
                 yield return null;
             }
             ejeHorizontal.localPosition = new Vector3(ejeHorizontal.localPosition.x, ejeHorizontal.localPosition.y, destinoZ);
         }
 
-        // 2. LÓGICA DE MOVIMIENTO VERTICAL INMEDIATO
-        // Si al llegar a la posición (o si ya estaba ahí) la señal de pickup o release está activa:
+        // =======================================================================================
+        // ¡DETECCIÓN UNIVERSAL!: Medimos la distancia hacia ambas estaciones para saber exactamente
+        // sobre cuál estamos parados en este milisegundo (independientemente de qué comando llegó).
+        // =======================================================================================
+        float distanciaAlHorno = Mathf.Abs(ejeHorizontal.localPosition.z - zHorno);
+        float distanciaALaTurntable = Mathf.Abs(ejeHorizontal.localPosition.z - zTurntable);
 
-        if (data.pickup == 1 && !tienePieza)
+        Transform plataformaActual = (distanciaAlHorno < distanciaALaTurntable) ? plataformaHorno : plataformaTurntable;
+        string nombreEstacion = (distanciaAlHorno < distanciaALaTurntable) ? "HORNO" : "TURNTABLE";
+
+        // 2. EJECUCIÓN AG NÓSTICA DE COMANDOS
+        bool ventosaTienePiezaReal = proxyFisico != null && proxyFisico.TienePieza();
+
+        if (data.pickup == 1 && !ventosaTienePiezaReal)
         {
-            Debug.Log("Ejecutando Pickup...");
-            yield return StartCoroutine(SecuenciaFisicaVertical(true));
+            Debug.Log($"<color=yellow><b>[MPO]:</b> Ejecutando Pickup Universal en <b>{nombreEstacion}</b>...</color>");
+            yield return StartCoroutine(SecuenciaFisicaVertical(true, null));
         }
-        else if (data.release == 1 && tienePieza)
+        else if (data.release == 1 && ventosaTienePiezaReal)
         {
-            Debug.Log("Ejecutando Release...");
-            yield return StartCoroutine(SecuenciaFisicaVertical(false));
+            Debug.Log($"<color=yellow><b>[MPO]:</b> Ejecutando Release Universal en <b>{nombreEstacion}</b>...</color>");
+            yield return StartCoroutine(SecuenciaFisicaVertical(false, plataformaActual));
         }
 
         estaOcupado = false;
     }
 
-    IEnumerator SecuenciaFisicaVertical(bool agarrar)
+    IEnumerator SecuenciaFisicaVertical(bool agarrar, Transform destinoRelease)
     {
         float inicioX = ejeVertical.localPosition.x;
 
@@ -116,9 +138,15 @@ public class ControladorBrazoMPO : MonoBehaviour
         }
         ejeVertical.localPosition = new Vector3(xPickup, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
 
-        // ACCIÓN (Simulada para tus pruebas)
-        if (agarrar) { tienePieza = true; Debug.Log("Pieza Agarrada (Simulado)"); }
-        else { tienePieza = false; Debug.Log("Pieza Soltada (Simulado)"); }
+        // INTERACCIÓN FÍSICA DIRECTA
+        if (agarrar)
+        {
+            if (proxyFisico != null) proxyFisico.ForzarEscaneoInmediato();
+        }
+        else
+        {
+            if (proxyFisico != null && destinoRelease != null) proxyFisico.EjecutarRelease(destinoRelease);
+        }
 
         yield return new WaitForSeconds(0.3f);
 
@@ -135,10 +163,6 @@ public class ControladorBrazoMPO : MonoBehaviour
         }
         ejeVertical.localPosition = new Vector3(xReposo, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
     }
-
-    // Funciones de soltar físicas (comentadas como pediste)
-    void AgarrarObjeto() { }
-    void SoltarObjeto() { if (piezaAgarrada != null) { piezaAgarrada.SetParent(null); piezaAgarrada = null; } }
 
     private void OnDestroy()
     {
