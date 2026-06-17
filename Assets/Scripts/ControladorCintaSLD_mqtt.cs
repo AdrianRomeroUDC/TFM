@@ -15,18 +15,16 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public Vector3 offsetBusqueda = Vector3.zero;
     public bool mostrarGizmos = true;
 
-    [Header("Configuración de Movimiento Real de la Pieza")]
+    [Header("Configuración de Movimiento Visual (Sincronizado con MPO)")]
+    [Tooltip("Usa el mismo valor que en la CintaMPO (ej: 0.001) para que vayan a la par.")]
     public float multiplicadorVelocidad = 0.001f;
     [SerializeField] private float velocidadActual = 0f;
-
-    [Tooltip("Dirección local (del Padre) en la que se desplazará la pieza a lo largo de la cinta.")]
-    public Vector3 direccionAvanceLocal = new Vector3(0f, 0f, 1f);
 
     [Header("Monitoreo de Sensores (Lectura)")]
     public bool SensorEntrada = false;
     public bool SensorCilindros = false;
 
-    [Header("Ajuste de Posición")]
+    [Header("Ajuste de Posición Manual")]
     [Tooltip("Modifica estos tres valores (X, Y, Z) en el Inspector para centrar y elevar la pieza respecto al eslabón.")]
     public Vector3 offsetLocalPieza = new Vector3(0f, 0.000154f, -0.000238f);
     public Vector3 rotacionLocalPieza = new Vector3(-2.818f, -90f, 90f);
@@ -38,9 +36,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     private Vector3[] posRailes;
     private Quaternion[] rotRailes;
     private float progresoCiclo = 0f;
-
-    // Referencia interna para mover la pieza de extremo a extremo sin saltos
-    private Transform piezaActivaEnCinta = null;
 
     void Start()
     {
@@ -59,7 +54,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         if (MQTTClient.Instance != null)
         {
             MQTTClient.Instance.OnBeltUpdateEvent += ActualizarDatosCinta;
-            Debug.Log("<color=green><b>Cinta SLD:</b> Conectado con éxito al sistema central.</color>");
+            Debug.Log("<color=green><b>Cinta SLD:</b> Conectado con éxito al sistema central e igualada velocidad visual con MPO.</color>");
             CancelInvoke("IntentarSuscripcion");
         }
     }
@@ -89,14 +84,18 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     void Update()
     {
-        float deltaMovimiento = velocidadActual * multiplicadorVelocidad * Time.deltaTime;
-
-        // 1. Mover los eslabones (Efecto visual continuo)
+        // Mover los eslabones (Sincronizado visualmente con MPO)
         if (velocidadActual > 0 && eslabonesOrdenados.Count > 0)
         {
-            progresoCiclo += deltaMovimiento;
+            // --- CAMBIO CLAVE AQUÍ ---
+            // Usamos la matemática directa de MPO: velocidad * multiplicador.
+            // Esto ignora el tamaño físico del eslabón y usa "unidades de progreso" puras.
+            float deltaProgresoMPOStyle = velocidadActual * multiplicadorVelocidad * Time.deltaTime;
+            progresoCiclo += deltaProgresoMPOStyle;
 
-            if (progresoCiclo >= 1f)
+            // Mantenemos el 'while' por seguridad ante picos de velocidad,
+            // pero ahora deltaProgreso será mucho más pequeño y suave.
+            while (progresoCiclo >= 1f)
             {
                 Transform ultimo = eslabonesOrdenados[eslabonesOrdenados.Count - 1];
                 eslabonesOrdenados.RemoveAt(eslabonesOrdenados.Count - 1);
@@ -113,13 +112,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             }
         }
 
-        // 2. Desplazar la pieza físicamente por encima de la cinta completa sin saltos
-        if (velocidadActual > 0 && piezaActivaEnCinta != null)
-        {
-            piezaActivaEnCinta.localPosition += direccionAvanceLocal.normalized * deltaMovimiento;
-        }
-
-        // 3. Reaparición segura
+        // Reaparición segura
         if (solicitarReaparicion)
         {
             solicitarReaparicion = false;
@@ -131,8 +124,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     {
         Transform pieza = ControladorCintaMPO_mqtt.piezaEnTransito;
 
-        if (pieza == null) return;
-        if (sensorEntradaObjeto == null) return;
+        if (pieza == null || sensorEntradaObjeto == null) return;
 
         // 1. Localizar eslabón
         Vector3 puntoDeBusquedaMundial = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
@@ -151,10 +143,14 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
         if (eslabonMasCercano != null)
         {
-            // 2. Emparentamiento directo respetando la jerarquía local
+            // Desactivar físicas temporales
+            Rigidbody rb = pieza.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true;
+
+            // 2. Emparentamiento directo
             pieza.SetParent(eslabonMasCercano, false);
 
-            // 3. Aplicamos el offset local del Inspector directamente
+            // 3. Aplicamos tu offset local manual
             pieza.localPosition = offsetLocalPieza;
             pieza.localRotation = Quaternion.Euler(rotacionLocalPieza);
 
@@ -163,9 +159,8 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
             // Limpieza de buffers
             ControladorCintaMPO_mqtt.piezaEnTransito = null;
-            piezaActivaEnCinta = null;
 
-            Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Pieza emparentada a '{eslabonMasCercano.name}'.</color>");
+            Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Pieza acoplada a '{eslabonMasCercano.name}' con velocidad visual sincronizada.</color>");
         }
     }
 
@@ -200,6 +195,8 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             posRailes[i] = eslabonesOrdenados[i].localPosition;
             rotRailes[i] = eslabonesOrdenados[i].localRotation;
         }
+
+        // Ya no necesitamos calcular 'distanciaEntreEslabones' para la velocidad visual.
     }
 
     void OnDrawGizmos()
@@ -207,11 +204,8 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         if (!mostrarGizmos || sensorEntradaObjeto == null) return;
 
         Vector3 puntoDeBusqueda = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
-
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(puntoDeBusqueda, 0.012f);
-        Gizmos.DrawSphere(puntoDeBusqueda, 0.003f);
-
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(sensorEntradaObjeto.position, puntoDeBusqueda);
     }

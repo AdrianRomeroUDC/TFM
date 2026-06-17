@@ -1596,9 +1596,8 @@ MonoBehaviour:
   sensorEntradaObjeto: {fileID: 8836232917588539197}
   offsetBusqueda: {x: 0, y: 0, z: 0}
   mostrarGizmos: 1
-  multiplicadorVelocidad: 0.01
+  multiplicadorVelocidad: 0.009
   velocidadActual: 0
-  direccionAvanceLocal: {x: 0, y: 0, z: 1}
   SensorEntrada: 0
   SensorCilindros: 0
   offsetLocalPieza: {x: 0, y: 0.000154, z: 0.0001934}
@@ -5077,7 +5076,7 @@ MonoBehaviour:
   objetoCintaPadre: {fileID: 898376971}
   sensorSalidaObjeto: {fileID: 1154017732857660425}
   rangoSensor: 0.07
-  multiplicadorVelocidad: 0.01
+  multiplicadorVelocidad: 0.009
   velocidadActual: 0
   sensorSalida: 0
 --- !u!1 &1378674611
