@@ -1594,10 +1594,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnimacionCintaSLD
   objetoCintaPadre: {fileID: 2593961540105253669}
   sensorEntradaObjeto: {fileID: 8836232917588539197}
+  offsetBusqueda: {x: 0, y: 0, z: 0}
+  mostrarGizmos: 1
   multiplicadorVelocidad: 0.01
   velocidadActual: 0
-  sensorEntrada: 0
-  sensorCilindros: 0
+  direccionAvanceLocal: {x: 0, y: 0, z: 1}
+  SensorEntrada: 0
+  SensorCilindros: 0
+  offsetLocalPieza: {x: 0, y: 0.000154, z: 0.0001934}
+  rotacionLocalPieza: {x: -2.818, y: -90, z: 90}
 --- !u!4 &334509518
 Transform:
   m_ObjectHideFlags: 0

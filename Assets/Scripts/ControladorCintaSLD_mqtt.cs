@@ -26,6 +26,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public bool SensorEntrada = false;
     public bool SensorCilindros = false;
 
+    [Header("Ajuste de Posición")]
+    [Tooltip("Modifica estos tres valores (X, Y, Z) en el Inspector para centrar y elevar la pieza respecto al eslabón.")]
+    public Vector3 offsetLocalPieza = new Vector3(0f, 0.000154f, -0.000238f);
+    public Vector3 rotacionLocalPieza = new Vector3(-2.818f, -90f, 90f);
+
     // Hilo seguro: Bandera para avisarle a Update() que debe procesar la pieza
     private bool solicitarReaparicion = false;
 
@@ -126,24 +131,14 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     {
         Transform pieza = ControladorCintaMPO_mqtt.piezaEnTransito;
 
-        if (pieza == null)
-        {
-            Debug.LogError("<color=red><b>[CINTA SLD - ALERTA CRÍTICA]:</b> 'piezaEnTransito' es NULL.</color>");
-            return;
-        }
+        if (pieza == null) return;
+        if (sensorEntradaObjeto == null) return;
 
-        if (sensorEntradaObjeto == null)
-        {
-            Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> Falta asignar 'sensorEntradaObjeto' en el Inspector.</color>");
-            return;
-        }
-
-        // 1. Encontrar la posición del haz de entrada en el mundo físico
+        // 1. Localizar eslabón
         Vector3 puntoDeBusquedaMundial = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
-
-        // 2. Buscar el eslabón de la cinta SLD más cercano para calibrar la altura (Y) de asentamiento
         Transform eslabonMasCercano = null;
         float distanciaMinima = float.MaxValue;
+
         foreach (Transform eslabon in eslabonesOrdenados)
         {
             float distancia = Vector3.Distance(eslabon.position, puntoDeBusquedaMundial);
@@ -156,35 +151,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
         if (eslabonMasCercano != null)
         {
-            // --- TRUCO MATEMÁTICO DE ESPACIO DE ALINEACIÓN ---
-            // Primero la hacemos hija directa de la estructura global para aislarla de las rotaciones raras de los eslabones
-            pieza.SetParent(objetoCintaPadre, false);
+            // 2. Emparentamiento directo respetando la jerarquía local
+            pieza.SetParent(eslabonMasCercano, false);
 
-            // Colocamos la pieza en la posición horizontal del haz, pero con la altura (Y) física exacta de la superficie del eslabón
-            Vector3 posicionAlineadaMundo = puntoDeBusquedaMundial;
-            posicionAlineadaMundo.y = eslabonMasCercano.position.y + 0.000154f; // Mantiene el desfase de altura útil que tenías
-            pieza.position = posicionAlineadaMundo;
+            // 3. Aplicamos el offset local del Inspector directamente
+            pieza.localPosition = offsetLocalPieza;
+            pieza.localRotation = Quaternion.Euler(rotacionLocalPieza);
 
-            // CALIBRACIÓN DE ROTACIÓN RELATIVA SÍNCRONA:
-            // Forzamos a la pieza a mirar exactamente con la misma orientación relativa que tenía la cinta original, 
-            // pero alineada a los ejes estructurales de la nueva cinta SLD, compensando el desfase de 90 grados.
-            pieza.localRotation = Quaternion.Euler(0f, 0f, 0f);
-
-            // Activamos el objeto en la escena (Imagen 1 muestra que se clona correctamente en la jerarquía)
+            // Activamos visibilidad
             pieza.gameObject.SetActive(true);
 
-            // Asignamos la referencia para el movimiento lineal continuo del Update
-            piezaActivaEnCinta = pieza;
-
-            // Vaciamos el canal de tránsito
+            // Limpieza de buffers
             ControladorCintaMPO_mqtt.piezaEnTransito = null;
+            piezaActivaEnCinta = null;
 
-            Debug.Log($"<color=green><b>[CINTA SLD]:</b> ¡Pieza reposicionada y reorientada con éxito! Adaptada de MPO a SLD.</color>");
-            Physics.SyncTransforms();
-        }
-        else
-        {
-            Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> No se encontró eslabón de apoyo.</color>");
+            Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Pieza emparentada a '{eslabonMasCercano.name}'.</color>");
         }
     }
 
