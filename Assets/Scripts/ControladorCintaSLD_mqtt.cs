@@ -29,8 +29,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public Vector3 offsetLocalPieza = new Vector3(0f, 0.000154f, -0.000238f);
     public Vector3 rotacionLocalPieza = new Vector3(-2.818f, -90f, 90f);
 
-    // Hilo seguro: Bandera para avisarle a Update() que debe procesar la pieza
-    private bool solicitarReaparicion = false;
+    // --- VARIABLES DE CONTROL INTERNO Y COLOR ---
+    private Transform piezaActual = null;          // Guarda la pieza que viaja actualmente por esta cinta
+    private string ultimoColorCilindro = "WHITE"; // Almacena el último color enviado por el topic de cilindros
+    private bool solicitarReaparicion = false;    // Bandera de hilos para reaparición
+    private bool flagCambiarColor = false;        // Bandera de hilos para cambio de color
 
     private List<Transform> eslabonesOrdenados = new List<Transform>();
     private Vector3[] posRailes;
@@ -53,8 +56,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     {
         if (MQTTClient.Instance != null)
         {
+            // Nos suscribimos a la cinta y también al topic de los cilindros f/sld/cylinder
             MQTTClient.Instance.OnBeltUpdateEvent += ActualizarDatosCinta;
-            Debug.Log("<color=green><b>Cinta SLD:</b> Conectado con éxito al sistema central e igualada velocidad visual con MPO.</color>");
+            MQTTClient.Instance.OnCylinderUpdateEvent += ActualizarColorDesdeCilindro;
+
+            Debug.Log("<color=green><b>Cinta SLD:</b> Suscrito a eventos de movimiento y color de cilindros con éxito.</color>");
             CancelInvoke("IntentarSuscripcion");
         }
     }
@@ -62,23 +68,48 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     void OnDisable()
     {
         if (MQTTClient.Instance != null)
+        {
             MQTTClient.Instance.OnBeltUpdateEvent -= ActualizarDatosCinta;
+            MQTTClient.Instance.OnCylinderUpdateEvent -= ActualizarColorDesdeCilindro;
+        }
+    }
+
+    // Callback del topic f/sld/cylinder
+    void ActualizarColorDesdeCilindro(string color, int estado)
+    {
+        // Si estado == 1 significa que el PLC ordena extender el pistón de ese color para la pieza actual
+        if (estado == 1)
+        {
+            ultimoColorCilindro = color;
+
+            // Si la pieza ya está pisando el sensor físicamente, actualizamos el color de inmediato
+            if (SensorCilindros)
+            {
+                flagCambiarColor = true;
+            }
+        }
     }
 
     void ActualizarDatosCinta(SLDBeltPayload data)
     {
         velocidadActual = data.velocidad;
-        SensorCilindros = (data.SensorCilindros == 1);
 
+        // Detección de flanco de subida para el Sensor de Cilindros (Cambio de 0 a 1)
+        bool nuevoSensorCilindros = (data.SensorCilindros == 1);
+        if (!SensorCilindros && nuevoSensorCilindros)
+        {
+            Debug.Log("<color=orange><b>[DEBUG SLD]:</b> ¡Pieza detectada en Sensor de Cilindros! Activando comprobación de color.</color>");
+            flagCambiarColor = true;
+        }
+        SensorCilindros = nuevoSensorCilindros;
+
+        // Detección de flanco de bajada para el Sensor de Entrada (Cambio de 1 a 0)
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
-
-        // Detección de flanco de bajada (Cambio de 1 a 0)
         if (SensorEntrada && !nuevoSensorEntrada)
         {
             Debug.Log("<color=orange><b>[DEBUG SLD]:</b> ¡Flanco de bajada detectado en Red! Levantando bandera de reaparición.</color>");
             solicitarReaparicion = true;
         }
-
         SensorEntrada = nuevoSensorEntrada;
     }
 
@@ -87,14 +118,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         // Mover los eslabones (Sincronizado visualmente con MPO)
         if (velocidadActual > 0 && eslabonesOrdenados.Count > 0)
         {
-            // --- CAMBIO CLAVE AQUÍ ---
-            // Usamos la matemática directa de MPO: velocidad * multiplicador.
-            // Esto ignora el tamaño físico del eslabón y usa "unidades de progreso" puras.
             float deltaProgresoMPOStyle = velocidadActual * multiplicadorVelocidad * Time.deltaTime;
             progresoCiclo += deltaProgresoMPOStyle;
 
-            // Mantenemos el 'while' por seguridad ante picos de velocidad,
-            // pero ahora deltaProgreso será mucho más pequeño y suave.
             while (progresoCiclo >= 1f)
             {
                 Transform ultimo = eslabonesOrdenados[eslabonesOrdenados.Count - 1];
@@ -112,11 +138,44 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             }
         }
 
-        // Reaparición segura
+        // Reaparición segura en el hilo principal
         if (solicitarReaparicion)
         {
             solicitarReaparicion = false;
             EjecutarReaparicionPieza();
+        }
+
+        // Cambio de color seguro en el hilo principal
+        if (flagCambiarColor)
+        {
+            flagCambiarColor = false;
+            EjecutarCambioColorPieza();
+        }
+    }
+
+    private void EjecutarCambioColorPieza()
+    {
+        // Si no tenemos ninguna pieza guardada o registrada, no hacemos nada
+        if (piezaActual == null) return;
+
+        // Buscamos el componente MeshRenderer o Renderer en la pieza (o sus hijos)
+        Renderer renderizador = piezaActual.GetComponentInChildren<Renderer>();
+        if (renderizador != null)
+        {
+            Color colorObjetivo = Color.white;
+
+            // Mapeamos el string del topic MQTT a un Color real de Unity
+            switch (ultimoColorCilindro.ToUpper())
+            {
+                case "WHITE": colorObjetivo = Color.white; break;
+                case "RED": colorObjetivo = Color.red; break;
+                case "BLUE": colorObjetivo = Color.blue; break;
+                default: colorObjetivo = Color.white; break;
+            }
+
+            // Cambiamos el color de forma dinámica instanciando el material de forma segura
+            renderizador.material.color = colorObjetivo;
+            Debug.Log($"<color=cyan><b>[CINTA SLD]:</b> Color de la pieza cambiado a <b>{ultimoColorCilindro}</b> en el Sensor de Cilindros.</color>");
         }
     }
 
@@ -143,24 +202,24 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
         if (eslabonMasCercano != null)
         {
-            // Desactivar físicas temporales
             Rigidbody rb = pieza.GetComponent<Rigidbody>();
             if (rb != null) rb.isKinematic = true;
 
             // 2. Emparentamiento directo
             pieza.SetParent(eslabonMasCercano, false);
 
+            // --- CAMBIO CLAVE ---
+            // Guardamos la referencia de la pieza actual para saber a cuál cambiarle el color más adelante
+            piezaActual = pieza;
+
             // 3. Aplicamos tu offset local manual
             pieza.localPosition = offsetLocalPieza;
             pieza.localRotation = Quaternion.Euler(rotacionLocalPieza);
 
-            // Activamos visibilidad
             pieza.gameObject.SetActive(true);
-
-            // Limpieza de buffers
             ControladorCintaMPO_mqtt.piezaEnTransito = null;
 
-            Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Pieza acoplada a '{eslabonMasCercano.name}' con velocidad visual sincronizada.</color>");
+            Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Pieza acoplada a '{eslabonMasCercano.name}'. Referencia guardada para el sensor.</color>");
         }
     }
 
@@ -195,8 +254,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             posRailes[i] = eslabonesOrdenados[i].localPosition;
             rotRailes[i] = eslabonesOrdenados[i].localRotation;
         }
-
-        // Ya no necesitamos calcular 'distanciaEntreEslabones' para la velocidad visual.
     }
 
     void OnDrawGizmos()
