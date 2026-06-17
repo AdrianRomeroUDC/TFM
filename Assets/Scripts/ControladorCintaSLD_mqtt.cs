@@ -38,6 +38,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     [Tooltip("Velocidad lineal a la que se desplazará la pieza hacia la rampa.")]
     public float velocidadTraslacion = 0.5f;
 
+    [Tooltip("Posición Z local exacta que debe tener la pieza al llegar a la rampa para evitar traspasarla.")]
+    public float posicionZLocalEnRampa = -0.0001335999f;
+
     // --- VARIABLES DE CONTROL INTERNO Y COLOR ---
     private Transform piezaActual = null;          // Guarda la pieza que viaja actualmente por esta cinta
     private string ultimoColorCilindro = "WHITE"; // Almacena el último color enviado por el topic de cilindros
@@ -102,7 +105,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 flagCambiarColor = true;
             }
 
-            // SOLUCIÓN: En vez de ejecutar el empuje aquí, levantamos una bandera para el Update()
             colorParaEmpuje = color;
             flagEmpujarARampa = true;
         }
@@ -137,7 +139,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             EjecutarCambioColorPieza();
         }
 
-        // 2. NUEVO: Ejecutar el empuje de rampa de forma segura en el Hilo Principal
+        // 2. Ejecutar el empuje de rampa de forma segura en el Hilo Principal
         if (flagEmpujarARampa)
         {
             flagEmpujarARampa = false;
@@ -216,13 +218,16 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
             piezaEnRampa.SetParent(rampaDestino, true);
 
-            // Esto ahora se ejecuta de forma segura en el hilo principal de Unity
+            // Calculamos la posición objetivo basada en centros geométricos
             posicionLocalObjetivo = centroRampaLocal - (piezaEnRampa.localRotation * centroPiezaLocal);
+
+            // ¡SOLUCIÓN!: Sobrescribimos el eje Z calculado con el tope manual exacto para que no traspase
+            posicionLocalObjetivo.z = posicionZLocalEnRampa;
 
             Rigidbody rb = piezaEnRampa.GetComponent<Rigidbody>();
             if (rb != null) rb.isKinematic = true;
 
-            Debug.Log($"<color=orange><b>[CINTA SLD]:</b> Iniciando traslación pura (sin rotación) hacia {rampaDestino.name}.</color>");
+            Debug.Log($"<color=orange><b>[CINTA SLD]:</b> Iniciando traslación corregida en eje Z hacia {rampaDestino.name}.</color>");
         }
     }
 
