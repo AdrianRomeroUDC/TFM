@@ -1602,6 +1602,10 @@ MonoBehaviour:
   SensorCilindros: 0
   offsetLocalPieza: {x: 0, y: 0.000154, z: 0.0001934}
   rotacionLocalPieza: {x: -2.818, y: -90, z: 90}
+  finRampaBlanca: {fileID: 8972519635171573006}
+  finRampaRoja: {fileID: 4091309073054997913}
+  finRampaAzul: {fileID: 8092191828404619852}
+  velocidadTraslacion: 0.005
 --- !u!4 &334509518
 Transform:
   m_ObjectHideFlags: 0
@@ -45832,7 +45836,7 @@ GameObject:
   - component: {fileID: 3984810906986084441}
   - component: {fileID: 1497027064849123623}
   m_Layer: 0
-  m_Name: 9V_38259_Bauplatte30x30_id4490_step
+  m_Name: 9V_38259_Bauplatte30x30_id4490_step___FinRampaAzul
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -148312,7 +148316,7 @@ GameObject:
   - component: {fileID: 251087674075449588}
   - component: {fileID: 4530855719811020606}
   m_Layer: 0
-  m_Name: 9V_38259_Bauplatte30x30_id4490_step004
+  m_Name: 9V_38259_Bauplatte30x30_id4490_step004___FinRampaBlanca
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -164147,7 +164151,7 @@ GameObject:
   - component: {fileID: 5409993866980305776}
   - component: {fileID: 3119810687478298315}
   m_Layer: 0
-  m_Name: 9V_38259_Bauplatte30x30_id4490_step003
+  m_Name: 9V_38259_Bauplatte30x30_id4490_step003___FinRampaRoja
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

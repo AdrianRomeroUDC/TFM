@@ -29,11 +29,28 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public Vector3 offsetLocalPieza = new Vector3(0f, 0.000154f, -0.000238f);
     public Vector3 rotacionLocalPieza = new Vector3(-2.818f, -90f, 90f);
 
+    [Header("Referencias de Rampas / Plataformas")]
+    public Transform finRampaBlanca;
+    public Transform finRampaRoja;
+    public Transform finRampaAzul;
+
+    [Header("Ajustes del Desplazamiento")]
+    [Tooltip("Velocidad lineal a la que se desplazará la pieza hacia la rampa.")]
+    public float velocidadTraslacion = 0.5f;
+
     // --- VARIABLES DE CONTROL INTERNO Y COLOR ---
     private Transform piezaActual = null;          // Guarda la pieza que viaja actualmente por esta cinta
     private string ultimoColorCilindro = "WHITE"; // Almacena el último color enviado por el topic de cilindros
     private bool solicitarReaparicion = false;    // Bandera de hilos para reaparición
     private bool flagCambiarColor = false;        // Bandera de hilos para cambio de color
+
+    // Banderas de hilos seguras para el empuje a la rampa
+    private bool flagEmpujarARampa = false;
+    private string colorParaEmpuje = "";
+
+    // Control de traslación hacia las rampas
+    private Transform piezaEnRampa = null;
+    private Vector3 posicionLocalObjetivo;
 
     private List<Transform> eslabonesOrdenados = new List<Transform>();
     private Vector3[] posRailes;
@@ -73,21 +90,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    // Callback del topic f/sld/cylinder
+    // Callback del topic f/sld/cylinder (Ocurre en el hilo de MQTT)
     void ActualizarColorDesdeCilindro(string color, int estado)
     {
-        // ¡SOLUCIÓN!: Guardamos SIEMPRE el color que nos llega, aunque el estado sea 0.
-        // Así el script no pierde el rastro de qué color estamos procesando.
         ultimoColorCilindro = color;
 
-        // Si estado == 1 significa que el PLC ordena extender el pistón de ese color
         if (estado == 1)
         {
-            // Si la pieza ya está pisando el sensor físicamente, actualizamos el color de inmediato
             if (SensorCilindros)
             {
                 flagCambiarColor = true;
             }
+
+            // SOLUCIÓN: En vez de ejecutar el empuje aquí, levantamos una bandera para el Update()
+            colorParaEmpuje = color;
+            flagEmpujarARampa = true;
         }
     }
 
@@ -95,7 +112,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     {
         velocidadActual = data.velocidad;
 
-        // Detección de flanco de subida para el Sensor de Cilindros (Cambio de 0 a 1)
         bool nuevoSensorCilindros = (data.SensorCilindros == 1);
         if (!SensorCilindros && nuevoSensorCilindros)
         {
@@ -104,7 +120,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
         SensorCilindros = nuevoSensorCilindros;
 
-        // Detección de flanco de bajada para el Sensor de Entrada (Cambio de 1 a 0)
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
         if (SensorEntrada && !nuevoSensorEntrada)
         {
@@ -115,14 +130,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     void Update()
     {
-        // Cambio de color seguro en el hilo principal
+        // 1. Cambio de color seguro
         if (flagCambiarColor)
         {
             flagCambiarColor = false;
             EjecutarCambioColorPieza();
         }
 
-        // Mover los eslabones (Sincronizado visualmente con MPO)
+        // 2. NUEVO: Ejecutar el empuje de rampa de forma segura en el Hilo Principal
+        if (flagEmpujarARampa)
+        {
+            flagEmpujarARampa = false;
+            EjecutarEmpujeHaciaRampa(colorParaEmpuje);
+        }
+
+        // 3. Mover los eslabones (Sincronizado visualmente con MPO)
         if (velocidadActual > 0 && eslabonesOrdenados.Count > 0)
         {
             float deltaProgresoMPOStyle = velocidadActual * multiplicadorVelocidad * Time.deltaTime;
@@ -145,7 +167,26 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             }
         }
 
-        // Reaparición segura en el hilo principal
+        // 4. Traslación pura hacia el centro local de la rampa activa (Sin alterar rotaciones)
+        if (piezaEnRampa != null)
+        {
+            piezaEnRampa.localPosition = Vector3.MoveTowards(
+                piezaEnRampa.localPosition,
+                posicionLocalObjetivo,
+                velocidadTraslacion * Time.deltaTime
+            );
+
+            if (Vector3.Distance(piezaEnRampa.localPosition, posicionLocalObjetivo) < 0.0001f)
+            {
+                Rigidbody rb = piezaEnRampa.GetComponent<Rigidbody>();
+                if (rb != null) rb.isKinematic = false;
+
+                Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Centros perfectamente alineados en {piezaEnRampa.parent.name}. Traslación finalizada.</color>");
+                piezaEnRampa = null;
+            }
+        }
+
+        // 5. Reaparición segura en el hilo principal
         if (solicitarReaparicion)
         {
             solicitarReaparicion = false;
@@ -153,15 +194,60 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    private void EjecutarCambioColorPieza()
+    private void EjecutarEmpujeHaciaRampa(string color)
     {
         if (piezaActual == null) return;
 
-        Renderer renderizador = piezaActual.GetComponentInChildren<Renderer>();
+        Transform rampaDestino = null;
+        switch (color.ToUpper())
+        {
+            case "WHITE": rampaDestino = finRampaBlanca; break;
+            case "RED": rampaDestino = finRampaRoja; break;
+            case "BLUE": rampaDestino = finRampaAzul; break;
+        }
+
+        if (rampaDestino != null)
+        {
+            piezaEnRampa = piezaActual;
+            piezaActual = null;
+
+            Vector3 centroRampaLocal = ObtenerCentroLocal(rampaDestino);
+            Vector3 centroPiezaLocal = ObtenerCentroLocal(piezaEnRampa);
+
+            piezaEnRampa.SetParent(rampaDestino, true);
+
+            // Esto ahora se ejecuta de forma segura en el hilo principal de Unity
+            posicionLocalObjetivo = centroRampaLocal - (piezaEnRampa.localRotation * centroPiezaLocal);
+
+            Rigidbody rb = piezaEnRampa.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true;
+
+            Debug.Log($"<color=orange><b>[CINTA SLD]:</b> Iniciando traslación pura (sin rotación) hacia {rampaDestino.name}.</color>");
+        }
+    }
+
+    private Vector3 ObtenerCentroLocal(Transform objetivo)
+    {
+        Renderer[] renderers = objetivo.GetComponentsInChildren<Renderer>();
+        if (renderers == null || renderers.Length == 0) return Vector3.zero;
+
+        Bounds encapsulada = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+        {
+            encapsulada.Encapsulate(renderers[i].bounds);
+        }
+        return objetivo.InverseTransformPoint(encapsulada.center);
+    }
+
+    private void EjecutarCambioColorPieza()
+    {
+        Transform piezaAColorear = piezaActual != null ? piezaActual : piezaEnRampa;
+        if (piezaAColorear == null) return;
+
+        Renderer renderizador = piezaAColorear.GetComponentInChildren<Renderer>();
         if (renderizador != null)
         {
             Color colorObjetivo = Color.white;
-
             switch (ultimoColorCilindro.ToUpper())
             {
                 case "WHITE": colorObjetivo = Color.white; break;
