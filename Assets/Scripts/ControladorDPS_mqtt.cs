@@ -4,14 +4,18 @@ using System.Collections.Generic;
 
 public class ControladorDPS_mqtt : MonoBehaviour
 {
-    [Header("Referencias")]
-    public Transform puntoEntrada;
-    public Transform pinzaVGR;
+    [Header("Referencias Plataformas")]
+    [Tooltip("Arrastra aquí el objeto de la plataforma DSI")]
+    public Transform plataformaDSI;
     [Tooltip("Arrastra aquí el objeto de la plataforma DSO")]
     public Transform plataformaDSO;
 
+    [Header("Referencias Pinza")]
+    public Transform pinzaVGR;
+
     // Configuración fija y oculta del Inspector (Privada)
-    private const float offsetFlechaVerde = 0.02f;
+    private const float offsetAlturaDSO = 0.02f;
+    private const float offsetYDSI = 0.000572f; // <--- Solo para la plataforma DSI
 
     [Header("Prefabs Visuales")]
     public GameObject prefabBaseGris;
@@ -20,7 +24,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
     public GameObject prefabAzul;
 
     private GameObject piezaActual;
-    private GameObject piezaManoDSO; // Para controlar la pieza que se pone a mano
+    private GameObject piezaManoDSO;
     private Queue<string> colaDeOrdenes = new Queue<string>();
     private bool gripActivo = false;
 
@@ -109,9 +113,44 @@ public class ControladorDPS_mqtt : MonoBehaviour
         switch (orden)
         {
             case "SPAWN_BASE":
+                if (plataformaDSI == null)
+                {
+                    Debug.LogWarning("[DPS] No se ha asignado la referencia de la plataformaDSI en el Inspector.");
+                    break;
+                }
+
                 if (piezaActual != null) Destroy(piezaActual);
-                piezaActual = Instantiate(prefabBaseGris, puntoEntrada.position, puntoEntrada.rotation);
+
+                // 1. OBTENER CENTRO GEOMÉTRICO REAL DE LA PLATAFORMA DSI
+                Collider colliderPlatDSI = plataformaDSI.GetComponent<Collider>();
+                Vector3 centroPlatDSIMundo = (colliderPlatDSI != null) ? colliderPlatDSI.bounds.center : plataformaDSI.position;
+
+                // 2. INSTANCIACIÓN Y ROTACIÓN INITIAL
+                piezaActual = Instantiate(prefabBaseGris);
+                piezaActual.name = "pieza_base";
+                piezaActual.transform.rotation = plataformaDSI.rotation * Quaternion.Euler(-90f, 0f, 0f);
+
+                // 3. DESFASE DE PIVOTE CAD
+                BoxCollider colliderPiezaDSI = piezaActual.GetComponentInChildren<BoxCollider>();
+                Vector3 centroPiezaLocalDSI = (colliderPiezaDSI != null) ? colliderPiezaDSI.center : Vector3.zero;
+
+                centroPiezaLocalDSI.z = 0f;
+                Vector3 offsetMundoPiezaDSI = piezaActual.transform.TransformDirection(centroPiezaLocalDSI);
+
+                // 4. POSICIONAMIENTO MATEMÁTICO
+                Vector3 posFinalDSI = centroPlatDSIMundo - offsetMundoPiezaDSI;
+                posFinalDSI += piezaActual.transform.up * offsetAlturaDSO;
+                piezaActual.transform.position = posFinalDSI;
+
+                // 5. EMPARENTADO Y AJUSTE LOCAL EXACTO EN Y / Z (SOLO DSI)
+                piezaActual.transform.SetParent(plataformaDSI, true);
+                Vector3 posLocalLimpiaDSI = piezaActual.transform.localPosition;
+                posLocalLimpiaDSI.y = offsetYDSI; // <--- FORZAMOS TU VALOR EXACTO EN Y (0.000572)
+                posLocalLimpiaDSI.z = 0f;            // <--- CERO ABSOLUTO EN Z LOCAL
+                piezaActual.transform.localPosition = posLocalLimpiaDSI;
+
                 ConfigurarFisicas(piezaActual, "pieza_base");
+                Debug.Log("<color=green><b>[GEMELO DIGITAL]:</b> Pieza DSI generada en el centro optimizado (Y=" + offsetYDSI + ", Z=0).</color>");
                 break;
 
             case "SPAWN_MANO_DSO":
@@ -121,13 +160,11 @@ public class ControladorDPS_mqtt : MonoBehaviour
                     break;
                 }
 
-                // OBTENER CENTRO GEOMÉTRICO REAL DE LA PLATAFORMA (Usa el BoxCollider)
-                Collider colliderPlat = plataformaDSO.GetComponent<Collider>();
-                Vector3 centroPlatMundo = (colliderPlat != null) ? colliderPlat.bounds.center : plataformaDSO.position;
+                Collider colliderPlatDSO = plataformaDSO.GetComponent<Collider>();
+                Vector3 centroPlatDSOMundo = (colliderPlatDSO != null) ? colliderPlatDSO.bounds.center : plataformaDSO.position;
 
-                // ESCUDO ANTIDUPLICADOS
                 bool yaHayPieza = false;
-                Collider[] collidersCercanos = Physics.OverlapSphere(centroPlatMundo, 0.05f);
+                Collider[] collidersCercanos = Physics.OverlapSphere(centroPlatDSOMundo, 0.05f);
                 foreach (Collider col in collidersCercanos)
                 {
                     if (col.name.ToLower().Contains("pieza"))
@@ -139,47 +176,31 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
                 if (!yaHayPieza && piezaManoDSO == null)
                 {
-                    // 1. Instanciamos la pieza libre en el mundo
                     piezaManoDSO = Instantiate(prefabBaseGris);
                     piezaManoDSO.name = "pieza_base_manual";
-
-                    // 2. ROTACIÓN: Copiamos la de la plataforma y sumamos -90º locales en X
                     piezaManoDSO.transform.rotation = plataformaDSO.rotation * Quaternion.Euler(-90f, 0f, 0f);
 
-                    // 3. NEUTRALIZACIÓN DE PIVOTE CAD: Ajustamos según el BoxCollider centrado
-                    BoxCollider colliderPieza = piezaManoDSO.GetComponentInChildren<BoxCollider>();
-                    Vector3 centroPiezaLocal = (colliderPieza != null) ? colliderPieza.center : Vector3.zero;
+                    BoxCollider colliderPiezaDSO = piezaManoDSO.GetComponentInChildren<BoxCollider>();
+                    Vector3 centroPiezaLocalDSO = (colliderPiezaDSO != null) ? colliderPiezaDSO.center : Vector3.zero;
+                    centroPiezaLocalDSO.z = 0f;
 
-                    // CAMBIO: Forzamos el eje Z local de la pieza a 0 para que no sufra desvíos en esa dirección
-                    centroPiezaLocal.z = 0f;
+                    Vector3 offsetMundoPiezaDSO = piezaManoDSO.transform.TransformDirection(centroPiezaLocalDSO);
+                    Vector3 posicionFinalMundoDSO = centroPlatDSOMundo - offsetMundoPiezaDSO;
+                    posicionFinalMundoDSO += piezaManoDSO.transform.up * offsetAlturaDSO;
+                    piezaManoDSO.transform.position = posicionFinalMundoDSO;
 
-                    // Convertimos el desfase local modificado a dirección de mundo
-                    Vector3 offsetMundoPieza = piezaManoDSO.transform.TransformDirection(centroPiezaLocal);
-
-                    // 4. POSICIONAMIENTO MATEMÁTICO:
-                    Vector3 posicionFinalMundo = centroPlatMundo - offsetMundoPieza;
-
-                    // Desplazamos la pieza en su flecha verde (eje Y local) de forma fija (0.02)
-                    posicionFinalMundo += piezaManoDSO.transform.up * offsetFlechaVerde;
-
-                    piezaManoDSO.transform.position = posicionFinalMundo;
-
-                    // 5. EMPARENTADO (Manteniendo la posición de mundo actual)
+                    // RESTAURADO: Emparentado y limpieza en Z Local únicamente (Dejamos Y como estaba originalmente)
                     piezaManoDSO.transform.SetParent(plataformaDSO, true);
+                    Vector3 posLocalLimpiaDSO = piezaManoDSO.transform.localPosition;
+                    posLocalLimpiaDSO.z = 0f; // <--- CERO ABSOLUTO EN Z LOCAL sin sobreescribir la Y
+                    piezaManoDSO.transform.localPosition = posLocalLimpiaDSO;
 
-                    // SOLUCIÓN: Forzamos el eje Z local exacto a 0 tras el emparentado 
-                    // Esto limpia cualquier residuo de precisión matemática (como el -0.0001718)
-                    Vector3 posLocalLimpia = piezaManoDSO.transform.localPosition;
-                    posLocalLimpia.z = 0f;
-                    piezaManoDSO.transform.localPosition = posLocalLimpia;
-
-                    // Congelamos las físicas
                     Rigidbody rb = piezaManoDSO.GetComponent<Rigidbody>();
                     if (rb == null) rb = piezaManoDSO.AddComponent<Rigidbody>();
                     rb.isKinematic = true;
                     rb.useGravity = false;
 
-                    Debug.Log("<color=cyan><b>[GEMELO DIGITAL]:</b> Pieza manual emparentada y forzada a Z local = 0 absoluto.</color>");
+                    Debug.Log("<color=cyan><b>[GEMELO DIGITAL]:</b> Pieza manual DSO generada (Y original preservada, Z=0).</color>");
                 }
                 break;
 
@@ -192,11 +213,11 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 break;
 
             case "DELETE":
-                if (piezaActual != null && !gripActivo && piezaActual.transform.parent == null)
+                if (piezaActual != null && !gripActivo && piezaActual.transform.parent == plataformaDSI)
                 {
                     Destroy(piezaActual);
+                    piezaActual = null;
                 }
-                piezaActual = null;
                 break;
 
             case "DROP":
@@ -255,6 +276,16 @@ public class ControladorDPS_mqtt : MonoBehaviour
         if (padreViejo != null)
         {
             piezaNueva.transform.SetParent(padreViejo);
+
+            // Solo si el padre es la plataforma DSI, forzamos su Y exacta y su Z en 0
+            if (padreViejo == plataformaDSI)
+            {
+                Vector3 lPos = piezaNueva.transform.localPosition;
+                lPos.y = offsetYDSI; // <--- Mantiene el valor exacto en Y solo para DSI
+                lPos.z = 0f;              // <--- Mantiene Z en cero
+                piezaNueva.transform.localPosition = lPos;
+            }
+            // Si es cualquier otro padre (como la pinza o el DSO al cambiar de color), dejamos que conserve su posición relativa natural
         }
 
         ConfigurarFisicas(piezaNueva, "pieza_" + color.ToLower());
@@ -262,7 +293,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
         Destroy(piezaActual);
         piezaActual = piezaNueva;
 
-        Debug.Log($"<color=lime><b>[DPS Sustitución]:</b> Pieza directa '{piezaNueva.name}' sustituida con éxito.</color>");
+        Debug.Log($"<color=lime><b>[DPS Sustitución]:</b> Pieza directa '{piezaNueva.name}' sustituida manteniendo alineación.</color>");
     }
 
     void ConfigurarFisicas(GameObject p, string nombreDestino)

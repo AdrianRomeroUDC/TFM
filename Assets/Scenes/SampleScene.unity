@@ -1714,11 +1714,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62bb778931dc44b4baf71d86a6b406c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GestorDPS_mqtt
-  puntoEntrada: {fileID: 1163600023}
-  pinzaVGR: {fileID: 1770509447237504354}
+  plataformaDSI: {fileID: 741576419541351943}
   plataformaDSO: {fileID: 8608494611413966379}
-  offsetLocalMano: {x: 0, y: 0, z: 0}
-  offsetFlechaVerde: 0.02
+  pinzaVGR: {fileID: 1770509447237504354}
   prefabBaseGris: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
   prefabBlanco: {fileID: 1874647114658911321, guid: 3775355192241ee428b71c8509c3b32f, type: 3}
   prefabRojo: {fileID: 3690905493317575458, guid: 13e4a19f76c20da4daecd8f64b375192, type: 3}
@@ -200311,6 +200309,7 @@ GameObject:
   - component: {fileID: 741576419541351943}
   - component: {fileID: 7127254583524697291}
   - component: {fileID: 855946275347201994}
+  - component: {fileID: 7127254583524697292}
   m_Layer: 0
   m_Name: 9V_36593_bauplatte45-45_id2746_step002_plataformaDSI
   m_TagString: Untagged
@@ -224107,6 +224106,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6313586832887578501}
   m_Mesh: {fileID: -2384392693206723477, guid: e3c80de4d6b25fd489d923d90d9129ca, type: 3}
+--- !u!65 &7127254583524697292
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6313586832887578501}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.00045, y: 0.00045000002, z: 0.000055000048}
+  m_Center: {x: -0.00045000002, y: 0.00067500374, z: 0.000027499544}
 --- !u!33 &7127292199003179106
 MeshFilter:
   m_ObjectHideFlags: 0
