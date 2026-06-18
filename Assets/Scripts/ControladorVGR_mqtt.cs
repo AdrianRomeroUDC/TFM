@@ -17,9 +17,16 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public Transform ejeExtension;
     public Transform puntoAnclajeVentosa;
 
-    [Header("Ajustes Agarre")]
+    [Header("Ajustes Agarre (Hijo en Ventosa)")]
     public Vector3 posicionEnPinza = new Vector3(0f, 0.05f, 0f);
     public Vector3 rotacionEnPinza = Vector3.zero;
+
+    [Header("Ajuste Fino de Escaneo (¡Para el Radar Ventosa!)")]
+    [Tooltip("Desfase local desde la ventosa hacia abajo (ej: -0.05 en Y o Z según orientación) para detectar la pieza en la rampa sin tocarla.")]
+    public Vector3 offsetBusquedaVentosa = new Vector3(0f, -0.02f, 0f);
+    [Tooltip("Tamaño de la esfera del radar de agarre.")]
+    public float radioBusquedaVentosa = 0.05f;
+    public bool mostrarGizmosVentosa = true;
 
     [Header("Calibración PLC")]
     public float plcRot_Min = 1395; public float plcRot_Max = 21;
@@ -126,13 +133,16 @@ public class ControladorVGR_mqtt : MonoBehaviour
         {
             if (puntoAnclajeVentosa != null && piezaEnganchada == null)
             {
-                Collider[] collidersEnVentosa = Physics.OverlapSphere(puntoAnclajeVentosa.position, 0.15f);
+                // ¡CORRECCIÓN AQUÍ!: Calculamos el centro usando el offset dinámico
+                Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
+
+                Collider[] collidersEnVentosa = Physics.OverlapSphere(centroBusquedaMundial, radioBusquedaVentosa);
                 foreach (Collider col in collidersEnVentosa)
                 {
                     if (col.name.ToLower().Contains("pieza"))
                     {
                         piezaEnganchada = col.transform;
-                        Debug.Log("<color=cyan><b>[VGR]:</b> Pieza detectada y fijada a la ventosa: </color>" + piezaEnganchada.name);
+                        Debug.Log("<color=cyan><b>[VGR]:</b> Pieza detectada en rango del radar y fijada: </color>" + piezaEnganchada.name);
                         break;
                     }
                 }
@@ -165,13 +175,11 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 ContenedorHBW_proxy destinoFinal = contenedorActual;
 
-                // PROTECCIÓN SEGURA: Solo quitamos el padre si nadie lo ha cambiado ya
                 if (piezaEnganchada.parent == puntoAnclajeVentosa)
                 {
                     piezaEnganchada.SetParent(null);
                 }
 
-                // Transferencia forzosa y limpia al contenedor
                 if (destinoFinal != null)
                 {
                     destinoFinal.AcoplarPiezaDirecto(piezaEnganchada);
@@ -179,7 +187,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 }
                 else
                 {
-                    // Caída libre segura si no hay contenedor abajo (Cintas/DPS)
                     if (piezaEnganchada.parent == null)
                     {
                         piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
@@ -213,5 +220,26 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private void OnTriggerExit(Collider other)
     {
         if (other.name.ToLower().Contains("pieza") && piezaEnganchada == null) SetPiezaCercana(null);
+    }
+
+    // --- EL GIZMO VISUAL PARA TU ESCENA ---
+    void OnDrawGizmos()
+    {
+        if (!mostrarGizmosVentosa || puntoAnclajeVentosa == null) return;
+
+        // Convierte el offset local a coordenadas del mundo real basado en la rotación de la ventosa
+        Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
+
+        // 1. Dibujar esfera de alambre del radar
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(centroBusquedaMundial, radioBusquedaVentosa);
+
+        // 2. Dibujar una pequeña esfera sólida en el centro del radar
+        Gizmos.color = new Color(0f, 1f, 1f, 0.3f); // Cian con transparencia
+        Gizmos.DrawSphere(centroBusquedaMundial, radioBusquedaVentosa * 0.2f);
+
+        // 3. Línea guía que une la punta de la ventosa con el centro de búsqueda
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(puntoAnclajeVentosa.position, centroBusquedaMundial);
     }
 }
