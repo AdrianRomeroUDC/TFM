@@ -1716,6 +1716,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GestorDPS_mqtt
   puntoEntrada: {fileID: 1163600023}
   pinzaVGR: {fileID: 1770509447237504354}
+  plataformaDSO: {fileID: 8608494611413966379}
+  offsetLocalMano: {x: 0, y: 0, z: 0}
+  offsetFlechaVerde: 0.02
   prefabBaseGris: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
   prefabBlanco: {fileID: 1874647114658911321, guid: 3775355192241ee428b71c8509c3b32f, type: 3}
   prefabRojo: {fileID: 3690905493317575458, guid: 13e4a19f76c20da4daecd8f64b375192, type: 3}
@@ -1955,37 +1958,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5362792707082744397}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &442443655
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 442443656}
-  m_Layer: 0
-  m_Name: PuntoColorReader
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &442443656
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 442443655}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.00008, y: 0.000589, z: 0.000882}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5338267089836147892}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &462204610
 GameObject:
@@ -6129,9 +6101,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7664446001035552673}
   - {fileID: 626471978}
   - {fileID: 8608494611413966379}
+  - {fileID: 7664446001035552673}
   - {fileID: 27000557449380815}
   - {fileID: 2536354194509320035}
   - {fileID: 8700939135870849196}
@@ -31050,7 +31022,7 @@ GameObject:
   - component: {fileID: 2391459223515585134}
   - component: {fileID: 6674177159182921808}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_30_id7834_step007_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_30_id7834_step007
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -39355,7 +39327,7 @@ GameObject:
   - component: {fileID: 7208481464117386386}
   - component: {fileID: 7558268240642973133}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_30_id7834_step008_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_30_id7834_step008
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -111650,7 +111622,7 @@ GameObject:
   - component: {fileID: 7450882977553463189}
   - component: {fileID: 8608494611413966380}
   m_Layer: 0
-  m_Name: 9V_36593_bauplatte45-45_id2746_step
+  m_Name: 9V_36593_bauplatte45-45_id2746_step____plataformaDSO
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -120589,7 +120561,7 @@ GameObject:
   - component: {fileID: 241936183448906740}
   - component: {fileID: 1246939011697769128}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_12_2_id2874_step015_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_12_2_id2874_step015
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -122798,7 +122770,7 @@ GameObject:
   - component: {fileID: 1493682011866934288}
   - component: {fileID: 1760660244871739282}
   m_Layer: 0
-  m_Name: 9V_baustein 30 sw_id138_step229_____componenteEstatico
+  m_Name: 9V_baustein 30 sw_id138_step229
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -141315,7 +141287,7 @@ GameObject:
   - component: {fileID: 530143372657975193}
   - component: {fileID: 6820143874698722046}
   m_Layer: 0
-  m_Name: 9V_baustein 30 sw_id138_step231_____componenteEstatico
+  m_Name: 9V_baustein 30 sw_id138_step231
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -155843,7 +155815,7 @@ GameObject:
   - component: {fileID: 5071942099847401801}
   - component: {fileID: 7628010660117702054}
   m_Layer: 0
-  m_Name: 9V_32881_baustein 15_id506_step036_____componenteEstatico
+  m_Name: 9V_32881_baustein 15_id506_step036
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -172805,7 +172777,6 @@ Transform:
   - {fileID: 5286615885528611701}
   - {fileID: 120838042}
   - {fileID: 1163600023}
-  - {fileID: 442443656}
   m_Father: {fileID: 9029366199755941001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5338708853956957772
@@ -180646,7 +180617,7 @@ GameObject:
   - component: {fileID: 4142612884656756334}
   - component: {fileID: 6743508825234936274}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_15_id3734_step_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_15_id3734_step
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -186862,7 +186833,7 @@ GameObject:
   - component: {fileID: 6152739233683335845}
   - component: {fileID: 8448116224096459968}
   m_Layer: 0
-  m_Name: 9V_baustein 30 sw_id138_step099_____componenteEstatico
+  m_Name: 9V_baustein 30 sw_id138_step099
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -192221,7 +192192,7 @@ GameObject:
   - component: {fileID: 1921496526029334052}
   - component: {fileID: 609797907952028593}
   m_Layer: 0
-  m_Name: 9V_baustein 30 sw_id138_step230_____componenteEstatico
+  m_Name: 9V_baustein 30 sw_id138_step230
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -195767,7 +195738,7 @@ GameObject:
   - component: {fileID: 1986863241054419380}
   - component: {fileID: 4736493317661173195}
   m_Layer: 0
-  m_Name: 9V_baustein 15_id12038_step015_____componenteEstatico
+  m_Name: 9V_baustein 15_id12038_step015
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -200341,7 +200312,7 @@ GameObject:
   - component: {fileID: 7127254583524697291}
   - component: {fileID: 855946275347201994}
   m_Layer: 0
-  m_Name: 9V_36593_bauplatte45-45_id2746_step002
+  m_Name: 9V_36593_bauplatte45-45_id2746_step002_plataformaDSI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -211142,7 +211113,7 @@ GameObject:
   - component: {fileID: 5270544542566990666}
   - component: {fileID: 2601220363862883924}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_15_id3734_step001_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_15_id3734_step001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -233666,7 +233637,7 @@ GameObject:
   - component: {fileID: 6273376299549775129}
   - component: {fileID: 4710420790916620133}
   m_Layer: 0
-  m_Name: 9V_baustein 15_2zapfen_id426_step058_____componenteEstatico
+  m_Name: 9V_baustein 15_2zapfen_id426_step058
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -249649,7 +249620,7 @@ GameObject:
   - component: {fileID: 6531578796563927778}
   - component: {fileID: 1005742192208208420}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_60_id2442_step007_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_60_id2442_step007
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -265095,7 +265066,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8180531573698016523}
   m_Layer: 0
-  m_Name: 9V_Auflage_rechts_id14550_step_____componenteEstatico
+  m_Name: 9V_Auflage_rechts_id14550_step
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -267760,7 +267731,7 @@ GameObject:
   - component: {fileID: 8879073672577749059}
   - component: {fileID: 5889465615911856136}
   m_Layer: 0
-  m_Name: 9V_winkeltr\X\E4ger_60_id2442_step006_____componenteEstatico
+  m_Name: 9V_winkeltr\X\E4ger_60_id2442_step006
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -277788,7 +277759,7 @@ GameObject:
   - component: {fileID: 1498301353378611876}
   - component: {fileID: 8713452188828851368}
   m_Layer: 0
-  m_Name: 9V_reedkontakthalter_id326_step027_____componenteEstatico
+  m_Name: 9V_reedkontakthalter_id326_step027
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -98,8 +98,11 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnCylinderUpdate(string color, int state);
     public event OnCylinderUpdate OnCylinderUpdateEvent;
 
-    public delegate void OnDPSPiezaUpdate(bool detectada);
-    public event OnDPSPiezaUpdate OnDPSPiezaEvent;
+    public delegate void OnDPSPiezaDSIUpdate(bool detectada);
+    public event OnDPSPiezaDSIUpdate OnDPSPiezaDSIEvent;
+
+    public delegate void OnDPSPiezaDSOUpdate(bool detectada);
+    public event OnDPSPiezaDSOUpdate OnDPSPiezaDSOEvent;
 
     public delegate void OnDPSColorUpdate(string color);
     public event OnDPSColorUpdate OnDPSColorEvent;
@@ -155,10 +158,10 @@ public class MQTTClient : MonoBehaviour
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
 
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/color", "f/vgr/grip", "f/pieces_hbw",
+                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/piezaDSO", "f/dps/color", "f/vgr/grip", "f/pieces_hbw",
                     "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo", "f/ssc/LEDs", "f/ssc/camara" };
 
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                 client.Subscribe(topics, qos);
             }
         }
@@ -190,7 +193,11 @@ public class MQTTClient : MonoBehaviour
         }
         else if (topic == "f/dps/piezaDSI")
         {
-            OnDPSPiezaEvent?.Invoke(msg == "1");
+            OnDPSPiezaDSIEvent?.Invoke(msg == "1");
+        }
+        else if (topic == "f/dps/piezaDSO")
+        {
+            OnDPSPiezaDSOEvent?.Invoke(msg == "1");
         }
         else if (topic == "f/dps/color")
         {
