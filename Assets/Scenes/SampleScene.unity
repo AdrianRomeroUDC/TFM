@@ -6912,7 +6912,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ControladorCintaHBW_mqtt
   direccionEntrada: {x: 1, y: 0, z: 0}
-  multiplicadorVel: 0.0005
+  multiplicadorVel: 0.0003
   velocidadActual: 0
   factorSentido: 0
 --- !u!1 &1955133129
@@ -252986,7 +252986,7 @@ BoxCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1084829215938613119}
-  m_Material: {fileID: 13400000, guid: 2e3a76d4519a5784196d0142f40d226a, type: 2}
+  m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0

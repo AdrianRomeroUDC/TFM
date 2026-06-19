@@ -34,14 +34,8 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
             Transform cajon = padreEje.GetChild(0);
             if (cajon.TryGetComponent<ContenedorHBW_proxy>(out ContenedorHBW_proxy proxy))
             {
-                // Simulamos exactamente lo que hace 'Instantiate(prefab, padreEje.position, padreEje.rotation, cajon)'
-                // Calculamos la posición y rotación relativas de 'padreEje' respecto a 'cajon'
                 Vector3 posicionLocalTeorica = cajon.InverseTransformPoint(padreEje.position);
-
-                // Calculamos la rotación relativa
                 Quaternion rotacionLocalTeorica = Quaternion.Inverse(cajon.rotation) * padreEje.rotation;
-
-                // Guardamos el cálculo en el proxy del cajón
                 proxy.RegistrarOffsetTeorico(posicionLocalTeorica, rotacionLocalTeorica);
             }
         }
@@ -56,28 +50,38 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         string inicial = MQTTClient.Instance.GetLastHBWStatus();
         if (!string.IsNullOrEmpty(inicial))
         {
-            HBWStockPayload data = JsonUtility.FromJson<HBWStockPayload>(inicial);
-            AlRecibirPiezas(data.piezas);
+            // CORRECCIÓN CRÍTICA: El JSON retenido usa la estructura de red nueva ("stock")
+            // Deserializamos con la clase interna correcta para que no devuelva null
+            JSON_HBWStock data = JsonUtility.FromJson<JSON_HBWStock>(inicial);
+            if (data != null && data.stock != null)
+            {
+                AlRecibirPiezas(data.stock);
+            }
         }
     }
 
     private void AlRecibirPiezas(string[] piezas) { listaPendiente = piezas; hayCambio = true; }
+
     void Update() { if (hayCambio) { ActualizarVisualizacion(listaPendiente); hayCambio = false; } }
 
     void ActualizarVisualizacion(string[] listaColores)
     {
+        // SALVAVIDAS 1: Si por alguna razón la lista llega nula de la red, abortamos sin romper nada
+        if (listaColores == null) return;
+
         for (int i = 0; i < puntosDeHueco.Length; i++)
         {
             if (i >= listaColores.Length) break;
 
             Transform padreEje = puntosDeHueco[i];
-            if (padreEje.childCount == 0) continue;
+
+            // SALVAVIDAS 2: Si hay algún hueco sin asignar en el Inspector, lo saltamos limpiamente
+            if (padreEje == null || padreEje.childCount == 0) continue;
 
             Transform cajon = padreEje.GetChild(0);
 
             for (int j = cajon.childCount - 1; j >= 0; j--)
             {
-                // No destruimos otros componentes, solo las piezas visuales antiguas
                 if (cajon.GetChild(j).name.ToLower().Contains("pieza"))
                     Destroy(cajon.GetChild(j).gameObject);
             }
@@ -100,7 +104,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     {
         foreach (Transform h in puntosDeHueco)
         {
-            if (h.childCount > 0)
+            if (h != null && h.childCount > 0)
             {
                 Transform cajon = h.GetChild(0);
                 for (int j = cajon.childCount - 1; j >= 0; j--)

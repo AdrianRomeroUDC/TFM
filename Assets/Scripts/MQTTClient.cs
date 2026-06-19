@@ -5,9 +5,13 @@ using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
+// =================================================================
+// 1. ESTRUCTURAS DE COMPATIBILIDAD (Para no romper tus controladores)
+// =================================================================
 [Serializable] public class HBWStockPayload { public string[] piezas; }
-[Serializable] public class VGRPositionData { public float estirar; public float rotacion; public float vertical; }
-[Serializable] public class HBWPositionPayload { public float estirar; public float horizontal; public float vertical; }
+[Serializable] public class VGRPositionData { public float rotation; public float vertical; public float extend; public string ts; }
+[Serializable] public class VGRGripPayload { public bool active; public string ts; }
+[Serializable] public class HBWPositionPayload { public float horizontal; public float vertical; public float extend; public string ts; }
 [Serializable] public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
 
 [Serializable]
@@ -60,20 +64,35 @@ public class MPOBrazoPayload
     public string ts;
 }
 
+[Serializable] public class SSCLEDsPayload { public int LED_online; public int LEDs; }
+[Serializable] public class SSCCamaraPayload { public float pan; public float tilt; public string ts; }
+
+// =================================================================
+// 2. NUEVAS ESTRUCTURAS INTERNAS DE RED (Mapean los nuevos JSON)
+// =================================================================
+[Serializable] internal class JSON_DPSSensor { public bool dsi_sensor; public bool dso_sensor; }
+[Serializable] internal class JSON_DPSColor { public string color; }
+[Serializable] internal class JSON_SLDBelt { public bool cylinder_sensor; public bool entry_sensor; public float speed; public string ts; }
+[Serializable] internal class JSON_SLDCylinder { public string cyl_color; public bool active; }
+[Serializable] internal class JSON_MPOBelt { public bool active; public bool exit_sensor; public string ts; }
+[Serializable] internal class JSON_MPOOven { public bool oven_sensor; public bool close_door; public bool lights; public bool move2Ref5; public bool move2Ref6; public bool open_door; public string ts; }
+[Serializable] internal class JSON_MPOArm { public bool move2Ref3; public bool move2Ref4; public bool pickup; public bool release; public string ts; }
+[Serializable] internal class JSON_MPOTurntable { public bool eject; public bool move2Ref7; public bool move2Ref9; public bool move2Ref10; public int rotation; public int saw; public string ts; }
+[Serializable] internal class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
+[Serializable] internal class JSON_SSCCamera { public float pan; public float tilt; }
+[Serializable] internal class JSON_HBWStock { public string[] stock; }
+
+// NUEVA ESTRUCTURA AÑADIDA PARA CORREGIR LA CINTA HBW
 [Serializable]
-public class SSCLEDsPayload
+internal class JSON_HBWBelt
 {
-    public int LED_online;
-    public int LEDs;
+    public string ts;
+    public float belt_speed;
+    public bool isTrigeredIn;
+    public bool isTriggeredOut;
+    public string rot_direction;
 }
 
-[Serializable]
-public class SSCCamaraPayload
-{
-    public float pan;
-    public float tilt;
-    public string ts;
-}
 
 public class MQTTClient : MonoBehaviour
 {
@@ -91,7 +110,7 @@ public class MQTTClient : MonoBehaviour
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
 
-    // --- EVENTOS (Delegados) ---
+    // --- EVENTOS MANTENIDOS INTACTOS ---
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
 
@@ -158,10 +177,13 @@ public class MQTTClient : MonoBehaviour
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
 
-                string[] topics = { "f/sld/belt", "f/sld/cylinder", "f/dps/piezaDSI", "f/dps/piezaDSO", "f/dps/color", "f/vgr/grip", "f/pieces_hbw",
-                    "f/pos_vgr", "f/pos_hbw", "f/hbw/cinta", "f/mpo/horno", "f/mpo/turntable", "f/mpo/belt", "f/mpo/brazo", "f/ssc/LEDs", "f/ssc/camara" };
+                string[] topics = {
+                    "dt/sld/belt", "dt/sld/cylinder", "dt/dps/dsi", "dt/dps/dso", "dt/dps/color", "dt/vgr/grip",
+                    "dt/i/stock", "dt/vgr/pos", "dt/hbw/pos", "dt/hbw/belt", "dt/mpo/oven", "dt/mpo/turntable",
+                    "dt/mpo/belt", "dt/mpo/arm", "dt/ssc/leds", "dt/ssc/camera"
+                };
 
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
         }
@@ -170,142 +192,174 @@ public class MQTTClient : MonoBehaviour
 
     private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
     {
-        string msg = Encoding.UTF8.GetString(e.Message).Trim();
+        string msg = Encoding.UTF8.GetString(e.Message).Trim().Replace("True", "true").Replace("False", "false");
         string topic = e.Topic;
 
-        if (topic == "f/sld/belt")
+        // --- ESTACIÓN SLD ---
+        if (topic == "dt/sld/belt")
         {
-            // LÍNEA DE DIAGNÓSTICO: Te dirá exactamente cómo vienen escritas las llaves desde la red
-            Debug.Log($"<color=yellow>[RAW MQTT SLD]: {msg}</color>");
-
             try
             {
-                SLDBeltPayload data = JsonUtility.FromJson<SLDBeltPayload>(msg);
-                if (data != null) OnBeltUpdateEvent?.Invoke(data);
+                JSON_SLDBelt netData = JsonUtility.FromJson<JSON_SLDBelt>(msg);
+                SLDBeltPayload legacyData = new SLDBeltPayload
+                {
+                    velocidad = netData.speed,
+                    SensorEntrada = netData.entry_sensor ? 1 : 0,
+                    SensorCilindros = netData.cylinder_sensor ? 1 : 0,
+                    z_ts = netData.ts
+                };
+                OnBeltUpdateEvent?.Invoke(legacyData);
             }
-            catch (Exception ex) { Debug.LogWarning("Error al parsear JSON de f/sld/belt: " + ex.Message); }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/sld/belt: " + ex.Message); }
         }
-        else if (topic == "f/sld/cylinder")
+        else if (topic == "dt/sld/cylinder")
         {
-            string[] partes = msg.Split(',');
-            if (partes.Length == 2 && int.TryParse(partes[1], out int state))
-                OnCylinderUpdateEvent?.Invoke(partes[0].ToUpper(), state);
+            try
+            {
+                JSON_SLDCylinder data = JsonUtility.FromJson<JSON_SLDCylinder>(msg);
+                OnCylinderUpdateEvent?.Invoke(data.cyl_color.ToUpper(), data.active ? 1 : 0);
+            }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/sld/cylinder: " + ex.Message); }
         }
-        else if (topic == "f/dps/piezaDSI")
+
+        // --- ESTACIÓN DPS ---
+        else if (topic == "dt/dps/dsi")
         {
-            OnDPSPiezaDSIEvent?.Invoke(msg == "1");
+            try { OnDPSPiezaDSIEvent?.Invoke(JsonUtility.FromJson<JSON_DPSSensor>(msg).dsi_sensor); } catch { }
         }
-        else if (topic == "f/dps/piezaDSO")
+        else if (topic == "dt/dps/dso")
         {
-            OnDPSPiezaDSOEvent?.Invoke(msg == "1");
+            try { OnDPSPiezaDSOEvent?.Invoke(JsonUtility.FromJson<JSON_DPSSensor>(msg).dso_sensor); } catch { }
         }
-        else if (topic == "f/dps/color")
+        else if (topic == "dt/dps/color")
         {
-            OnDPSColorEvent?.Invoke(msg.ToUpper());
+            try { OnDPSColorEvent?.Invoke(JsonUtility.FromJson<JSON_DPSColor>(msg).color.ToUpper()); } catch { }
         }
-        else if (topic == "f/vgr/grip")
+
+        // --- ESTACIÓN VGR ---
+        else if (topic == "dt/vgr/grip")
         {
-            OnVGRGripEvent?.Invoke(msg == "1");
+            try { OnVGRGripEvent?.Invoke(JsonUtility.FromJson<VGRGripPayload>(msg).active); } catch { }
         }
-        else if (topic == "f/pieces_hbw")
+        else if (topic == "dt/vgr/pos")
+        {
+            try { var data = JsonUtility.FromJson<VGRPositionData>(msg); OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend); } catch { }
+        }
+
+        // --- ALMACÉN HBW ---
+        else if (topic == "dt/i/stock")
         {
             lastHBWJson = msg;
-            try
-            {
-                HBWStockPayload data = JsonUtility.FromJson<HBWStockPayload>(msg);
-                OnHBWUpdatePiecesEvent?.Invoke(data.piezas);
-            }
-            catch { Debug.LogWarning("Error al parsear piezas HBW"); }
+            try { OnHBWUpdatePiecesEvent?.Invoke(JsonUtility.FromJson<JSON_HBWStock>(msg).stock); } catch { }
         }
-        else if (topic == "f/pos_vgr")
+        else if (topic == "dt/hbw/pos")
+        {
+            try { var data = JsonUtility.FromJson<HBWPositionPayload>(msg); OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.extend); } catch { }
+        }
+
+        // CORREGIDO: Ahora procesa el nuevo formato JSON mapeándolo al formato que espera tu script antiguo
+        else if (topic == "dt/hbw/belt")
         {
             try
             {
-                VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
-                OnVGRPositionUpdateEvent?.Invoke(data.rotacion, data.vertical, data.estirar);
-            }
-            catch { Debug.LogWarning("Error en JSON VGR"); }
-        }
-        else if (topic == "f/pos_hbw")
-        {
-            try
-            {
-                HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
-                OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.estirar);
-            }
-            catch { Debug.LogWarning("Error parseando f/pos_hbw"); }
-        }
-        else if (topic == "f/hbw/cinta")
-        {
-            try
-            {
-                HBWBeltPayload data = JsonUtility.FromJson<HBWBeltPayload>(msg);
-                OnBeltHBWUpdateEvent?.Invoke(data.cintaHBWspeed, data.sentidoGiro);
-            }
-            catch { Debug.LogWarning("Error al parsear f/hbw/cinta"); }
-        }
-        else if (topic == "f/mpo/horno")
-        {
-            try
-            {
-                MPOHornoPayload data = JsonUtility.FromJson<MPOHornoPayload>(msg);
-                if (data != null) OnHornoUpdateEvent?.Invoke(data);
-            }
-            catch (Exception ex) { Debug.LogWarning("Error al parsear horno: " + ex.Message); }
-        }
-        else if (topic == "f/mpo/turntable")
-        {
-            try
-            {
-                var data = JsonUtility.FromJson<MPOTurntablePayload>(Encoding.UTF8.GetString(e.Message));
-                lock (colaMensajes)
-                {
-                    colaMensajes.Enqueue(data);
-                }
-            }
-            catch (Exception ex) { Debug.LogWarning("Error al parsear turntable: " + ex.Message); }
-        }
-        else if (topic == "f/mpo/belt")
-        {
-            try
-            {
-                MPOBeltPayload data = JsonUtility.FromJson<MPOBeltPayload>(msg);
-                if (data != null)
-                {
-                    OnMPOBeltUpdateEvent?.Invoke(data);
-                }
+                JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
+                OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
             }
             catch (Exception ex)
             {
-                Debug.LogWarning("Error al parsear JSON de f/mpo/belt: " + ex.Message);
+                Debug.LogWarning("Error al procesar dt/hbw/belt: " + ex.Message);
             }
         }
-        else if (topic == "f/mpo/brazo")
+
+        // --- ESTACIÓN MPO ---
+        else if (topic == "dt/mpo/oven")
         {
             try
             {
-                MPOBrazoPayload data = JsonUtility.FromJson<MPOBrazoPayload>(Encoding.UTF8.GetString(e.Message));
-                if (data != null) OnBrazoUpdateEvent?.Invoke(data);
+                JSON_MPOOven netData = JsonUtility.FromJson<JSON_MPOOven>(msg);
+                MPOHornoPayload legacyData = new MPOHornoPayload
+                {
+                    closeDoor = netData.close_door ? 1 : 0,
+                    openDoor = netData.open_door ? 1 : 0,
+                    lights = netData.lights ? 1 : 0,
+                    move2Ref5 = netData.move2Ref5 ? 1 : 0,
+                    move2Ref6 = netData.move2Ref6 ? 1 : 0,
+                    ts = netData.ts
+                };
+                OnHornoUpdateEvent?.Invoke(legacyData);
             }
-            catch (Exception ex) { Debug.LogWarning("Error al parsear brazo MPO: " + ex.Message); }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/oven: " + ex.Message); }
         }
-        else if (topic == "f/ssc/LEDs")
+        else if (topic == "dt/mpo/turntable")
         {
             try
             {
-                SSCLEDsPayload data = JsonUtility.FromJson<SSCLEDsPayload>(Encoding.UTF8.GetString(e.Message));
-                if (data != null) OnSSCLEDsUpdateEvent?.Invoke(data.LED_online, data.LEDs);
+                JSON_MPOTurntable netData = JsonUtility.FromJson<JSON_MPOTurntable>(msg);
+                MPOTurntablePayload legacyData = new MPOTurntablePayload
+                {
+                    eject = netData.eject ? 1 : 0,
+                    move2Ref7 = netData.move2Ref7 ? 1 : 0,
+                    move2Ref9 = netData.move2Ref9 ? 1 : 0,
+                    move2Ref10 = netData.move2Ref10 ? 1 : 0,
+                    rotation = netData.rotation,
+                    saw = netData.saw,
+                    ts = netData.ts
+                };
+                lock (colaMensajes) { colaMensajes.Enqueue(legacyData); }
             }
-            catch (Exception ex) { Debug.LogWarning("Error al parsear f/ssc/LEDs: " + ex.Message); }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/turntable: " + ex.Message); }
         }
-        else if (topic == "f/ssc/camara")
+        else if (topic == "dt/mpo/belt")
         {
             try
             {
-                SSCCamaraPayload data = JsonUtility.FromJson<SSCCamaraPayload>(Encoding.UTF8.GetString(e.Message));
-                if (data != null) OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
+                JSON_MPOBelt netData = JsonUtility.FromJson<JSON_MPOBelt>(msg);
+                MPOBeltPayload legacyData = new MPOBeltPayload
+                {
+                    estado = netData.active ? 1 : 0,
+                    sensorSalida = netData.exit_sensor ? 1 : 0,
+                    z_ts = netData.ts
+                };
+                OnMPOBeltUpdateEvent?.Invoke(legacyData);
             }
-            catch (Exception ex) { Debug.LogWarning("Error al parsear f/ssc/camara: " + ex.Message); }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/belt: " + ex.Message); }
+        }
+        else if (topic == "dt/mpo/arm")
+        {
+            try
+            {
+                JSON_MPOArm netData = JsonUtility.FromJson<JSON_MPOArm>(msg);
+                MPOBrazoPayload legacyData = new MPOBrazoPayload
+                {
+                    move2Ref3 = netData.move2Ref3 ? 1 : 0,
+                    move2Ref4 = netData.move2Ref4 ? 1 : 0,
+                    pickup = netData.pickup ? 1 : 0,
+                    release = netData.release ? 1 : 0,
+                    ts = netData.ts
+                };
+                OnBrazoUpdateEvent?.Invoke(legacyData);
+            }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/arm: " + ex.Message); }
+        }
+
+        // --- ESTACIÓN SSC ---
+        else if (topic == "dt/ssc/leds")
+        {
+            try
+            {
+                JSON_SSCLEDs data = JsonUtility.FromJson<JSON_SSCLEDs>(msg);
+                OnSSCLEDsUpdateEvent?.Invoke(data.led_online, data.leds_semaphore);
+            }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/ssc/leds: " + ex.Message); }
+        }
+        else if (topic == "dt/ssc/camera")
+        {
+            try
+            {
+                JSON_SSCCamera data = JsonUtility.FromJson<JSON_SSCCamera>(msg);
+                OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
+            }
+            catch (Exception ex) { Debug.LogWarning("Error en dt/ssc/camera: " + ex.Message); }
         }
     }
 
