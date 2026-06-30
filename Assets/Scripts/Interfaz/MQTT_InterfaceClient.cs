@@ -21,10 +21,10 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class CamConfigPayload { public string ts; public bool on; public int fps; }
 [Serializable] public class SensorPeriodPayload { public string ts; public int period; }
 
-public class MQTT_InterfazClient : MonoBehaviour
+public class MQTT_InterfaceClient : MonoBehaviour
 {
-    private static MQTT_InterfazClient instance;
-    public static MQTT_InterfazClient Instance { get { return instance; } }
+    private static MQTT_InterfaceClient instance;
+    public static MQTT_InterfaceClient Instance { get { return instance; } }
 
     private MqttClient client;
 
