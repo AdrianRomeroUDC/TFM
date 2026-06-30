@@ -6,7 +6,7 @@ using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
 // =================================================================
-// ESTRUCTURAS DE DATOS EXCLUSIVAS PARA LA INTERFAZ
+// ESTRUCTURAS DE DATOS EXCLUSIVAS PARA LA INTERFAZ (LECTURA)
 // =================================================================
 [Serializable] public class CameraPayload { public string ts; public string data; }
 [Serializable] public class Bme680Payload { public string ts; public float t; public float h; public float p; public int iaq; public int aq; public float gr; }
@@ -15,11 +15,16 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class StockItem { public string location; public Workpiece workpiece; }
 [Serializable] public class StockPayload { public List<StockItem> stockItems; public string ts; }
 
-// Estructuras de publicación
+// =================================================================
+// ESTRUCTURAS DE DATOS PARA PUBLICACIÓN desde la UI
+// =================================================================
 [Serializable] public class OrderPayload { public string ts; public string type; }
 [Serializable] public class PtuPayload { public string ts; public string cmd; public int degree; }
 [Serializable] public class CamConfigPayload { public string ts; public bool on; public int fps; }
 [Serializable] public class SensorPeriodPayload { public string ts; public int period; }
+
+// Estructura especial para el comando "home" (evita enviar la clave 'degree')
+[Serializable] public class PtuHomePayload { public string ts; public string cmd; }
 
 public class MQTT_InterfaceClient : MonoBehaviour
 {
@@ -129,8 +134,18 @@ public class MQTT_InterfaceClient : MonoBehaviour
 
     public void SendPtuCommand(string command, int degree = 10)
     {
-        var payload = new PtuPayload { ts = GetISO8601Timestamp(), cmd = command, degree = degree };
-        PublishJson("o/ptu", JsonUtility.ToJson(payload));
+        if (command == "home")
+        {
+            // Si el comando es "home", enviamos el JSON simplificado (sin la propiedad degree)
+            var homePayload = new PtuHomePayload { ts = GetISO8601Timestamp(), cmd = command };
+            PublishJson("o/ptu", JsonUtility.ToJson(homePayload));
+        }
+        else
+        {
+            // Para relmove_up, relmove_down, relmove_left y relmove_right enviamos los grados
+            var payload = new PtuPayload { ts = GetISO8601Timestamp(), cmd = command, degree = degree };
+            PublishJson("o/ptu", JsonUtility.ToJson(payload));
+        }
     }
 
     public void SendCameraConfig(bool isOn, int fps)

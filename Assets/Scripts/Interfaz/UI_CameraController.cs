@@ -1,11 +1,22 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UI;   // Necesario para Toggle, Slider y Button
+using TMPro;            // Necesario para el Dropdown de TextMeshPro
 using System;
 
 public class UI_CameraController : MonoBehaviour
 {
-    [Header("Componente UI")]
-    public RawImage rawImageVideo; // Tu cuadro blanco de la interfaz
+    public static bool IsCameraOn { get; private set; } = true;
+
+    [Header("Componentes de Renderizado Video")]
+    public RawImage rawImageVideo;
+
+    [Header("Componentes de Control (Se arrastran aquí)")]
+    public Toggle toggleCamara;       // Tu botón ON-OFF (LED)
+    public Slider sliderFPS;          // Tu barra de FPS
+    public TMP_Dropdown dropdownGrados; // El dropdown de los grados
+
+    [Header("Botones de Movimiento a bloquear")]
+    public Button[] botonesPTU;       // Lista donde meterás las flechas y el botón Home
 
     private Texture2D texturaVideo;
     private string proximaBase64 = "";
@@ -14,20 +25,30 @@ public class UI_CameraController : MonoBehaviour
 
     void Start()
     {
-        // Inicializamos la textura de renderizado
         texturaVideo = new Texture2D(2, 2);
 
-        // ESCUCHAR TU EVENTO: Nos suscribimos de forma limpia al evento de tu Singleton
+        if (toggleCamara != null)
+        {
+            IsCameraOn = toggleCamara.isOn;
+        }
+
+        ActualizarInteractividadUI();
+
+        // NUEVO: Asegurar negro al arrancar si el toggle está desactivado
+        if (!IsCameraOn && rawImageVideo != null)
+        {
+            rawImageVideo.texture = null;
+            rawImageVideo.color = Color.black;
+        }
+
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnCameraImageEvent += AlRecibirImagenBase64;
         }
     }
 
-    // Este método se ejecutará automáticamente cada vez que tu MQTT reciba un mensaje en "i/cam"
     private void AlRecibirImagenBase64(string base64Data)
     {
-        // Guardamos los datos bloqueando el hilo un milisegundo por seguridad
         lock (bloqueoHilo)
         {
             proximaBase64 = base64Data;
@@ -40,7 +61,6 @@ public class UI_CameraController : MonoBehaviour
         string base64ParaProcesar = "";
         bool procesar = false;
 
-        // Comprobamos en el hilo principal de Unity si llegó algo
         lock (bloqueoHilo)
         {
             if (hayNuevaImagen)
@@ -51,8 +71,7 @@ public class UI_CameraController : MonoBehaviour
             }
         }
 
-        // Si hay datos nuevos, los pintamos de forma segura en la pantalla
-        if (procesar && !string.IsNullOrEmpty(base64ParaProcesar))
+        if (procesar && !string.IsNullOrEmpty(base64ParaProcesar) && IsCameraOn)
         {
             PintarTexturaEnUI(base64ParaProcesar);
         }
@@ -62,16 +81,12 @@ public class UI_CameraController : MonoBehaviour
     {
         try
         {
-            // Limpiamos el prefijo "data:image/jpeg;base64," si viene incluido en el JSON
             if (base64String.Contains(","))
             {
                 base64String = base64String.Substring(base64String.IndexOf(",") + 1);
             }
 
-            // Convertimos el texto Base64 purificado a bytes de imagen
             byte[] imageBytes = Convert.FromBase64String(base64String);
-
-            // Cargamos los bytes en la textura y la asignamos a tu RawImage
             texturaVideo.LoadImage(imageBytes);
 
             if (rawImageVideo != null)
@@ -81,13 +96,74 @@ public class UI_CameraController : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogError("Error al renderizar la imagen MQTT en la interfaz: " + e.Message);
+            Debug.LogError("Error al renderizar la imagen: " + e.Message);
+        }
+    }
+
+    public void EnviarConfiguracionActual()
+    {
+        if (toggleCamara == null || sliderFPS == null) return;
+
+        IsCameraOn = toggleCamara.isOn;
+
+        // Cambiar el estado de los botones (interactivos o grises)
+        ActualizarInteractividadUI();
+
+        // =======================================================================
+        // NUEVA LÓGICA: Si se apaga, limpiamos la pantalla y la ponemos en negro
+        // =======================================================================
+        if (!IsCameraOn)
+        {
+            if (rawImageVideo != null)
+            {
+                // Opción A: Dejar la textura vacía (se vuelve del color base, por defecto negro/gris)
+                rawImageVideo.texture = null;
+
+                // Opción B (Opcional): Si quieres asegurar un negro puro usando el color del componente:
+                rawImageVideo.color = Color.black;
+            }
+        }
+        else
+        {
+            if (rawImageVideo != null)
+            {
+                // Al encenderla, restauramos el color blanco base de la UI para que el video no se vea oscurecido
+                rawImageVideo.color = Color.white;
+            }
+        }
+
+        int fpsSeleccionados = Mathf.RoundToInt(sliderFPS.value);
+
+        if (MQTT_InterfaceClient.Instance != null)
+        {
+            MQTT_InterfaceClient.Instance.SendCameraConfig(IsCameraOn, fpsSeleccionados);
+        }
+    }
+
+    /// <summary>
+    /// Activa o desactiva la interacción de todos los mandos según el estado de la cámara
+    /// </summary>
+    private void ActualizarInteractividadUI()
+    {
+        // El slider y el dropdown se bloquean directamente
+        if (sliderFPS != null) sliderFPS.interactable = IsCameraOn;
+        if (dropdownGrados != null) dropdownGrados.interactable = IsCameraOn;
+
+        // Recorremos la lista de botones de movimiento y los bloqueamos todos a la vez
+        if (botonesPTU != null)
+        {
+            foreach (Button boton in botonesPTU)
+            {
+                if (boton != null)
+                {
+                    boton.interactable = IsCameraOn;
+                }
+            }
         }
     }
 
     private void OnDestroy()
     {
-        // Buenas prácticas: nos desuscribimos al destruir el objeto para evitar fugas de memoria
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnCameraImageEvent -= AlRecibirImagenBase64;
