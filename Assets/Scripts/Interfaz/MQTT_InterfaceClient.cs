@@ -32,11 +32,13 @@ public class MQTT_InterfaceClient : MonoBehaviour
     private Queue<Bme680Payload> bmeQueue = new Queue<Bme680Payload>();
     private Queue<LdrPayload> ldrQueue = new Queue<LdrPayload>();
     private Queue<string> camQueue = new Queue<string>();
+    private Queue<StockPayload> stockQueue = new Queue<StockPayload>(); // <-- NUEVA COLA
 
     // Eventos
     public event Action<Bme680Payload> OnBmeEnvironmentEvent;
     public event Action<LdrPayload> OnLdrLightEvent;
     public event Action<string> OnCameraImageEvent;
+    public event Action<StockPayload> OnStockUpdateEvent; // <-- NUEVO EVENTO
 
     [Header("Configuración")]
     public string brokerHost = "tu-broker.cloud";
@@ -51,12 +53,12 @@ public class MQTT_InterfaceClient : MonoBehaviour
 
     void Update()
     {
-        // Procesar colas en el hilo principal de Unity (evita errores de Thread)
         lock (lockObject)
         {
             while (bmeQueue.Count > 0) OnBmeEnvironmentEvent?.Invoke(bmeQueue.Dequeue());
             while (ldrQueue.Count > 0) OnLdrLightEvent?.Invoke(ldrQueue.Dequeue());
             while (camQueue.Count > 0) OnCameraImageEvent?.Invoke(camQueue.Dequeue());
+            while (stockQueue.Count > 0) OnStockUpdateEvent?.Invoke(stockQueue.Dequeue()); // <-- PROCESAR COLA STOCK
         }
     }
 
@@ -87,13 +89,13 @@ public class MQTT_InterfaceClient : MonoBehaviour
                 if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msg));
                 else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msg));
                 else if (topic == "i/cam") camQueue.Enqueue(JsonUtility.FromJson<CameraPayload>(msg).data);
+                else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msg)); // <-- ENCOLAR DATOS DE STOCK
             }
             catch (Exception ex) { Debug.LogWarning($"Error parseando JSON: {ex.Message}"); }
         }
     }
 
-    // --- MÉTODOS DE PUBLICACIÓN (Los que te faltaban) ---
-
+    // --- MÉTODOS DE PUBLICACIÓN ---
     private string GetISO8601Timestamp() => DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
     private void PublishJson(string topic, string json)

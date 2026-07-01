@@ -804,7 +804,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Pieza Roja:'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3487,7 +3487,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Pieza Azul:'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3699,7 +3699,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Pieza Blanca:'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5175,7 +5175,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 5
+  m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
@@ -6627,7 +6627,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 20}
+  m_SizeDelta: {x: 0, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &719424160
 MonoBehaviour:
@@ -10000,6 +10000,36 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_StockController
   textoReloj: {fileID: 116238609}
+  spriteVacio: {fileID: 21300000, guid: cc8622b64ab39f84bae7a0cfd50fe09f, type: 3}
+  spriteAzul: {fileID: 21300000, guid: 1870cafe859c4094fac4d79ee7b6b4bf, type: 3}
+  spriteRojo: {fileID: 21300000, guid: 42119318122fb3745985eed6d6220f80, type: 3}
+  spriteBlanco: {fileID: 21300000, guid: 701f9bff84812b643bbe4c8465c23ef9, type: 3}
+  listaSlots:
+  - idSlot: A1
+    imagenComponente: {fileID: 351379367}
+  - idSlot: A2
+    imagenComponente: {fileID: 2011076046}
+  - idSlot: A3
+    imagenComponente: {fileID: 1570595997}
+  - idSlot: B1
+    imagenComponente: {fileID: 1145251759}
+  - idSlot: B2
+    imagenComponente: {fileID: 1337810459}
+  - idSlot: B3
+    imagenComponente: {fileID: 1669455498}
+  - idSlot: C1
+    imagenComponente: {fileID: 2046202925}
+  - idSlot: C2
+    imagenComponente: {fileID: 1816797240}
+  - idSlot: C3
+    imagenComponente: {fileID: 523740303}
+  txtStockAzul: {fileID: 350624860}
+  txtStockRojo: {fileID: 88252377}
+  txtStockBlanco: {fileID: 367189538}
+  btnPedirAzul: {fileID: 1156867666}
+  btnPedirRojo: {fileID: 2120833708}
+  btnPedirBlanco: {fileID: 59957044}
+  dropdownPeriodo: {fileID: 1476252919}
 --- !u!1 &1219696392
 GameObject:
   m_ObjectHideFlags: 0
@@ -12623,7 +12653,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 80, y: 50}
+  m_SizeDelta: {x: 100, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1476252919
 MonoBehaviour:
@@ -12688,7 +12718,7 @@ MonoBehaviour:
     - m_Text: 30s
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
-    - m_Text: 1min
+    - m_Text: 60s
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_OnValueChanged:
@@ -14107,7 +14137,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 240, y: 50}
+  m_SizeDelta: {x: 260, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1636981203
 MonoBehaviour:
@@ -14129,7 +14159,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Per\xEDodo de muestreo sensores:"
+  m_text: "Per\xEDodo de muestreo de los sensores:"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -15201,8 +15231,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
-  m_fontSizeBase: 14
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -16138,7 +16168,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 20}
+  m_SizeDelta: {x: 0, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1812758657
 MonoBehaviour:
@@ -17191,8 +17221,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 14
-  m_fontSizeBase: 14
+  m_fontSize: 20
+  m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
