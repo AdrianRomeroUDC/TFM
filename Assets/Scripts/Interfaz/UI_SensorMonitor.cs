@@ -14,6 +14,15 @@ public class UI_SensorsMonitor : MonoBehaviour
     [Header("Indicador Visual")]
     public Image imgCalidadAireLED;
 
+    void Start()
+    {
+        // Al arrancar, el LED es completamente transparente hasta recibir el primer valor
+        if (imgCalidadAireLED != null)
+        {
+            imgCalidadAireLED.color = Color.clear;
+        }
+    }
+
     void OnEnable()
     {
         if (MQTT_InterfaceClient.Instance != null)
@@ -43,47 +52,40 @@ public class UI_SensorsMonitor : MonoBehaviour
         if (txtHumedad != null) txtHumedad.text = $"{datos.h:F1} %";
         if (txtPresion != null) txtPresion.text = $"{datos.p:F1} hPa";
 
-        // Lógica de rangos para el IAQ y el color del cuadrado LED
+        // Lógica de rangos para el color del cuadrado LED
         if (txtCalidadAire != null)
         {
-            string estadoAire = "";
             Color colorLED = Color.white;
 
             if (datos.iaq <= 50)
             {
-                estadoAire = "Excelente";
                 colorLED = new Color(0f, 0.75f, 0.1f); // Verde brillante
             }
             else if (datos.iaq <= 100)
             {
-                estadoAire = "Buena";
                 colorLED = new Color(0.5f, 0.85f, 0f); // Verde claro / Lima
             }
             else if (datos.iaq <= 150)
             {
-                estadoAire = "Moderada";
                 colorLED = new Color(1f, 0.75f, 0f); // Amarillo / Ámbar
             }
             else if (datos.iaq <= 200)
             {
-                estadoAire = "Mala";
                 colorLED = new Color(1f, 0.4f, 0f); // Naranja
             }
             else if (datos.iaq <= 300)
             {
-                estadoAire = "Muy mala";
                 colorLED = Color.red; // Rojo
             }
             else // Más de 300
             {
-                estadoAire = "Severa";
                 colorLED = new Color(0.5f, 0f, 0.5f); // Morado / Púrpura
             }
 
-            // Mostramos el valor numérico del IAQ seguido del estado entre paréntesis
-            txtCalidadAire.text = $"{datos.iaq} ({estadoAire})";
+            // Mostramos ÚNICAMENTE el valor numérico bruto del IAQ
+            txtCalidadAire.text = $"{datos.iaq}";
 
-            // Cambiamos el color del cuadrado pequeño (Image) asignado en el inspector
+            // Cambiamos el color del cuadrado pequeño (vuelve a ser opaco con su color correspondiente)
             if (imgCalidadAireLED != null)
             {
                 imgCalidadAireLED.color = colorLED;
