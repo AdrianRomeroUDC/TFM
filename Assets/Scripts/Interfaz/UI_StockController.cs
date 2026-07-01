@@ -1,16 +1,18 @@
 using UnityEngine;
+using TMPro; // Obligatorio para usar TextMeshPro
+using System;
 
 public class UI_StockController : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    [Header("--- Componente Reloj ---")]
+    [SerializeField] private TextMeshProUGUI textoReloj;
 
-    // Update is called once per frame
     void Update()
     {
-        
+        if (textoReloj != null)
+        {
+            // Captura la fecha y hora del sistema operativo frame a frame
+            textoReloj.text = DateTime.Now.ToString("dd/MM/yyyy   HH:mm:ss");
+        }
     }
 }

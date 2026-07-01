@@ -9892,6 +9892,7 @@ GameObject:
   - component: {fileID: 1208488564}
   - component: {fileID: 1208488563}
   - component: {fileID: 1208488565}
+  - component: {fileID: 1208488566}
   m_Layer: 5
   m_Name: Pedidos-Almacen
   m_TagString: Untagged
@@ -9986,6 +9987,19 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &1208488566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1208488561}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 878b8be544c001d48be0410afa09e8b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_StockController
+  textoReloj: {fileID: 116238609}
 --- !u!1 &1219696392
 GameObject:
   m_ObjectHideFlags: 0
