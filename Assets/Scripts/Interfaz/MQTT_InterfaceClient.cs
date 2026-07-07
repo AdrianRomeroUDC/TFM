@@ -40,9 +40,13 @@ public class MQTT_InterfaceClient : MonoBehaviour
     public event Action<string> OnCameraImageEvent;
     public event Action<StockPayload> OnStockUpdateEvent; // <-- NUEVO EVENTO
 
-    [Header("Configuración")]
-    public string brokerHost = "tu-broker.cloud";
-    public int puerto = 1883;
+    [Header("Configuración del Broker")]
+    public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
+    public int puerto = 8883;
+
+    [Header("Credenciales")]
+    public string usuario = "LearningFactory";
+    public string contrasena = "Fischertechnik1";
 
     void Awake()
     {
@@ -68,7 +72,9 @@ public class MQTT_InterfaceClient : MonoBehaviour
         {
             client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
-            client.Connect(Guid.NewGuid().ToString());
+
+            //client.Connect(Guid.NewGuid().ToString());
+            client.Connect(Guid.NewGuid().ToString(), usuario, contrasena);
 
             string[] topics = { "i/cam", "i/bme680", "i/ldr", "f/i/stock" };
             client.Subscribe(topics, new byte[] { 0, 0, 0, 0 });
