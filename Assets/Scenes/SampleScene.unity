@@ -19477,7 +19477,7 @@ MonoBehaviour:
   brokerHost: 10.113.36.36
   puerto: 1884
   usuario: LearningFactory
-  contrasena: 
+  contrasena: Fischertechnik1
 --- !u!4 &2076051687
 Transform:
   m_ObjectHideFlags: 0

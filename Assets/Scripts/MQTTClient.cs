@@ -81,17 +81,15 @@ public class MPOBrazoPayload
 [Serializable] internal class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
 [Serializable] internal class JSON_SSCCamera { public float pan; public float tilt; }
 [Serializable] internal class JSON_HBWStock { public string[] stock; }
+[Serializable] internal class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
 
-// NUEVA ESTRUCTURA AÑADIDA PARA CORREGIR LA CINTA HBW
+// --- NUEVAS ESTRUCTURAS PARA EL NUEVO ALMACÉN (f/i/stock) ---
 [Serializable]
-internal class JSON_HBWBelt
-{
-    public string ts;
-    public float belt_speed;
-    public bool isTrigeredIn;
-    public bool isTriggeredOut;
-    public string rot_direction;
-}
+internal class JSON_Workpiece { public string id; public string type; public string state; }
+[Serializable]
+internal class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
+[Serializable]
+internal class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
 
 
 public class MQTTClient : MonoBehaviour
@@ -177,9 +175,10 @@ public class MQTTClient : MonoBehaviour
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
 
+                // CAMBIADO: "dt/i/stock" pasa a ser "f/i/stock"
                 string[] topics = {
                     "dt/sld/belt", "dt/sld/cylinder", "dt/dps/dsi", "dt/dps/dso", "dt/dps/color", "dt/vgr/grip",
-                    "dt/i/stock", "dt/vgr/pos", "dt/hbw/pos", "dt/hbw/belt", "dt/mpo/oven", "dt/mpo/turntable",
+                    "f/i/stock", "dt/vgr/pos", "dt/hbw/pos", "dt/hbw/belt", "dt/mpo/oven", "dt/mpo/turntable",
                     "dt/mpo/belt", "dt/mpo/arm", "dt/ssc/leds", "dt/ssc/camera"
                 };
 
@@ -246,18 +245,52 @@ public class MQTTClient : MonoBehaviour
             try { var data = JsonUtility.FromJson<VGRPositionData>(msg); OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend); } catch { }
         }
 
-        // --- ALMACÉN HBW ---
-        else if (topic == "dt/i/stock")
+        // --- NUEVO PROCESAMIENTO ALMACÉN HBW (Mapeo de f/i/stock) ---
+        else if (topic == "f/i/stock")
         {
             lastHBWJson = msg;
-            try { OnHBWUpdatePiecesEvent?.Invoke(JsonUtility.FromJson<JSON_HBWStock>(msg).stock); } catch { }
+            try
+            {
+                JSON_FullStock data = JsonUtility.FromJson<JSON_FullStock>(msg);
+                if (data != null && data.stockItems != null)
+                {
+                    string[] flatStock = new string[9];
+                    for (int i = 0; i < 9; i++) flatStock[i] = ""; // Inicializar vacío
+
+                    foreach (var item in data.stockItems)
+                    {
+                        if (string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
+
+                        // Mapeo: Letra (A,B,C) -> Columna (0,1,2) | Número (1,2,3) -> Fila (0,1,2)
+                        int col = char.ToUpper(item.location[0]) - 'A';
+                        int row = item.location[1] - '1';
+
+                        if (col >= 0 && col < 3 && row >= 0 && row < 3)
+                        {
+                            int idx = (row * 3) + col; // Fila 1 Col 1 (A1) = Index 0 | Fila 2 Col 2 (B2) = Index 4 | Fila 3 Col 3 (C3) = Index 8
+
+                            // Unity JsonUtility quirk check: Evita sub-objetos nulos simulados
+                            if (item.workpiece != null && !string.IsNullOrEmpty(item.workpiece.type))
+                            {
+                                flatStock[idx] = item.workpiece.type.ToUpper();
+                            }
+                        }
+                    }
+
+                    // Enviar los datos mapeados al visualizador
+                    OnHBWUpdatePiecesEvent?.Invoke(flatStock);
+
+                    // CRÍTICO: Dessuscribirse inmediatamente del broker para cumplir con "solo leer al arrancar"
+                    client.Unsubscribe(new string[] { "f/i/stock" });
+                    Debug.Log("<color=cyan><b>[MQTT HBW] Estado inicial cargado con éxito. Desuscrito de f/i/stock.</b></color>");
+                }
+            }
+            catch (Exception ex) { Debug.LogWarning("Error procesando f/i/stock: " + ex.Message); }
         }
         else if (topic == "dt/hbw/pos")
         {
             try { var data = JsonUtility.FromJson<HBWPositionPayload>(msg); OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.extend); } catch { }
         }
-
-        // CORREGIDO: Ahora procesa el nuevo formato JSON mapeándolo al formato que espera tu script antiguo
         else if (topic == "dt/hbw/belt")
         {
             try
@@ -265,10 +298,7 @@ public class MQTTClient : MonoBehaviour
                 JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
                 OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning("Error al procesar dt/hbw/belt: " + ex.Message);
-            }
+            catch (Exception ex) { Debug.LogWarning("Error al procesar dt/hbw/belt: " + ex.Message); }
         }
 
         // --- ESTACIÓN MPO ---

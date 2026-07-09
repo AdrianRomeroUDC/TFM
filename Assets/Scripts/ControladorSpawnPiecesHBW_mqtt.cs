@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System;
 
 public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 {
@@ -16,10 +17,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
     void Start()
     {
-        // 1. Precalculamos los offsets en todos los cajones vacíos
         PrecalcularOffsetsEnCajones();
-
-        // 2. Limpieza e inicio normal
         LimpiarSoloPiezas();
         StartCoroutine(SuscripcionSegura());
     }
@@ -50,23 +48,57 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         string inicial = MQTTClient.Instance.GetLastHBWStatus();
         if (!string.IsNullOrEmpty(inicial))
         {
-            // CORRECCIÓN CRÍTICA: El JSON retenido usa la estructura de red nueva ("stock")
-            // Deserializamos con la clase interna correcta para que no devuelva null
-            JSON_HBWStock data = JsonUtility.FromJson<JSON_HBWStock>(inicial);
-            if (data != null && data.stock != null)
+            try
             {
-                AlRecibirPiezas(data.stock);
+                // CAMBIADO: Deserializar usando el nuevo formato complejo retenido
+                JSON_FullStock data = JsonUtility.FromJson<JSON_FullStock>(inicial);
+                if (data != null && data.stockItems != null)
+                {
+                    string[] flatStock = new string[9];
+                    for (int i = 0; i < 9; i++) flatStock[i] = "";
+
+                    foreach (var item in data.stockItems)
+                    {
+                        if (string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
+
+                        int col = char.ToUpper(item.location[0]) - 'A';
+                        int row = item.location[1] - '1';
+
+                        if (col >= 0 && col < 3 && row >= 0 && row < 3)
+                        {
+                            int idx = (row * 3) + col;
+                            if (item.workpiece != null && !string.IsNullOrEmpty(item.workpiece.type))
+                            {
+                                flatStock[idx] = item.workpiece.type.ToUpper();
+                            }
+                        }
+                    }
+                    AlRecibirPiezas(flatStock);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[ControladorSpawnPieces] Error al procesar stock retenido inicial: " + ex.Message);
             }
         }
     }
 
-    private void AlRecibirPiezas(string[] piezas) { listaPendiente = piezas; hayCambio = true; }
+    private void AlRecibirPiezas(string[] piezas)
+    {
+        listaPendiente = piezas;
+        hayCambio = true;
+
+        // CRÍTICO: Desvincular el evento C# inmediatamente para garantizar lectura UNICA al inicio
+        if (MQTTClient.Instance != null)
+        {
+            MQTTClient.Instance.OnHBWUpdatePiecesEvent -= AlRecibirPiezas;
+        }
+    }
 
     void Update() { if (hayCambio) { ActualizarVisualizacion(listaPendiente); hayCambio = false; } }
 
     void ActualizarVisualizacion(string[] listaColores)
     {
-        // SALVAVIDAS 1: Si por alguna razón la lista llega nula de la red, abortamos sin romper nada
         if (listaColores == null) return;
 
         for (int i = 0; i < puntosDeHueco.Length; i++)
@@ -74,8 +106,6 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
             if (i >= listaColores.Length) break;
 
             Transform padreEje = puntosDeHueco[i];
-
-            // SALVAVIDAS 2: Si hay algún hueco sin asignar en el Inspector, lo saltamos limpiamente
             if (padreEje == null || padreEje.childCount == 0) continue;
 
             Transform cajon = padreEje.GetChild(0);
@@ -116,5 +146,9 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
-    private void OnDisable() { if (MQTTClient.Instance != null) MQTTClient.Instance.OnHBWUpdatePiecesEvent -= AlRecibirPiezas; }
+    private void OnDisable()
+    {
+        // Desuscripción redundante de seguridad por si se desactiva el script antes de recibir datos
+        if (MQTTClient.Instance != null) MQTTClient.Instance.OnHBWUpdatePiecesEvent -= AlRecibirPiezas;
+    }
 }
