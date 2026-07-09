@@ -32,13 +32,13 @@ public class MQTT_InterfaceClient : MonoBehaviour
     private Queue<Bme680Payload> bmeQueue = new Queue<Bme680Payload>();
     private Queue<LdrPayload> ldrQueue = new Queue<LdrPayload>();
     private Queue<string> camQueue = new Queue<string>();
-    private Queue<StockPayload> stockQueue = new Queue<StockPayload>(); // <-- NUEVA COLA
+    private Queue<StockPayload> stockQueue = new Queue<StockPayload>();
 
     // Eventos
     public event Action<Bme680Payload> OnBmeEnvironmentEvent;
     public event Action<LdrPayload> OnLdrLightEvent;
     public event Action<string> OnCameraImageEvent;
-    public event Action<StockPayload> OnStockUpdateEvent; // <-- NUEVO EVENTO
+    public event Action<StockPayload> OnStockUpdateEvent;
 
     [Header("Configuración del Broker")]
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
@@ -62,7 +62,7 @@ public class MQTT_InterfaceClient : MonoBehaviour
             while (bmeQueue.Count > 0) OnBmeEnvironmentEvent?.Invoke(bmeQueue.Dequeue());
             while (ldrQueue.Count > 0) OnLdrLightEvent?.Invoke(ldrQueue.Dequeue());
             while (camQueue.Count > 0) OnCameraImageEvent?.Invoke(camQueue.Dequeue());
-            while (stockQueue.Count > 0) OnStockUpdateEvent?.Invoke(stockQueue.Dequeue()); // <-- PROCESAR COLA STOCK
+            while (stockQueue.Count > 0) OnStockUpdateEvent?.Invoke(stockQueue.Dequeue());
         }
     }
 
@@ -73,7 +73,6 @@ public class MQTT_InterfaceClient : MonoBehaviour
             client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
 
-            //client.Connect(Guid.NewGuid().ToString());
             client.Connect(Guid.NewGuid().ToString(), usuario, contrasena);
 
             string[] topics = { "i/cam", "i/bme680", "i/ldr", "f/i/stock" };
@@ -95,7 +94,7 @@ public class MQTT_InterfaceClient : MonoBehaviour
                 if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msg));
                 else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msg));
                 else if (topic == "i/cam") camQueue.Enqueue(JsonUtility.FromJson<CameraPayload>(msg).data);
-                else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msg)); // <-- ENCOLAR DATOS DE STOCK
+                else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msg));
             }
             catch (Exception ex) { Debug.LogWarning($"Error parseando JSON: {ex.Message}"); }
         }
@@ -150,8 +149,49 @@ public class MQTT_InterfaceClient : MonoBehaviour
         PublishJson("c/bme680", JsonUtility.ToJson(payload));
     }
 
+    // =======================================================================
+    // MÉTODO MODIFICADO: Envío crítico controlado antes de la desconexión total
+    // =======================================================================
     private void OnApplicationQuit()
     {
-        if (client != null && client.IsConnected) client.Disconnect();
+        if (client != null && client.IsConnected)
+        {
+            try
+            {
+                // 1. Construimos el payload exacto usando las clases del script
+                CamConfigPayload payloadApagado = new CamConfigPayload
+                {
+                    ts = GetISO8601Timestamp(),
+                    on = false,
+                    fps = 15
+                };
+
+                // 2. Convertimos el objeto a JSON estructurado string
+                string jsonApagado = JsonUtility.ToJson(payloadApagado);
+
+                // 3. Forzamos la publicación directa usando QoS 1 (Asegura entrega en brokers Cloud)
+                client.Publish("c/cam",
+                               Encoding.UTF8.GetBytes(jsonApagado),
+                               MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
+                               false);
+
+                Debug.Log("<color=red><b>[MQTT Interface] Comando on:false enviado con éxito a c/cam</b></color>");
+
+                // 4. CRÍTICO: Congelamos el hilo de Unity 250 milisegundos. 
+                // Esto le da tiempo real a los buffers de Windows/Mac para vaciar la cola TCP hacia HiveMQ
+                System.Threading.Thread.Sleep(250);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Error al procesar el envío de apagado de cámara: " + ex.Message);
+            }
+
+            // 5. Procedemos al cierre seguro de la conexión
+            try
+            {
+                client.Disconnect();
+            }
+            catch { }
+        }
     }
 }

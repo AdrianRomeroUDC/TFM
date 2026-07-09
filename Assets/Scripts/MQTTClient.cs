@@ -84,12 +84,9 @@ public class MPOBrazoPayload
 [Serializable] internal class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
 
 // --- NUEVAS ESTRUCTURAS PARA EL NUEVO ALMACÉN (f/i/stock) ---
-[Serializable]
-internal class JSON_Workpiece { public string id; public string type; public string state; }
-[Serializable]
-internal class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
-[Serializable]
-internal class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
+[Serializable] internal class JSON_Workpiece { public string id; public string type; public string state; }
+[Serializable] internal class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
+[Serializable] internal class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
 
 
 public class MQTTClient : MonoBehaviour
@@ -99,6 +96,7 @@ public class MQTTClient : MonoBehaviour
 
     private MqttClient client;
     private string lastHBWJson = "";
+    private string[] initialStock = null; // Guarda el primer almacén procesado que llegue de la red
 
     [Header("Configuración del Broker")]
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
@@ -175,7 +173,6 @@ public class MQTTClient : MonoBehaviour
             {
                 Debug.Log("<color=green><b>MQTT Conectado</b></color>");
 
-                // CAMBIADO: "dt/i/stock" pasa a ser "f/i/stock"
                 string[] topics = {
                     "dt/sld/belt", "dt/sld/cylinder", "dt/dps/dsi", "dt/dps/dso", "dt/dps/color", "dt/vgr/grip",
                     "f/i/stock", "dt/vgr/pos", "dt/hbw/pos", "dt/hbw/belt", "dt/mpo/oven", "dt/mpo/turntable",
@@ -245,7 +242,7 @@ public class MQTTClient : MonoBehaviour
             try { var data = JsonUtility.FromJson<VGRPositionData>(msg); OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend); } catch { }
         }
 
-        // --- NUEVO PROCESAMIENTO ALMACÉN HBW (Mapeo de f/i/stock) ---
+        // --- NUEVO PROCESAMIENTO ALMACÉN HBW (f/i/stock) ---
         else if (topic == "f/i/stock")
         {
             lastHBWJson = msg;
@@ -255,21 +252,19 @@ public class MQTTClient : MonoBehaviour
                 if (data != null && data.stockItems != null)
                 {
                     string[] flatStock = new string[9];
-                    for (int i = 0; i < 9; i++) flatStock[i] = ""; // Inicializar vacío
+                    for (int i = 0; i < 9; i++) flatStock[i] = "";
 
                     foreach (var item in data.stockItems)
                     {
                         if (string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
 
-                        // Mapeo: Letra (A,B,C) -> Columna (0,1,2) | Número (1,2,3) -> Fila (0,1,2)
                         int col = char.ToUpper(item.location[0]) - 'A';
                         int row = item.location[1] - '1';
 
                         if (col >= 0 && col < 3 && row >= 0 && row < 3)
                         {
-                            int idx = (row * 3) + col; // Fila 1 Col 1 (A1) = Index 0 | Fila 2 Col 2 (B2) = Index 4 | Fila 3 Col 3 (C3) = Index 8
+                            int idx = (row * 3) + col;
 
-                            // Unity JsonUtility quirk check: Evita sub-objetos nulos simulados
                             if (item.workpiece != null && !string.IsNullOrEmpty(item.workpiece.type))
                             {
                                 flatStock[idx] = item.workpiece.type.ToUpper();
@@ -277,12 +272,15 @@ public class MQTTClient : MonoBehaviour
                         }
                     }
 
-                    // Enviar los datos mapeados al visualizador
+                    // 1. Guardamos el stock en memoria RAM por si el script visual pregunta antes de tiempo
+                    initialStock = flatStock;
+
+                    // 2. Disparamos el evento C# hacia el controlador visual
                     OnHBWUpdatePiecesEvent?.Invoke(flatStock);
 
-                    // CRÍTICO: Dessuscribirse inmediatamente del broker para cumplir con "solo leer al arrancar"
+                    // 3. SE CORTA EL CANAL: Le ordenamos al broker MQTT dejar de enviarnos este topic para siempre
                     client.Unsubscribe(new string[] { "f/i/stock" });
-                    Debug.Log("<color=cyan><b>[MQTT HBW] Estado inicial cargado con éxito. Desuscrito de f/i/stock.</b></color>");
+                    Debug.Log("<color=cyan><b>[MQTT] Primer f/i/stock procesado correctamente. Canal de red cerrado (Unsubscribed).</b></color>");
                 }
             }
             catch (Exception ex) { Debug.LogWarning("Error procesando f/i/stock: " + ex.Message); }
@@ -394,6 +392,9 @@ public class MQTTClient : MonoBehaviour
     }
 
     public string GetLastHBWStatus() => lastHBWJson;
+
+    // Método simple para que el controlador verifique si los datos ya entraron por caché
+    public string[] GetInitialStock() => initialStock;
 
     private void OnApplicationQuit()
     {
