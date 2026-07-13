@@ -54,13 +54,14 @@ public class MPOTurntablePayload
     public string ts;
 }
 
+// --- MODIFICADO: Estructura MPOBrazo adaptada al nuevo flujo de estados ---
 [Serializable]
 public class MPOBrazoPayload
 {
-    public int move2Ref3;
-    public int move2Ref4;
-    public int pickup;
-    public int release;
+    public bool move2Ref3;
+    public bool move2Ref4;
+    public bool lowering;
+    public bool vacuum;
     public string ts;
 }
 
@@ -76,14 +77,24 @@ public class MPOBrazoPayload
 [Serializable] internal class JSON_SLDCylinder { public string cyl_color; public bool active; }
 [Serializable] internal class JSON_MPOBelt { public bool active; public bool exit_sensor; public string ts; }
 [Serializable] internal class JSON_MPOOven { public bool oven_sensor; public bool close_door; public bool lights; public bool move2Ref5; public bool move2Ref6; public bool open_door; public string ts; }
-[Serializable] internal class JSON_MPOArm { public bool move2Ref3; public bool move2Ref4; public bool pickup; public bool release; public string ts; }
 [Serializable] internal class JSON_MPOTurntable { public bool eject; public bool move2Ref7; public bool move2Ref9; public bool move2Ref10; public int rotation; public int saw; public string ts; }
 [Serializable] internal class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
 [Serializable] internal class JSON_SSCCamera { public float pan; public float tilt; }
 [Serializable] internal class JSON_HBWStock { public string[] stock; }
 [Serializable] internal class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
 
-// --- NUEVAS ESTRUCTURAS PARA EL NUEVO ALMACÉN (f/i/stock) ---
+// --- MODIFICADO: Estructura interna de red MPO adaptada a Booleanos ---
+[Serializable]
+internal class JSON_MPOArm
+{
+    public bool move2Ref3;
+    public bool move2Ref4;
+    public bool lowering;
+    public bool vacuum;
+    public string ts;
+}
+
+// --- ESTRUCTURAS PARA EL ALMACÉN (f/i/stock) ---
 [Serializable] internal class JSON_Workpiece { public string id; public string type; public string state; }
 [Serializable] internal class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
 [Serializable] internal class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
@@ -98,7 +109,7 @@ public class MQTTClient : MonoBehaviour
     private string lastHBWJson = "";
     private string[] initialStock = null;
 
-    // --- PUENTE DE HILOS PARA POSICIONES CONTINUAS (Evita saturación y Lag acumulado) ---
+    // --- PUENTE DE HILOS PARA POSICIONES CONTINUAS ---
     private VGRPositionData ultimoVGRPos = null;
     private bool hayNuevoVGRPos = false;
 
@@ -113,7 +124,7 @@ public class MQTTClient : MonoBehaviour
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
 
-    // --- EVENTOS MANTENIDOS INTACTOS ---
+    // --- EVENTOS ---
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
 
@@ -170,7 +181,6 @@ public class MQTTClient : MonoBehaviour
 
     void Update()
     {
-        // Vaciamos de manera segura las muestras de coordenadas en el hilo principal de Unity
         VGRPositionData vgrAProcesar = null;
         HBWPositionPayload hbwAProcesar = null;
 
@@ -282,7 +292,7 @@ public class MQTTClient : MonoBehaviour
             catch { }
         }
 
-        // --- NUEVO PROCESAMIENTO ALMACÉN HBW (f/i/stock) ---
+        // --- PROCESAMIENTO ALMACÉN HBW (f/i/stock) ---
         else if (topic == "f/i/stock")
         {
             lastHBWJson = msg;
@@ -315,9 +325,8 @@ public class MQTTClient : MonoBehaviour
                     initialStock = flatStock;
                     OnHBWUpdatePiecesEvent?.Invoke(flatStock);
 
-                    // Desuscripción inmediata para lectura única de arranque
                     client.Unsubscribe(new string[] { "f/i/stock" });
-                    Debug.Log("<color=cyan><b>[MQTT] Primer f/i/stock procesado correctamente. Canal de red cerrado (Unsubscribed).</b></color>");
+                    Debug.Log("<color=cyan><b>[MQTT] f/i/stock procesado correctamente. Canal cerrado.</b></color>");
                 }
             }
             catch (Exception ex) { Debug.LogWarning("Error procesando f/i/stock: " + ex.Message); }
@@ -340,7 +349,6 @@ public class MQTTClient : MonoBehaviour
             try
             {
                 JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
-                // Enviamos el netData.belt_speed nativo (conservando el signo 400 o -400) para control de signo directo
                 OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
             }
             catch (Exception ex) { Debug.LogWarning("Error al procesar dt/hbw/belt: " + ex.Message); }
@@ -380,7 +388,7 @@ public class MQTTClient : MonoBehaviour
                     saw = netData.saw,
                     ts = netData.ts
                 };
-                lock (colaMensajes) { colaMensajes.Enqueue(legacyData); } // Las órdenes críticas SÍ usan cola
+                lock (colaMensajes) { colaMensajes.Enqueue(legacyData); }
             }
             catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/turntable: " + ex.Message); }
         }
@@ -399,6 +407,9 @@ public class MQTTClient : MonoBehaviour
             }
             catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/belt: " + ex.Message); }
         }
+        // =======================================================================
+        // TOPIC ACTUALIZADO: MPO ARM PROCESADO CON NUEVOS BOOLEANOS DE ESTADO
+        // =======================================================================
         else if (topic == "dt/mpo/arm")
         {
             try
@@ -406,10 +417,10 @@ public class MQTTClient : MonoBehaviour
                 JSON_MPOArm netData = JsonUtility.FromJson<JSON_MPOArm>(msg);
                 MPOBrazoPayload legacyData = new MPOBrazoPayload
                 {
-                    move2Ref3 = netData.move2Ref3 ? 1 : 0,
-                    move2Ref4 = netData.move2Ref4 ? 1 : 0,
-                    pickup = netData.pickup ? 1 : 0,
-                    release = netData.release ? 1 : 0,
+                    move2Ref3 = netData.move2Ref3,
+                    move2Ref4 = netData.move2Ref4,
+                    lowering = netData.lowering,
+                    vacuum = netData.vacuum,
                     ts = netData.ts
                 };
                 OnBrazoUpdateEvent?.Invoke(legacyData);

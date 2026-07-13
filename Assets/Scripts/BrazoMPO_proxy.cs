@@ -121,7 +121,7 @@ public class BrazoMPO_proxy : MonoBehaviour
             piezaASueltar.SetParent(destino, true);
 
             cooldownSuelte = 1f;
-            piezaActual = null; // ¡AHORA SÍ se limpia correctamente permitiendo capturar de nuevo!
+            piezaActual = null;
 
             // Si el destino es el horno, forzamos su script proxy para que la registre y calibre en Y al instante
             PlataformaHorno_proxy horno = destino.GetComponent<PlataformaHorno_proxy>();

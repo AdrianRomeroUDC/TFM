@@ -13287,7 +13287,7 @@ MonoBehaviour:
   posPlataformaFuera: {x: 0.99375594, y: 0.10059844, z: 2.2261808}
   posPlataformaDentro: {x: 0.99375594, y: 0.10059845, z: 2.173781}
   duracionMovimientoPuerta: 0.5
-  duracionMovimientoPlataforma: 3
+  duracionMovimientoPlataforma: 2
 --- !u!1 &1500953473
 GameObject:
   m_ObjectHideFlags: 0
@@ -18177,7 +18177,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ControladorCintaHBW_mqtt
   direccionEntrada: {x: 1, y: 0, z: 0}
-  multiplicadorVel: 0.0003
+  multiplicadorVel: 0.00035
   velocidadActual: 0
   factorSentido: 0
 --- !u!1 &1942252261

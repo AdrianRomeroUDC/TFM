@@ -25,19 +25,17 @@ public class ControladorBrazoMPO : MonoBehaviour
     public Transform plataformaHorno;
     public Transform plataformaTurntable;
 
-    private float targetZH;
-    private bool estaOcupado = false;
     private BrazoMPO_proxy proxyFisico;
-    private Queue<MPOBrazoPayload> colaComandos = new Queue<MPOBrazoPayload>();
+
+    // Almacena únicamente el ÚLTIMO estado absoluto enviado por el PLC
+    private MPOBrazoPayload estadoObjetivo = null;
+    private readonly object lockObj = new object();
 
     void Start()
     {
         if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnBrazoUpdateEvent += EncolarComando;
+            MQTTClient.Instance.OnBrazoUpdateEvent += RecibirEstadoDesdeMQTT;
 
-        if (ejeHorizontal) targetZH = ejeHorizontal.localPosition.z;
-
-        // Extraemos automáticamente el proxy del punto de agarre asignado
         if (puntoAgarre != null)
         {
             proxyFisico = puntoAgarre.GetComponent<BrazoMPO_proxy>();
@@ -49,124 +47,93 @@ public class ControladorBrazoMPO : MonoBehaviour
         }
     }
 
-    void EncolarComando(MPOBrazoPayload data)
+    void RecibirEstadoDesdeMQTT(MPOBrazoPayload data)
     {
-        lock (colaComandos) { colaComandos.Enqueue(data); }
+        // Sobrescribimos el estado anterior de inmediato. Cero colas, cero acumulaciones.
+        lock (lockObj)
+        {
+            estadoObjetivo = data;
+        }
     }
 
     void Update()
     {
-        if (!estaOcupado)
+        MPOBrazoPayload estadoActual = null;
+        lock (lockObj)
         {
-            lock (colaComandos)
+            estadoActual = estadoObjetivo;
+        }
+
+        // Si no ha llegado telemetría todavía, esperamos
+        if (estadoActual == null) return;
+
+        // =======================================================================
+        // 1. SEGUIMIENTO CONTINUO DEL EJE HORIZONTAL (Z)
+        // =======================================================================
+        if (ejeHorizontal != null)
+        {
+            float targetZ = ejeHorizontal.localPosition.z;
+            if (estadoActual.move2Ref4) targetZ = zHorno;
+            else if (estadoActual.move2Ref3) targetZ = zTurntable;
+
+            float distanciaTotalH = Mathf.Abs(zHorno - zTurntable);
+            float velocidadH = distanciaTotalH / Mathf.Max(0.01f, tiempoRecorridoHorizontal);
+
+            Vector3 posH = ejeHorizontal.localPosition;
+            posH.z = Mathf.MoveTowards(posH.z, targetZ, velocidadH * Time.deltaTime);
+            ejeHorizontal.localPosition = posH;
+        }
+
+        // =======================================================================
+        // 2. SEGUIMIENTO CONTINUO DEL EJE VERTICAL (X)
+        // =======================================================================
+        if (ejeVertical != null)
+        {
+            // El objetivo físico cambia INSTANTÁNEAMENTE en cuanto el PLC cambia el booleano
+            float targetX = estadoActual.lowering ? xPickup : xReposo;
+
+            float distanciaTotalV = Mathf.Abs(xReposo - xPickup);
+            float velocidadV = distanciaTotalV / Mathf.Max(0.01f, tiempoRecorridoVertical);
+
+            Vector3 posV = ejeVertical.localPosition;
+            posV.x = Mathf.MoveTowards(posV.x, targetX, velocidadV * Time.deltaTime);
+            ejeVertical.localPosition = posV;
+        }
+
+        // =======================================================================
+        // 3. CONTROL REACTIVO DE LA VENTOSA (Vacuum)
+        // =======================================================================
+        if (proxyFisico != null)
+        {
+            bool ventosaTienePiezaReal = proxyFisico.TienePieza();
+
+            // CASO A: El PLC exige succión y no la tenemos atrapada todavía
+            if (estadoActual.vacuum && !ventosaTienePiezaReal)
             {
-                if (colaComandos.Count > 0)
+                // FILTRO DE SEGURIDAD: Solo permitimos escanear si las milésimas del brazo confirman que ya llegó abajo
+                float distanciaAlSuelo = Mathf.Abs(ejeVertical.localPosition.x - xPickup);
+                if (distanciaAlSuelo < 0.0001f)
                 {
-                    MPOBrazoPayload proximoComando = colaComandos.Dequeue();
-                    StartCoroutine(EjecutarSecuencia(proximoComando));
+                    Physics.SyncTransforms(); // Mantenemos las matrices de colisión de Unity al día
+                    proxyFisico.ForzarEscaneoInmediato();
                 }
             }
-        }
-    }
-
-    IEnumerator EjecutarSecuencia(MPOBrazoPayload data)
-    {
-        estaOcupado = true;
-
-        // 1. DETERMINAR DESTINO HORIZONTAL SEGÚN TELEMETRÍA MQTT
-        float inicioZ = ejeHorizontal.localPosition.z;
-        float destinoZ = inicioZ;
-
-        if (data.move2Ref4 == 1) destinoZ = zHorno;
-        else if (data.move2Ref3 == 1) destinoZ = zTurntable;
-
-        // Mover horizontalmente si es necesario
-        if (Mathf.Abs(inicioZ - destinoZ) > 0.001f)
-        {
-            float tiempoPasadoH = 0;
-            while (tiempoPasadoH < tiempoRecorridoHorizontal)
+            // CASO B: El PLC corta la succión pero la ventosa registra que tiene la pieza sujeta (orden de soltar)
+            else if (!estadoActual.vacuum && ventosaTienePiezaReal)
             {
-                tiempoPasadoH += Time.deltaTime;
-                float t = Mathf.SmoothStep(0, 1, tiempoPasadoH / tiempoRecorridoHorizontal);
-                float nz = Mathf.Lerp(inicioZ, destinoZ, t); // <-- CORREGIDO AQUÍ
-                ejeHorizontal.localPosition = new Vector3(ejeHorizontal.localPosition.x, ejeHorizontal.localPosition.y, nz);
-                yield return null;
+                // Medimos la posición en tiempo real para saber dónde dejarla caer
+                float distanciaAlHorno = Mathf.Abs(ejeHorizontal.localPosition.z - zHorno);
+                float distanciaALaTurntable = Mathf.Abs(ejeHorizontal.localPosition.z - zTurntable);
+                Transform plataformaActual = (distanciaAlHorno < distanciaALaTurntable) ? plataformaHorno : plataformaTurntable;
+
+                proxyFisico.EjecutarRelease(plataformaActual);
             }
-            ejeHorizontal.localPosition = new Vector3(ejeHorizontal.localPosition.x, ejeHorizontal.localPosition.y, destinoZ);
         }
-
-        // =======================================================================================
-        // ¡DETECCIÓN UNIVERSAL!: Medimos la distancia hacia ambas estaciones para saber exactamente
-        // sobre cuál estamos parados en este milisegundo (independientemente de qué comando llegó).
-        // =======================================================================================
-        float distanciaAlHorno = Mathf.Abs(ejeHorizontal.localPosition.z - zHorno);
-        float distanciaALaTurntable = Mathf.Abs(ejeHorizontal.localPosition.z - zTurntable);
-
-        Transform plataformaActual = (distanciaAlHorno < distanciaALaTurntable) ? plataformaHorno : plataformaTurntable;
-        string nombreEstacion = (distanciaAlHorno < distanciaALaTurntable) ? "HORNO" : "TURNTABLE";
-
-        // 2. EJECUCIÓN AG NÓSTICA DE COMANDOS
-        bool ventosaTienePiezaReal = proxyFisico != null && proxyFisico.TienePieza();
-
-        if (data.pickup == 1 && !ventosaTienePiezaReal)
-        {
-            Debug.Log($"<color=yellow><b>[MPO]:</b> Ejecutando Pickup Universal en <b>{nombreEstacion}</b>...</color>");
-            yield return StartCoroutine(SecuenciaFisicaVertical(true, null));
-        }
-        else if (data.release == 1 && ventosaTienePiezaReal)
-        {
-            Debug.Log($"<color=yellow><b>[MPO]:</b> Ejecutando Release Universal en <b>{nombreEstacion}</b>...</color>");
-            yield return StartCoroutine(SecuenciaFisicaVertical(false, plataformaActual));
-        }
-
-        estaOcupado = false;
-    }
-
-    IEnumerator SecuenciaFisicaVertical(bool agarrar, Transform destinoRelease)
-    {
-        float inicioX = ejeVertical.localPosition.x;
-
-        // BAJAR
-        float tiempoPasadoV = 0;
-        while (tiempoPasadoV < tiempoRecorridoVertical)
-        {
-            tiempoPasadoV += Time.deltaTime;
-            float t = tiempoPasadoV / tiempoRecorridoVertical;
-            float nx = Mathf.Lerp(inicioX, xPickup, t);
-            ejeVertical.localPosition = new Vector3(nx, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
-            yield return null;
-        }
-        ejeVertical.localPosition = new Vector3(xPickup, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
-
-        // INTERACCIÓN FÍSICA DIRECTA
-        if (agarrar)
-        {
-            if (proxyFisico != null) proxyFisico.ForzarEscaneoInmediato();
-        }
-        else
-        {
-            if (proxyFisico != null && destinoRelease != null) proxyFisico.EjecutarRelease(destinoRelease);
-        }
-
-        yield return new WaitForSeconds(0.3f);
-
-        // SUBIR
-        inicioX = ejeVertical.localPosition.x;
-        float tiempoPasadoSubir = 0;
-        while (tiempoPasadoSubir < tiempoRecorridoVertical)
-        {
-            tiempoPasadoSubir += Time.deltaTime;
-            float t = tiempoPasadoSubir / tiempoRecorridoVertical;
-            float nx = Mathf.Lerp(inicioX, xReposo, t);
-            ejeVertical.localPosition = new Vector3(nx, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
-            yield return null;
-        }
-        ejeVertical.localPosition = new Vector3(xReposo, ejeVertical.localPosition.y, ejeVertical.localPosition.z);
     }
 
     private void OnDestroy()
     {
         if (MQTTClient.Instance != null)
-            MQTTClient.Instance.OnBrazoUpdateEvent -= EncolarComando;
+            MQTTClient.Instance.OnBrazoUpdateEvent -= RecibirEstadoDesdeMQTT;
     }
 }
