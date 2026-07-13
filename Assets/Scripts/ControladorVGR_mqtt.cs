@@ -22,7 +22,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public Vector3 rotacionEnPinza = Vector3.zero;
 
     [Header("Ajuste Fino de Escaneo (¡Para el Radar Ventosa!)")]
-    [Tooltip("Desfase local desde la ventosa hacia abajo (ej: -0.05 en Y o Z según orientación) para detectar la pieza en la rampa sin tocarla.")]
+    [Tooltip("Desfase local desde la ventosa hacia abajo para detectar la pieza en la rampa sin tocarla.")]
     public Vector3 offsetBusquedaVentosa = new Vector3(0f, -0.02f, 0f);
     [Tooltip("Tamaño de la esfera del radar de agarre.")]
     public float radioBusquedaVentosa = 0.05f;
@@ -73,29 +73,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
-    private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
-    {
-        lastRot = rot;
-        lastVert = vert;
-        lastExt = ext;
-    }
-
-    private void RecibirGripMQTT(bool activo)
-    {
-        estadoGripPendiente = activo;
-        cambioGripDetectado = true;
-    }
-
-    public void RegistrarContenedorBajoVentosa(ContenedorHBW_proxy contenedor)
-    {
-        contenedorActual = contenedor;
-    }
-
-    public ContenedorHBW_proxy ObtenerContenedorActual() => contenedorActual;
-    public Transform ObtenerPiezaEnganchada() => piezaEnganchada;
-    public void SetPiezaCercana(Transform pieza) => piezaCercana = pieza;
-
-    void Update()
+    private void Update()
     {
         if (cambioGripDetectado)
         {
@@ -127,27 +105,76 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
+    private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
+    {
+        lastRot = rot; lastVert = vert; lastExt = ext;
+    }
+
+    private void RecibirGripMQTT(bool activo)
+    {
+        estadoGripPendiente = activo;
+        cambioGripDetectado = true;
+    }
+
+    public void RegistrarContenedorBajoVentosa(ContenedorHBW_proxy contenedor) => contenedorActual = contenedor;
+    public ContenedorHBW_proxy ObtenerContenedorActual() => contenedorActual;
+    public Transform ObtenerPiezaEnganchada() => piezaEnganchada;
+    public void SetPiezaCercana(Transform pieza) => piezaCercana = pieza;
+
     private void ProcesarLogicaGrip(bool activo)
     {
         if (activo)
         {
             if (puntoAnclajeVentosa != null && piezaEnganchada == null)
             {
-                // ¡CORRECCIÓN AQUÍ!: Calculamos el centro usando el offset dinámico
                 Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
 
                 Collider[] collidersEnVentosa = Physics.OverlapSphere(centroBusquedaMundial, radioBusquedaVentosa);
                 foreach (Collider col in collidersEnVentosa)
                 {
-                    if (col.name.ToLower().Contains("pieza"))
+                    // 1. Rastreamos hacia arriba buscando la verdadera raíz "pieza_"
+                    Transform objetoActual = col.transform;
+                    Transform piezaReal = null;
+
+                    while (objetoActual != null)
+                    {
+                        // Si el objeto actual empieza por "pieza", hemos encontrado la raíz (ej: pieza_red)
+                        if (objetoActual.name.ToLower().StartsWith("pieza"))
+                        {
+                            piezaReal = objetoActual;
+                            break;
+                        }
+
+                        // ESCUDO PROTECTOR: Si tocamos el contenedor, frenamos el bucle.
+                        // Esto evita que el robot confunda el contenedor con la pieza.
+                        if (objetoActual.name.ToLower().Contains("cajon") ||
+                            objetoActual.name.ToLower().Contains("contenedor") ||
+                            objetoActual.name.ToLower().Contains("container"))
+                        {
+                            break;
+                        }
+
+                        objetoActual = objetoActual.parent;
+                    }
+
+                    // 2. Asignación validada de la pieza
+                    if (piezaReal != null)
+                    {
+                        piezaEnganchada = piezaReal;
+                        Debug.Log("<color=cyan><b>[VGR RADAR]:</b> Raíz de pieza fijada con éxito: </color>" + piezaEnganchada.name);
+                        break;
+                    }
+                    // Por si el objeto no tiene padres pero se llama pieza
+                    else if (col.name.ToLower().Contains("pieza"))
                     {
                         piezaEnganchada = col.transform;
-                        Debug.Log("<color=cyan><b>[VGR]:</b> Pieza detectada en rango del radar y fijada: </color>" + piezaEnganchada.name);
+                        Debug.Log("<color=cyan><b>[VGR RADAR]:</b> Objeto pieza independiente fijado: </color>" + piezaEnganchada.name);
                         break;
                     }
                 }
             }
 
+            // Código original de agarre (fijación a la ventosa)
             if (piezaEnganchada != null)
             {
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
@@ -159,7 +186,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
                 foreach (BoxCollider col in colliders)
                 {
-                    col.isTrigger = true;
+                    if (col != null) col.isTrigger = true;
                 }
 
                 piezaEnganchada.SetParent(puntoAnclajeVentosa);
@@ -171,9 +198,39 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
         else
         {
+            // =======================================================================
+            // SOLUCIÓN: AUTO-SANACIÓN DEL PUNTERO AL SOLTAR
+            // Si la pieza cambió de color en el camino, 'piezaEnganchada' se volvió null.
+            // La rescatamos buscando directamente qué objeto cuelga de la ventosa.
+            // =======================================================================
+            if (piezaEnganchada == null && puntoAnclajeVentosa != null)
+            {
+                foreach (Transform hijo in puntoAnclajeVentosa)
+                {
+                    if (hijo.name.ToLower().Contains("pieza"))
+                    {
+                        piezaEnganchada = hijo;
+                        Debug.Log("<color=lime><b>[VGR SANACIÓN]:</b> Puntero recuperado con éxito: </color>" + piezaEnganchada.name);
+                        break;
+                    }
+                }
+            }
+
             if (piezaEnganchada != null)
             {
                 ContenedorHBW_proxy destinoFinal = contenedorActual;
+
+                // ESCUDO DE SEGURIDAD: Si el trigger falló por lag de frames mecánicos,
+                // lanzamos un radar esférico para forzar la detección del cajón que está abajo.
+                if (destinoFinal == null)
+                {
+                    Collider[] collidersAbajo = Physics.OverlapSphere(piezaEnganchada.position, 0.06f);
+                    foreach (Collider col in collidersAbajo)
+                    {
+                        ContenedorHBW_proxy proxy = col.GetComponent<ContenedorHBW_proxy>() ?? col.GetComponentInParent<ContenedorHBW_proxy>();
+                        if (proxy != null) { destinoFinal = proxy; break; }
+                    }
+                }
 
                 if (piezaEnganchada.parent == puntoAnclajeVentosa)
                 {
@@ -187,22 +244,15 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 }
                 else
                 {
-                    if (piezaEnganchada.parent == null)
-                    {
-                        piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
+                    // Caída libre si realmente se soltó en el vacío
+                    piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
+                    BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                    foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;
 
-                        BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
-                        foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;
-
-                        Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
-                        if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
-
-                        rb.isKinematic = false;
-                        rb.useGravity = true;
-                        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                        rb.linearVelocity = Vector3.zero;
-                        rb.angularVelocity = Vector3.zero;
-                    }
+                    Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>() ?? piezaEnganchada.gameObject.AddComponent<Rigidbody>();
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+                    rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
                 }
 
                 contenedorActual = null;
@@ -222,23 +272,14 @@ public class ControladorVGR_mqtt : MonoBehaviour
         if (other.name.ToLower().Contains("pieza") && piezaEnganchada == null) SetPiezaCercana(null);
     }
 
-    // --- EL GIZMO VISUAL PARA TU ESCENA ---
     void OnDrawGizmos()
     {
         if (!mostrarGizmosVentosa || puntoAnclajeVentosa == null) return;
-
-        // Convierte el offset local a coordenadas del mundo real basado en la rotación de la ventosa
         Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
-
-        // 1. Dibujar esfera de alambre del radar
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(centroBusquedaMundial, radioBusquedaVentosa);
-
-        // 2. Dibujar una pequeña esfera sólida en el centro del radar
-        Gizmos.color = new Color(0f, 1f, 1f, 0.3f); // Cian con transparencia
+        Gizmos.color = new Color(0f, 1f, 1f, 0.3f);
         Gizmos.DrawSphere(centroBusquedaMundial, radioBusquedaVentosa * 0.2f);
-
-        // 3. Línea guía que une la punta de la ventosa con el centro de búsqueda
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(puntoAnclajeVentosa.position, centroBusquedaMundial);
     }

@@ -50,7 +50,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
         if (MQTTClient.Instance != null)
         {
             MQTTClient.Instance.OnDPSPiezaDSIEvent -= ActualizarPiezaDSI;
-            MQTTClient.Instance.OnDPSPiezaDSOEvent -= ActualizarPiezaDSO;
+            MQTTClient.Instance.OnDPSPiezaDSOEvent -= ActualizarPiezaDSO; // <--- CORREGIDO: Ya no da error de contexto
             MQTTClient.Instance.OnDPSColorEvent -= ActualizarColor;
             MQTTClient.Instance.OnVGRGripEvent -= ActualizarGrip;
         }
@@ -204,14 +204,12 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 break;
 
             case "DELETE_DSO":
-                // 1. Eliminación de la referencia directa asignada por script
                 if (piezaDSO != null)
                 {
                     Destroy(piezaDSO);
                     piezaDSO = null;
                 }
 
-                // 2. Limpieza física por volumen buscando ESTRICTAMENTE la palabra "pieza"
                 if (plataformaDSO != null)
                 {
                     Collider colPlatDSO = plataformaDSO.GetComponent<Collider>();
@@ -224,14 +222,12 @@ public class ControladorDPS_mqtt : MonoBehaviour
                     {
                         if (col.transform == plataformaDSO) continue;
 
-                        // Escalamos en la jerarquía para encontrar el objeto principal/raíz de lo que está tocando la plataforma
                         Transform raizPieza = col.transform;
                         while (raizPieza.parent != null && raizPieza.parent != plataformaDSO && !raizPieza.parent.name.ToLower().Contains("plataforma"))
                         {
                             raizPieza = raizPieza.parent;
                         }
 
-                        // CAMBIO AQUÍ: Comprobación estricta en el nombre del objeto final antes de agregarlo a la lista de borrado
                         if (raizPieza.name.ToLower().Contains("pieza"))
                         {
                             if (!objetosBorrar.Contains(raizPieza.gameObject))
@@ -241,7 +237,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
                         }
                     }
 
-                    // Destruimos únicamente los objetos validados
                     foreach (GameObject obj in objetosBorrar)
                     {
                         if (obj == piezaDPS) piezaDPS = null;
@@ -265,9 +260,20 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 }
                 break;
 
+            // =======================================================================
+            // UNICA MODIFICACIÓN: ESCUDO DE INTERCEPCIÓN EN EL DROP
+            // =======================================================================
             case "DROP":
                 if (piezaDPS != null)
                 {
+                    // Si la pieza ya NO es hija de la plataforma DSI (porque la lleva el VGR o ya entró al cajón)
+                    // detenemos el DROP del DPS para que no rompa el parentesco del contenedor.
+                    if (piezaDPS.transform.parent != plataformaDSI)
+                    {
+                        piezaDPS = null;
+                        break;
+                    }
+
                     if (piezaDPS.transform.parent != null &&
                         (piezaDPS.transform.parent.name.ToLower().Contains("cajon") ||
                          piezaDPS.transform.parent.name.ToLower().Contains("container") ||

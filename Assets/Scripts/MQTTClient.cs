@@ -96,7 +96,14 @@ public class MQTTClient : MonoBehaviour
 
     private MqttClient client;
     private string lastHBWJson = "";
-    private string[] initialStock = null; // Guarda el primer almacén procesado que llegue de la red
+    private string[] initialStock = null;
+
+    // --- PUENTE DE HILOS PARA POSICIONES CONTINUAS (Evita saturación y Lag acumulado) ---
+    private VGRPositionData ultimoVGRPos = null;
+    private bool hayNuevoVGRPos = false;
+
+    private HBWPositionPayload ultimoHBWPos = null;
+    private bool hayNuevoHBWPos = false;
 
     [Header("Configuración del Broker")]
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
@@ -159,6 +166,30 @@ public class MQTTClient : MonoBehaviour
         if (instance == null) instance = this;
         else { Destroy(gameObject); return; }
         Connect();
+    }
+
+    void Update()
+    {
+        // Vaciamos de manera segura las muestras de coordenadas en el hilo principal de Unity
+        VGRPositionData vgrAProcesar = null;
+        HBWPositionPayload hbwAProcesar = null;
+
+        lock (colaMensajes)
+        {
+            if (hayNuevoVGRPos)
+            {
+                vgrAProcesar = ultimoVGRPos;
+                hayNuevoVGRPos = false;
+            }
+            if (hayNuevoHBWPos)
+            {
+                hbwAProcesar = ultimoHBWPos;
+                hayNuevoHBWPos = false;
+            }
+        }
+
+        if (vgrAProcesar != null) OnVGRPositionUpdateEvent?.Invoke(vgrAProcesar.rotation, vgrAProcesar.vertical, vgrAProcesar.extend);
+        if (hbwAProcesar != null) OnHBWPositionUpdateEvent?.Invoke(hbwAProcesar.horizontal, hbwAProcesar.vertical, hbwAProcesar.extend);
     }
 
     void Connect()
@@ -239,7 +270,16 @@ public class MQTTClient : MonoBehaviour
         }
         else if (topic == "dt/vgr/pos")
         {
-            try { var data = JsonUtility.FromJson<VGRPositionData>(msg); OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend); } catch { }
+            try
+            {
+                VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
+                lock (colaMensajes)
+                {
+                    ultimoVGRPos = data;
+                    hayNuevoVGRPos = true;
+                }
+            }
+            catch { }
         }
 
         // --- NUEVO PROCESAMIENTO ALMACÉN HBW (f/i/stock) ---
@@ -272,13 +312,10 @@ public class MQTTClient : MonoBehaviour
                         }
                     }
 
-                    // 1. Guardamos el stock en memoria RAM por si el script visual pregunta antes de tiempo
                     initialStock = flatStock;
-
-                    // 2. Disparamos el evento C# hacia el controlador visual
                     OnHBWUpdatePiecesEvent?.Invoke(flatStock);
 
-                    // 3. SE CORTA EL CANAL: Le ordenamos al broker MQTT dejar de enviarnos este topic para siempre
+                    // Desuscripción inmediata para lectura única de arranque
                     client.Unsubscribe(new string[] { "f/i/stock" });
                     Debug.Log("<color=cyan><b>[MQTT] Primer f/i/stock procesado correctamente. Canal de red cerrado (Unsubscribed).</b></color>");
                 }
@@ -287,13 +324,23 @@ public class MQTTClient : MonoBehaviour
         }
         else if (topic == "dt/hbw/pos")
         {
-            try { var data = JsonUtility.FromJson<HBWPositionPayload>(msg); OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.extend); } catch { }
+            try
+            {
+                HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
+                lock (colaMensajes)
+                {
+                    ultimoHBWPos = data;
+                    hayNuevoHBWPos = true;
+                }
+            }
+            catch { }
         }
         else if (topic == "dt/hbw/belt")
         {
             try
             {
                 JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
+                // Enviamos el netData.belt_speed nativo (conservando el signo 400 o -400) para control de signo directo
                 OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
             }
             catch (Exception ex) { Debug.LogWarning("Error al procesar dt/hbw/belt: " + ex.Message); }
@@ -333,7 +380,7 @@ public class MQTTClient : MonoBehaviour
                     saw = netData.saw,
                     ts = netData.ts
                 };
-                lock (colaMensajes) { colaMensajes.Enqueue(legacyData); }
+                lock (colaMensajes) { colaMensajes.Enqueue(legacyData); } // Las órdenes críticas SÍ usan cola
             }
             catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/turntable: " + ex.Message); }
         }
@@ -392,8 +439,6 @@ public class MQTTClient : MonoBehaviour
     }
 
     public string GetLastHBWStatus() => lastHBWJson;
-
-    // Método simple para que el controlador verifique si los datos ya entraron por caché
     public string[] GetInitialStock() => initialStock;
 
     private void OnApplicationQuit()
