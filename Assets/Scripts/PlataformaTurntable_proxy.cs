@@ -8,11 +8,10 @@ public class PlataformaTurntable_proxy : MonoBehaviour
 
     [Header("Ajuste de Altura Global")]
     [Tooltip("Ajusta la altura en el eje Y global para que la pieza apoye perfectamente sobre el plato.")]
-    public float offsetAlturaY = 0.05f;
+    public float offsetAlturaY = 0.01f; // Ajustado por defecto a un valor más real (1cm)
 
     private void Start()
     {
-        // Intenta buscar el controlador automáticamente si no se arrastró en el Inspector
         if (controlador == null)
         {
             controlador = Object.FindFirstObjectByType<ControladorTurntableMPO_mqtt>();
@@ -23,39 +22,50 @@ public class PlataformaTurntable_proxy : MonoBehaviour
     {
         if (other.name.ToLower().Contains("pieza"))
         {
-            // 🔥 FILTRO MAESTRO: Si el Pusher está activo o extendiéndose, la mesa se congela
-            // y no procesa la pieza, evitando la guerra de parentesco (Tug of War).
-            if (controlador != null && controlador.EjectorEstaActivo)
-            {
-                return;
-            }
+            // Si la pieza ya es hija directa de la mesa (porque la acopló el brazo),
+            // ignoramos el trigger para evitar re-cálculos innecesarios.
+            if (other.transform.parent == this.transform) return;
 
-            Debug.Log($"[Turntable]: Pieza '{other.name}' detectada de forma segura. Centrando en el plato.");
+            AcoplarPiezaEnMesa(other.transform);
+        }
+    }
 
-            Quaternion rotacionMundoOriginal = other.transform.rotation;
-            BoxCollider miCollider = GetComponent<BoxCollider>();
+    // =======================================================================
+    // METODO DE ACOPLE DIRECTO (Invocado de forma segura por el brazo MPO)
+    // =======================================================================
+    public void AcoplarPiezaEnMesa(Transform pieza)
+    {
+        if (controlador != null && controlador.EjectorEstaActivo)
+        {
+            return;
+        }
 
-            if (miCollider != null)
-            {
-                Vector3 centroRealMundo = miCollider.bounds.center;
-                other.transform.position = new Vector3(centroRealMundo.x, centroRealMundo.y + offsetAlturaY, centroRealMundo.z);
-            }
-            else
-            {
-                other.transform.position = this.transform.position;
-            }
+        Debug.Log($"[Turntable - ACOPLE]: Fijando pieza '{pieza.name}' de forma segura en el centro del plato.");
 
-            other.transform.rotation = rotacionMundoOriginal;
-            other.transform.SetParent(this.transform, true);
+        Quaternion rotacionMundoOriginal = pieza.rotation;
+        BoxCollider miCollider = GetComponent<BoxCollider>();
 
-            Physics.SyncTransforms();
+        if (miCollider != null)
+        {
+            Vector3 centroRealMundo = miCollider.bounds.center;
+            // Posicionamos la pieza exactamente sobre el colisionador usando el offset del Inspector
+            pieza.position = new Vector3(centroRealMundo.x, centroRealMundo.y + offsetAlturaY, centroRealMundo.z);
+        }
+        else
+        {
+            pieza.position = this.transform.position;
+        }
 
-            Rigidbody rb = other.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.useGravity = false;
-            }
+        pieza.rotation = rotacionMundoOriginal;
+        pieza.SetParent(this.transform, true);
+
+        Physics.SyncTransforms();
+
+        Rigidbody rb = pieza.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
         }
     }
 }

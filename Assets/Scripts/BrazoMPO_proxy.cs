@@ -123,11 +123,27 @@ public class BrazoMPO_proxy : MonoBehaviour
             cooldownSuelte = 1f;
             piezaActual = null;
 
-            // Si el destino es el horno, forzamos su script proxy para que la registre y calibre en Y al instante
-            PlataformaHorno_proxy horno = destino.GetComponent<PlataformaHorno_proxy>();
+            // Buscamos componentes proxy en el destino de forma tolerante (directo o en sub-objetos)
+            PlataformaHorno_proxy horno = destino.GetComponent<PlataformaHorno_proxy>() ?? destino.GetComponentInChildren<PlataformaHorno_proxy>();
+            PlataformaTurntable_proxy turntable = destino.GetComponent<PlataformaTurntable_proxy>() ?? destino.GetComponentInChildren<PlataformaTurntable_proxy>();
+
             if (horno != null)
             {
+                // Caso A: El destino es el horno
                 horno.AcoplarPiezaEnPuntoDeContacto(piezaASueltar);
+            }
+            else if (turntable != null)
+            {
+                // Caso B: El destino es la mesa giratoria (¡NUEVO ACOPLE DIRECTO!)
+                turntable.AcoplarPiezaEnMesa(piezaASueltar);
+            }
+            else
+            {
+                // Caso C: Cualquier otro destino (caída libre por gravedad)
+                Rigidbody rb = piezaASueltar.GetComponent<Rigidbody>() ?? piezaASueltar.gameObject.AddComponent<Rigidbody>();
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             }
         }
     }

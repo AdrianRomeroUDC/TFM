@@ -11,6 +11,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
     public Transform plataformaDSO;
 
     [Header("Referencias Pinza")]
+    [Tooltip("Arrastra aquí el objeto 'puntoAnclajeVentosa' del VGR")]
     public Transform pinzaVGR;
 
     private const float offsetAlturaDSO = 0.02f;
@@ -189,7 +190,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
                     posLocalLimpiaDSO.z = 0f;
                     piezaDSO.transform.localPosition = posLocalLimpiaDSO;
 
-                    // CORRECCIÓN AQUÍ: Cambiado ?? por comprobación explícita nativa de Unity
                     Rigidbody rb = piezaDSO.GetComponent<Rigidbody>();
                     if (rb == null)
                     {
@@ -201,7 +201,54 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 break;
 
             case "DELETE_DSO":
-                if (piezaDSO != null) { Destroy(piezaDSO); piezaDSO = null; }
+                if (piezaDSO != null)
+                {
+                    Destroy(piezaDSO);
+                    piezaDSO = null;
+                }
+
+                if (plataformaDSO != null)
+                {
+                    Collider colPlatDSO = plataformaDSO.GetComponent<Collider>();
+                    Vector3 centroDSO = (colPlatDSO != null) ? colPlatDSO.bounds.center : plataformaDSO.position;
+
+                    Collider[] collidersContacto = Physics.OverlapSphere(centroDSO, 0.06f);
+                    List<GameObject> objetosBorrar = new List<GameObject>();
+
+                    foreach (Collider col in collidersContacto)
+                    {
+                        if (col.transform == plataformaDSO) continue;
+
+                        Transform raizPieza = col.transform;
+                        while (raizPieza.parent != null &&
+                               raizPieza.parent != plataformaDSO &&
+                               !raizPieza.parent.name.ToLower().Contains("plataforma"))
+                        {
+                            raizPieza = raizPieza.parent;
+                        }
+
+                        if (raizPieza.name.ToLower().Contains("pieza"))
+                        {
+                            if (!objetosBorrar.Contains(raizPieza.gameObject))
+                            {
+                                objetosBorrar.Add(raizPieza.gameObject);
+                            }
+                        }
+                    }
+
+                    foreach (GameObject obj in objetosBorrar)
+                    {
+                        if (obj == piezaDPS) piezaDPS = null;
+                        if (obj == piezaDSO) piezaDSO = null;
+
+                        Destroy(obj);
+                    }
+
+                    if (objetosBorrar.Count > 0)
+                    {
+                        Debug.Log($"<color=yellow><b>[DPS LIMPIEZA DSO]:</b> Se eliminaron {objetosBorrar.Count} pieza(s) físicas mediante radar.</color>");
+                    }
+                }
                 break;
 
             case "DELETE_DSI":
@@ -250,6 +297,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
     {
         GameObject piezaAColorar = null;
 
+        // Intentamos localizar la pieza colgada de la ventosa
         if (pinzaVGR != null)
         {
             foreach (Transform hijo in pinzaVGR.GetComponentsInChildren<Transform>())
@@ -262,12 +310,15 @@ public class ControladorDPS_mqtt : MonoBehaviour
             }
         }
 
+        // =======================================================================
+        // CORRECCIÓN CLAVE: Si no hay pieza en la ventosa, descartamos la orden.
+        // Se ha eliminado por completo el fallback a 'piezaDPS'.
+        // =======================================================================
         if (piezaAColorar == null)
         {
-            piezaAColorar = piezaDPS;
+            Debug.Log($"<color=orange><b>[DPS]:</b> Se recibió cambio de color '{color}' pero la ventosa del VGR está vacía. Comando descartado de forma segura.</color>");
+            return;
         }
-
-        if (piezaAColorar == null) return;
 
         GameObject prefabDestino = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : prefabAzul;
         if (prefabDestino == null) return;
@@ -293,6 +344,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
         ConfigurarFisicas(piezaNueva, "pieza_" + color.ToLower());
 
+        // Mantenemos la actualización de la referencia si coincide con piezaDPS por temas de limpieza
         if (piezaAColorar == piezaDPS)
         {
             piezaDPS = piezaNueva;
@@ -300,7 +352,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
         if (pinzaVGR != null && (padreViejo == pinzaVGR || padreViejo.IsChildOf(pinzaVGR)))
         {
-            // CORRECCIÓN AQUÍ: Eliminado ?? para evitar punteros fantasma con scripts de Unity
             ControladorVGR_mqtt vgrScript = pinzaVGR.GetComponentInParent<ControladorVGR_mqtt>();
             if (vgrScript == null)
             {
@@ -321,7 +372,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
     {
         p.name = nombreDestino;
 
-        // CORRECCIÓN AQUÍ: Cambiado ?? por comprobación explícita nativa de Unity
         Rigidbody rb = p.GetComponent<Rigidbody>();
         if (rb == null)
         {
