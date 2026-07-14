@@ -42,19 +42,21 @@ public class MPOHornoPayload
     public string ts;
 }
 
+// --- MODIFICADO: Añadido move2Ref8 a la estructura de la Turntable ---
 [Serializable]
 public class MPOTurntablePayload
 {
     public int eject;
-    public int move2Ref10;
     public int move2Ref7;
+    public int move2Ref8;
     public int move2Ref9;
+    public int move2Ref10;
     public int saw;
     public int rotation;
     public string ts;
 }
 
-// --- MODIFICADO: Estructura MPOBrazo adaptada al nuevo flujo de estados ---
+// --- Estructura MPOBrazo adaptada al nuevo flujo de estados ---
 [Serializable]
 public class MPOBrazoPayload
 {
@@ -77,13 +79,27 @@ public class MPOBrazoPayload
 [Serializable] internal class JSON_SLDCylinder { public string cyl_color; public bool active; }
 [Serializable] internal class JSON_MPOBelt { public bool active; public bool exit_sensor; public string ts; }
 [Serializable] internal class JSON_MPOOven { public bool oven_sensor; public bool close_door; public bool lights; public bool move2Ref5; public bool move2Ref6; public bool open_door; public string ts; }
-[Serializable] internal class JSON_MPOTurntable { public bool eject; public bool move2Ref7; public bool move2Ref9; public bool move2Ref10; public int rotation; public int saw; public string ts; }
-[Serializable] internal class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
-[Serializable] internal class JSON_SSCCamera { public float pan; public float tilt; }
-[Serializable] internal class JSON_HBWStock { public string[] stock; }
-[Serializable] internal class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
 
-// --- MODIFICADO: Estructura interna de red MPO adaptada a Booleanos ---
+// --- MODIFICADO: Añadido move2Ref8 a la deserialización JSON de la Turntable ---
+[Serializable]
+internal class JSON_MPOTurntable
+{
+    public bool eject;
+    public bool move2Ref7;
+    public bool move2Ref8;
+    public bool move2Ref9;
+    public bool move2Ref10;
+    public int rotation;
+    public int saw;
+    public string ts;
+}
+
+[Serializable] public class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
+[Serializable] public class JSON_SSCCamera { public float pan; public float tilt; }
+[Serializable] public class JSON_HBWStock { public string[] stock; }
+[Serializable] public class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
+
+// --- Estructura interna de red MPO adaptada a Booleanos ---
 [Serializable]
 internal class JSON_MPOArm
 {
@@ -382,6 +398,7 @@ public class MQTTClient : MonoBehaviour
                 {
                     eject = netData.eject ? 1 : 0,
                     move2Ref7 = netData.move2Ref7 ? 1 : 0,
+                    move2Ref8 = netData.move2Ref8 ? 1 : 0,
                     move2Ref9 = netData.move2Ref9 ? 1 : 0,
                     move2Ref10 = netData.move2Ref10 ? 1 : 0,
                     rotation = netData.rotation,
@@ -407,9 +424,6 @@ public class MQTTClient : MonoBehaviour
             }
             catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/belt: " + ex.Message); }
         }
-        // =======================================================================
-        // TOPIC ACTUALIZADO: MPO ARM PROCESADO CON NUEVOS BOOLEANOS DE ESTADO
-        // =======================================================================
         else if (topic == "dt/mpo/arm")
         {
             try

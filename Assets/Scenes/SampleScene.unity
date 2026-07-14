@@ -10791,7 +10791,7 @@ MonoBehaviour:
   ejeVertical: {fileID: 1202329174}
   puntoAgarre: {fileID: 4672518605949027983}
   zHorno: 0.003699
-  zTurntable: 0.001729
+  zTurntable: 0.0017
   xReposo: 0.0006319999
   xPickup: 0.0009
   tiempoRecorridoHorizontal: 10

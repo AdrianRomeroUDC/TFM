@@ -40,15 +40,17 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
     private float sawDir = 0f;
     private Vector3 targetPosEjector;
 
-    // CONTROL DE FLUJO: Evita que el cambio de parentesco se ejecute repetidamente en cada frame
+    // --- CONTROL LÓGICO INDESTRUCTIBLE ---
+    private bool _pusherDebeExtenderse = false;
     private bool piezaLiberadaEnEsteCiclo = false;
 
+    // Tu tolerancia original exacta
     public bool EjectorEstaActivo
     {
         get
         {
             if (ejector == null) return false;
-            return (targetPosEjector == posEjectExtendido) || (Vector3.Distance(ejector.localPosition, posEjectRetraido) > 0.000001f);
+            return _pusherDebeExtenderse || (Vector3.Distance(ejector.localPosition, posEjectRetraido) > 0.000001f);
         }
     }
 
@@ -58,6 +60,7 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
         targetAngleY = anguloVirtualActual;
         targetPosEjector = (ejector != null) ? ejector.localPosition : Vector3.zero;
         piezaLiberadaEnEsteCiclo = false;
+        _pusherDebeExtenderse = false;
     }
 
     void Update()
@@ -70,7 +73,8 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 if (MQTTClient.Instance.colaMensajes.Count > 0)
                 {
                     var data = MQTTClient.Instance.colaMensajes.Peek();
-                    bool esSoloActuador = (data.move2Ref7 == 0 && data.move2Ref9 == 0 && data.move2Ref10 == 0);
+                    // Filtro con move2Ref8 integrado
+                    bool esSoloActuador = (data.move2Ref7 == 0 && data.move2Ref8 == 0 && data.move2Ref9 == 0 && data.move2Ref10 == 0);
 
                     if (!estaOcupado || esSoloActuador)
                     {
@@ -101,15 +105,16 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
         {
             ejector.localPosition = Vector3.MoveTowards(ejector.localPosition, targetPosEjector, velocidadEjector * Time.deltaTime);
 
-            // Solo intenta la liberación si el objetivo es extenderse Y no ha liberado aún en esta carrera
-            if (targetPosEjector == posEjectExtendido && !piezaLiberadaEnEsteCiclo)
+            if (_pusherDebeExtenderse && !piezaLiberadaEnEsteCiclo)
             {
                 float distanciaAlObjetivo = Vector3.Distance(ejector.localPosition, posEjectExtendido);
 
-                if (distanciaAlObjetivo < 0.000001f)
+                // Tu tolerancia original de liberación por distancia física
+                if (distanciaAlObjetivo < 0.00001f)
                 {
+                    Debug.Log("<color=cyan><b>[Pusher]:</b> Llegó al límite físico. Liberando pieza por distancia.</color>");
                     LiberarPiezaEnCinta();
-                    piezaLiberadaEnEsteCiclo = true; // Enclava para evitar bucles repetitivos
+                    piezaLiberadaEnEsteCiclo = true;
                 }
             }
         }
@@ -123,22 +128,36 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
 
     void ProcesarComando(MPOTurntablePayload data)
     {
+        // COMANDO DE RETORNO (eject = 0)
         if (data.eject == 0)
         {
+            // SI ESTABA EXTENDIÉNDOSE Y NO SE HABÍA LIBERADO LA PIEZA: Forzamos la liberación inmediata
+            if (_pusherDebeExtenderse && !piezaLiberadaEnEsteCiclo)
+            {
+                Debug.Log("<color=orange><b>[Pusher]:</b> Se recibió comando de retorno antes de llegar al límite. ¡Forzando liberación segura!</color>");
+                LiberarPiezaEnCinta();
+                piezaLiberadaEnEsteCiclo = true;
+            }
+
             piezaLiberadaEnEsteCiclo = false;
+            _pusherDebeExtenderse = false;
+        }
+        else if (data.eject == 1)
+        {
+            _pusherDebeExtenderse = true;
         }
 
-        targetPosEjector = (data.eject == 1) ? posEjectExtendido : posEjectRetraido;
+        targetPosEjector = _pusherDebeExtenderse ? posEjectExtendido : posEjectRetraido;
         sawDir = (float)data.saw;
 
-        bool tieneOrdenDeReferencia = (data.move2Ref7 == 1 || data.move2Ref9 == 1 || data.move2Ref10 == 1);
+        bool tieneOrdenDeReferencia = (data.move2Ref7 == 1 || data.move2Ref8 == 1 || data.move2Ref9 == 1 || data.move2Ref10 == 1);
 
         if (tieneOrdenDeReferencia)
         {
             float nuevoAngulo = -1;
             if (data.move2Ref7 == 1) nuevoAngulo = TurntableBrazo;
             else if (data.move2Ref9 == 1) nuevoAngulo = TurntableCinta;
-            else if (data.move2Ref10 == 1) nuevoAngulo = TurntableSierra;
+            else if (data.move2Ref10 == 1 || data.move2Ref8 == 1) nuevoAngulo = TurntableSierra;
 
             if (nuevoAngulo != -1)
             {
@@ -146,9 +165,25 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 anguloVirtualActual = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
 
                 if (data.rotation != 0)
+                {
                     sentidoGiro = data.rotation;
+                }
                 else
-                    sentidoGiro = (Mathf.DeltaAngle(anguloVirtualActual, targetAngleY) > 0) ? 1 : -1;
+                {
+                    // Sentidos de giro por defecto
+                    if (data.move2Ref7 == 1 || data.move2Ref8 == 1)
+                    {
+                        sentidoGiro = -1; // Antihorario
+                    }
+                    else if (data.move2Ref9 == 1 || data.move2Ref10 == 1)
+                    {
+                        sentidoGiro = 1;  // Horario
+                    }
+                    else
+                    {
+                        sentidoGiro = (Mathf.DeltaAngle(anguloVirtualActual, targetAngleY) > 0) ? 1 : -1;
+                    }
+                }
 
                 float diff = Mathf.DeltaAngle(anguloVirtualActual, targetAngleY);
 
@@ -165,6 +200,7 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
     {
         Transform piezaSujeta = null;
 
+        // 1. Buscamos recursivamente en todo el eyector
         foreach (Transform hijo in ejector.GetComponentsInChildren<Transform>())
         {
             if (hijo != ejector && hijo.name.ToLower().Contains("pieza"))
@@ -174,16 +210,38 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
             }
         }
 
+        // 2. Si no es hijo directo del eyector, buscamos en la estructura global de la mesa
+        if (piezaSujeta == null)
+        {
+            foreach (Transform hijo in transform.GetComponentsInChildren<Transform>())
+            {
+                if (hijo.name.ToLower().Contains("pieza"))
+                {
+                    piezaSujeta = hijo;
+                    break;
+                }
+            }
+        }
+
         if (piezaSujeta != null)
         {
-            if (cintaMPO != null)
+            Transform realCinta = cintaMPO;
+
+            if (realCinta != null)
             {
+                // ESCUDO DE AUTODEFENSA: Si asignaste el script MPO_cinta_mqtt, obtenemos la cinta física real
+                ControladorCintaMPO_mqtt scriptCinta = realCinta.GetComponent<ControladorCintaMPO_mqtt>();
+                if (scriptCinta != null && scriptCinta.objetoCintaPadre != null)
+                {
+                    realCinta = scriptCinta.objetoCintaPadre;
+                }
+
                 Transform eslabonMasCercano = null;
                 float distanciaMinima = float.MaxValue;
 
-                foreach (Transform eslabon in cintaMPO.GetComponentsInChildren<Transform>())
+                foreach (Transform eslabon in realCinta.GetComponentsInChildren<Transform>())
                 {
-                    if (eslabon == cintaMPO) continue;
+                    if (eslabon == realCinta) continue;
 
                     float distancia = Vector3.Distance(piezaSujeta.position, eslabon.position);
                     if (distancia < distanciaMinima)
@@ -197,18 +255,11 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 {
                     Debug.Log($"<color=green>[CINTA]: Transferida con éxito la pieza '{piezaSujeta.name}' al eslabón '{eslabonMasCercano.name}' (Distancia: {distanciaMinima:F5}).</color>");
 
-                    // 1. Asignamos el nuevo padre. Al usar 'true', Unity conserva intacta la orientación del mundo real.
                     piezaSujeta.SetParent(eslabonMasCercano, true);
 
-                    // 2. Centramos la pieza en la superficie del eslabón usando los valores reales del Pivot
                     Vector3 posDeseada = new Vector3(0f, 0.000154f, 0.000178f);
                     piezaSujeta.localPosition = posDeseada;
 
-                    // --- CORRECCIÓN CLAVE ---
-                    // Se elimina por completo la sobrescritura de 'localRotation'. 
-                    // Así, mantendrá la relación angular perfecta calculada por el SetParent original.
-
-                    // 3. Aseguramos físicas estables e inmóviles dentro de la cinta
                     Rigidbody rb = piezaSujeta.GetComponent<Rigidbody>();
                     if (rb != null)
                     {
@@ -230,7 +281,7 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[Pusher]: Se estiró al máximo pero no llevaba ninguna pieza como hija de forma directa.");
+            Debug.LogWarning("[Pusher]: Se intentó liberar la pieza pero no se detectó ninguna pieza sujeta.");
         }
     }
 }
