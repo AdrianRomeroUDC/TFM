@@ -3496,7 +3496,7 @@ MonoBehaviour:
   sensorEntradaObjeto: {fileID: 8836232917588539197}
   offsetBusqueda: {x: 0, y: 0, z: 0}
   mostrarGizmos: 1
-  multiplicadorVelocidad: 0.0095
+  multiplicadorVelocidad: 0.00955
   velocidadActual: 0
   SensorEntrada: 0
   SensorCilindros: 0
@@ -261548,8 +261548,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.00020915223, y: 0.00014999993, z: 0.000198}
-  m_Center: {x: -0.000045423865, y: 0.00007499982, z: 0.000074999996}
+  m_Size: {x: 0.0001754552, y: 0.00014999993, z: 0.000198}
+  m_Center: {x: -0.000062272404, y: 0.00007499983, z: 0.000074999996}
 --- !u!54 &7911775429924827098
 Rigidbody:
   m_ObjectHideFlags: 0

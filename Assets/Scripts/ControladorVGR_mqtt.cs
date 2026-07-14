@@ -119,6 +119,11 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public void RegistrarContenedorBajoVentosa(ContenedorHBW_proxy contenedor) => contenedorActual = contenedor;
     public ContenedorHBW_proxy ObtenerContenedorActual() => contenedorActual;
     public Transform ObtenerPiezaEnganchada() => piezaEnganchada;
+    public void AsignarPiezaEnganchada(Transform nuevaPieza)
+    {
+        piezaEnganchada = nuevaPieza;
+        Debug.Log($"<color=lime><b>[VGR ENLACE]:</b> Referencia de pieza actualizada a '{nuevaPieza.name}' por cambio de color.</color>");
+    }
     public void SetPiezaCercana(Transform pieza) => piezaCercana = pieza;
 
     private void ProcesarLogicaGrip(bool activo)

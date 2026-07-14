@@ -13,9 +13,8 @@ public class ControladorDPS_mqtt : MonoBehaviour
     [Header("Referencias Pinza")]
     public Transform pinzaVGR;
 
-    // Configuración fija y oculta del Inspector (Privada)
     private const float offsetAlturaDSO = 0.02f;
-    private const float offsetYDSI = 0.000572f; // <--- Solo para la plataforma DSI
+    private const float offsetYDSI = 0.000572f;
 
     [Header("Prefabs Visuales")]
     public GameObject prefabBaseGris;
@@ -50,7 +49,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
         if (MQTTClient.Instance != null)
         {
             MQTTClient.Instance.OnDPSPiezaDSIEvent -= ActualizarPiezaDSI;
-            MQTTClient.Instance.OnDPSPiezaDSOEvent -= ActualizarPiezaDSO; // <--- CORREGIDO: Ya no da error de contexto
+            MQTTClient.Instance.OnDPSPiezaDSOEvent -= ActualizarPiezaDSO;
             MQTTClient.Instance.OnDPSColorEvent -= ActualizarColor;
             MQTTClient.Instance.OnVGRGripEvent -= ActualizarGrip;
         }
@@ -119,30 +118,35 @@ public class ControladorDPS_mqtt : MonoBehaviour
                     break;
                 }
 
-                if (piezaDPS != null) Destroy(piezaDPS);
+                if (piezaDPS != null)
+                {
+                    if (piezaDPS.transform.parent != plataformaDSI)
+                    {
+                        Debug.Log("<color=yellow><b>[DPS]:</b> Liberando puntero de la pieza anterior (está en el robot). No se destruirá.</color>");
+                        piezaDPS = null;
+                    }
+                    else
+                    {
+                        Destroy(piezaDPS);
+                    }
+                }
 
-                // 1. OBTENER CENTRO GEOMÉTRICO REAL DE LA PLATAFORMA DSI
                 Collider colliderPlatDSI = plataformaDSI.GetComponent<Collider>();
                 Vector3 centroPlatDSIMundo = (colliderPlatDSI != null) ? colliderPlatDSI.bounds.center : plataformaDSI.position;
 
-                // 2. INSTANCIACIÓN Y ROTACIÓN INITIAL
                 piezaDPS = Instantiate(prefabBaseGris);
                 piezaDPS.name = "pieza_base_dsi";
                 piezaDPS.transform.rotation = plataformaDSI.rotation * Quaternion.Euler(-90f, 0f, 0f);
 
-                // 3. DESFASE DE PIVOTE CAD
                 BoxCollider colliderPiezaDSI = piezaDPS.GetComponentInChildren<BoxCollider>();
                 Vector3 centroPiezaLocalDSI = (colliderPiezaDSI != null) ? colliderPiezaDSI.center : Vector3.zero;
-
                 centroPiezaLocalDSI.z = 0f;
                 Vector3 offsetMundoPiezaDSI = piezaDPS.transform.TransformDirection(centroPiezaLocalDSI);
 
-                // 4. POSICIONAMIENTO MATEMÁTICO
                 Vector3 posFinalDSI = centroPlatDSIMundo - offsetMundoPiezaDSI;
                 posFinalDSI += piezaDPS.transform.up * offsetAlturaDSO;
                 piezaDPS.transform.position = posFinalDSI;
 
-                // 5. EMPARENTADO Y AJUSTE LOCAL EXACTO EN Y / Z (SOLO DSI)
                 piezaDPS.transform.SetParent(plataformaDSI, true);
                 Vector3 posLocalLimpiaDSI = piezaDPS.transform.localPosition;
                 posLocalLimpiaDSI.y = offsetYDSI;
@@ -150,16 +154,11 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 piezaDPS.transform.localPosition = posLocalLimpiaDSI;
 
                 ConfigurarFisicas(piezaDPS, "pieza_base_dsi");
-                Debug.Log("<color=green><b>[GEMELO DIGITAL]:</b> Pieza DSI generada en el centro optimizado (Y=" + offsetYDSI + ", Z=0).</color>");
+                Debug.Log("<color=green><b>[GEMELO DIGITAL]:</b> Pieza DSI generada de forma segura.</color>");
                 break;
 
             case "SPAWN_DSO":
-                if (plataformaDSO == null)
-                {
-                    Debug.LogWarning("[DPS] No se ha asignado la referencia de la plataformaDSO en el Inspector.");
-                    break;
-                }
-
+                if (plataformaDSO == null) { Debug.LogWarning("[DPS] Falta plataformaDSO."); break; }
                 Collider colliderPlatDSO = plataformaDSO.GetComponent<Collider>();
                 Vector3 centroPlatDSOMundo = (colliderPlatDSO != null) ? colliderPlatDSO.bounds.center : plataformaDSO.position;
 
@@ -167,11 +166,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 Collider[] collidersCercanos = Physics.OverlapSphere(centroPlatDSOMundo, 0.05f);
                 foreach (Collider col in collidersCercanos)
                 {
-                    if (col.name.ToLower().Contains("pieza"))
-                    {
-                        yaHayPieza = true;
-                        break;
-                    }
+                    if (col.name.ToLower().Contains("pieza")) { yaHayPieza = true; break; }
                 }
 
                 if (!yaHayPieza && piezaDSO == null)
@@ -194,109 +189,49 @@ public class ControladorDPS_mqtt : MonoBehaviour
                     posLocalLimpiaDSO.z = 0f;
                     piezaDSO.transform.localPosition = posLocalLimpiaDSO;
 
+                    // CORRECCIÓN AQUÍ: Cambiado ?? por comprobación explícita nativa de Unity
                     Rigidbody rb = piezaDSO.GetComponent<Rigidbody>();
-                    if (rb == null) rb = piezaDSO.AddComponent<Rigidbody>();
+                    if (rb == null)
+                    {
+                        rb = piezaDSO.AddComponent<Rigidbody>();
+                    }
                     rb.isKinematic = true;
                     rb.useGravity = false;
-
-                    Debug.Log("<color=cyan><b>[GEMELO DIGITAL]:</b> Pieza DSO generada (Y original preservada, Z=0).</color>");
                 }
                 break;
 
             case "DELETE_DSO":
-                if (piezaDSO != null)
-                {
-                    Destroy(piezaDSO);
-                    piezaDSO = null;
-                }
-
-                if (plataformaDSO != null)
-                {
-                    Collider colPlatDSO = plataformaDSO.GetComponent<Collider>();
-                    Vector3 centroDSO = (colPlatDSO != null) ? colPlatDSO.bounds.center : plataformaDSO.position;
-
-                    Collider[] collidersContacto = Physics.OverlapSphere(centroDSO, 0.05f);
-                    List<GameObject> objetosBorrar = new List<GameObject>();
-
-                    foreach (Collider col in collidersContacto)
-                    {
-                        if (col.transform == plataformaDSO) continue;
-
-                        Transform raizPieza = col.transform;
-                        while (raizPieza.parent != null && raizPieza.parent != plataformaDSO && !raizPieza.parent.name.ToLower().Contains("plataforma"))
-                        {
-                            raizPieza = raizPieza.parent;
-                        }
-
-                        if (raizPieza.name.ToLower().Contains("pieza"))
-                        {
-                            if (!objetosBorrar.Contains(raizPieza.gameObject))
-                            {
-                                objetosBorrar.Add(raizPieza.gameObject);
-                            }
-                        }
-                    }
-
-                    foreach (GameObject obj in objetosBorrar)
-                    {
-                        if (obj == piezaDPS) piezaDPS = null;
-                        if (obj == piezaDSO) piezaDSO = null;
-
-                        Destroy(obj);
-                    }
-
-                    if (objetosBorrar.Count > 0)
-                    {
-                        Debug.Log($"<color=yellow><b>[GEMELO DIGITAL]:</b> Se han limpiado {objetosBorrar.Count} pieza(s) detectada(s) en la plataforma DSO.</color>");
-                    }
-                }
+                if (piezaDSO != null) { Destroy(piezaDSO); piezaDSO = null; }
                 break;
 
             case "DELETE_DSI":
                 if (piezaDPS != null && !gripActivo && piezaDPS.transform.parent == plataformaDSI)
                 {
-                    Destroy(piezaDPS);
-                    piezaDPS = null;
+                    Destroy(piezaDPS); piezaDPS = null;
                 }
                 break;
 
-            // =======================================================================
-            // UNICA MODIFICACIÓN: ESCUDO DE INTERCEPCIÓN EN EL DROP
-            // =======================================================================
             case "DROP":
                 if (piezaDPS != null)
                 {
-                    // Si la pieza ya NO es hija de la plataforma DSI (porque la lleva el VGR o ya entró al cajón)
-                    // detenemos el DROP del DPS para que no rompa el parentesco del contenedor.
-                    if (piezaDPS.transform.parent != plataformaDSI)
-                    {
-                        piezaDPS = null;
-                        break;
-                    }
+                    if (piezaDPS.transform.parent == plataformaDSI) break;
 
                     if (piezaDPS.transform.parent != null &&
                         (piezaDPS.transform.parent.name.ToLower().Contains("cajon") ||
-                         piezaDPS.transform.parent.name.ToLower().Contains("container") ||
-                         piezaDPS.transform.parent.GetComponent<ContenedorHBW_proxy>() != null))
+                         piezaDPS.transform.parent.name.ToLower().Contains("container")))
                     {
-                        Debug.Log("<color=cyan><b>[DPS PROTECCIÓN]:</b> Drop ignorado. La pieza ya pertenece al contenedor HBW.</color>");
                         piezaDPS = null;
                     }
                     else
                     {
                         piezaDPS.transform.SetParent(null);
-
                         BoxCollider[] colliders = piezaDPS.GetComponentsInChildren<BoxCollider>();
-                        foreach (BoxCollider col in colliders)
-                        {
-                            if (col != null) col.isTrigger = false;
-                        }
+                        foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
 
                         Rigidbody rb = piezaDPS.GetComponent<Rigidbody>();
                         if (rb != null)
                         {
-                            rb.isKinematic = false;
-                            rb.useGravity = true;
+                            rb.isKinematic = false; rb.useGravity = true;
                             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
                         }
                     }
@@ -313,14 +248,33 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
     void SustituirPorPrefabColor(string color)
     {
-        if (piezaDPS == null) return;
+        GameObject piezaAColorar = null;
+
+        if (pinzaVGR != null)
+        {
+            foreach (Transform hijo in pinzaVGR.GetComponentsInChildren<Transform>())
+            {
+                if (hijo.name.ToLower().Contains("pieza"))
+                {
+                    piezaAColorar = hijo.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (piezaAColorar == null)
+        {
+            piezaAColorar = piezaDPS;
+        }
+
+        if (piezaAColorar == null) return;
 
         GameObject prefabDestino = (color == "WHITE") ? prefabBlanco : (color == "RED") ? prefabRojo : prefabAzul;
         if (prefabDestino == null) return;
 
-        Vector3 posicionVieja = piezaDPS.transform.position;
-        Quaternion rotacionVieja = piezaDPS.transform.rotation;
-        Transform padreViejo = piezaDPS.transform.parent;
+        Vector3 posicionVieja = piezaAColorar.transform.position;
+        Quaternion rotacionVieja = piezaAColorar.transform.rotation;
+        Transform padreViejo = piezaAColorar.transform.parent;
 
         GameObject piezaNueva = Instantiate(prefabDestino, posicionVieja, rotacionVieja);
 
@@ -339,25 +293,44 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
         ConfigurarFisicas(piezaNueva, "pieza_" + color.ToLower());
 
-        Destroy(piezaDPS);
-        piezaDPS = piezaNueva;
+        if (piezaAColorar == piezaDPS)
+        {
+            piezaDPS = piezaNueva;
+        }
 
-        Debug.Log($"<color=lime><b>[DPS Sustitución]:</b> Pieza directa '{piezaNueva.name}' sustituida manteniendo alineación.</color>");
+        if (pinzaVGR != null && (padreViejo == pinzaVGR || padreViejo.IsChildOf(pinzaVGR)))
+        {
+            // CORRECCIÓN AQUÍ: Eliminado ?? para evitar punteros fantasma con scripts de Unity
+            ControladorVGR_mqtt vgrScript = pinzaVGR.GetComponentInParent<ControladorVGR_mqtt>();
+            if (vgrScript == null)
+            {
+                vgrScript = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
+            }
+
+            if (vgrScript != null)
+            {
+                vgrScript.AsignarPiezaEnganchada(piezaNueva.transform);
+            }
+        }
+
+        Destroy(piezaAColorar);
+        Debug.Log($"<color=lime><b>[DPS MATRICIAL]:</b> Cambio de color '{color}' aplicado con éxito al objetivo correcto.</color>");
     }
 
     void ConfigurarFisicas(GameObject p, string nombreDestino)
     {
         p.name = nombreDestino;
 
+        // CORRECCIÓN AQUÍ: Cambiado ?? por comprobación explícita nativa de Unity
         Rigidbody rb = p.GetComponent<Rigidbody>();
-        if (rb == null) rb = p.AddComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = p.AddComponent<Rigidbody>();
+        }
         rb.isKinematic = true;
         rb.useGravity = false;
 
         BoxCollider[] colliders = p.GetComponentsInChildren<BoxCollider>();
-        foreach (BoxCollider col in colliders)
-        {
-            if (col != null) col.isTrigger = gripActivo;
-        }
+        foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = gripActivo;
     }
 }

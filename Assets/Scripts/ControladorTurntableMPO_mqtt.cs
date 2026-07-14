@@ -38,19 +38,18 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
     private int sentidoGiro = 0;
     private bool estaOcupado = false;
     private float sawDir = 0f;
-    private Vector3 targetPosEjector;
 
-    // --- CONTROL LÓGICO INDESTRUCTIBLE ---
-    private bool _pusherDebeExtenderse = false;
+    // --- AUTOMATIZACIÓN POR CICLO AUTO-MANTENIDO ---
+    private bool _pusherMoviendoseHaciaAfuera = false;
     private bool piezaLiberadaEnEsteCiclo = false;
 
-    // Tu tolerancia original exacta
+    // El eyector se considera activo si va hacia afuera o si aún no ha regresado a su base de reposo
     public bool EjectorEstaActivo
     {
         get
         {
             if (ejector == null) return false;
-            return _pusherDebeExtenderse || (Vector3.Distance(ejector.localPosition, posEjectRetraido) > 0.000001f);
+            return _pusherMoviendoseHaciaAfuera || (Vector3.Distance(ejector.localPosition, posEjectRetraido) > 0.00001f);
         }
     }
 
@@ -58,14 +57,13 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
     {
         anguloVirtualActual = Normalizar(pivotMesaGiratoria.localEulerAngles.y);
         targetAngleY = anguloVirtualActual;
-        targetPosEjector = (ejector != null) ? ejector.localPosition : Vector3.zero;
         piezaLiberadaEnEsteCiclo = false;
-        _pusherDebeExtenderse = false;
+        _pusherMoviendoseHaciaAfuera = false;
     }
 
     void Update()
     {
-        // 1. MQTT - PROCESAMIENTO
+        // 1. MQTT - PROCESAMIENTO DE COLA
         if (MQTTClient.Instance != null)
         {
             lock (MQTTClient.Instance.colaMensajes)
@@ -73,7 +71,6 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 if (MQTTClient.Instance.colaMensajes.Count > 0)
                 {
                     var data = MQTTClient.Instance.colaMensajes.Peek();
-                    // Filtro con move2Ref8 integrado
                     bool esSoloActuador = (data.move2Ref7 == 0 && data.move2Ref8 == 0 && data.move2Ref9 == 0 && data.move2Ref10 == 0);
 
                     if (!estaOcupado || esSoloActuador)
@@ -84,7 +81,7 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
             }
         }
 
-        // 2. Movimiento de Mesa
+        // 2. Movimiento de Mesa Giratoria
         if (estaOcupado)
         {
             anguloVirtualActual = Mathf.MoveTowards(anguloVirtualActual, targetVirtual, SpeedTurntable * Time.deltaTime);
@@ -100,21 +97,27 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
             }
         }
 
-        // 3. Ejector (Pusher)
+        // 3. Control Cinemático Automático del Ejector (Pusher)
         if (ejector)
         {
+            // Determinamos el objetivo dependiendo de la fase del ciclo en la que nos encontremos
+            Vector3 targetPosEjector = _pusherMoviendoseHaciaAfuera ? posEjectExtendido : posEjectRetraido;
+
             ejector.localPosition = Vector3.MoveTowards(ejector.localPosition, targetPosEjector, velocidadEjector * Time.deltaTime);
 
-            if (_pusherDebeExtenderse && !piezaLiberadaEnEsteCiclo)
+            // Fase de extensión y entrega
+            if (_pusherMoviendoseHaciaAfuera && !piezaLiberadaEnEsteCiclo)
             {
                 float distanciaAlObjetivo = Vector3.Distance(ejector.localPosition, posEjectExtendido);
 
-                // Tu tolerancia original de liberación por distancia física
-                if (distanciaAlObjetivo < 0.00001f)
+                if (distanciaAlObjetivo < 0.00005f) // Margen de llegada seguro
                 {
-                    Debug.Log("<color=cyan><b>[Pusher]:</b> Llegó al límite físico. Liberando pieza por distancia.</color>");
+                    Debug.Log("<color=green><b>[Pusher]:</b> Límite de carrera alcanzado. Entregando pieza a la cinta...</color>");
                     LiberarPiezaEnCinta();
                     piezaLiberadaEnEsteCiclo = true;
+
+                    // Conmutación automática: Iniciamos el retorno inmediato a casa
+                    _pusherMoviendoseHaciaAfuera = false;
                 }
             }
         }
@@ -128,26 +131,20 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
 
     void ProcesarComando(MPOTurntablePayload data)
     {
-        // COMANDO DE RETORNO (eject = 0)
-        if (data.eject == 0)
+        // El pulso de activación inicia el ciclo blindado
+        if (data.eject == 1)
         {
-            // SI ESTABA EXTENDIÉNDOSE Y NO SE HABÍA LIBERADO LA PIEZA: Forzamos la liberación inmediata
-            if (_pusherDebeExtenderse && !piezaLiberadaEnEsteCiclo)
+            // Solo disparamos si el pusher está en reposo para evitar re-disparos buclados
+            if (!_pusherMoviendoseHaciaAfuera && Vector3.Distance(ejector.localPosition, posEjectRetraido) < 0.0001f)
             {
-                Debug.Log("<color=orange><b>[Pusher]:</b> Se recibió comando de retorno antes de llegar al límite. ¡Forzando liberación segura!</color>");
-                LiberarPiezaEnCinta();
-                piezaLiberadaEnEsteCiclo = true;
+                _pusherMoviendoseHaciaAfuera = true;
+                piezaLiberadaEnEsteCiclo = false;
+                Debug.Log("<color=lime><b>[Pusher]:</b> Pulso EJECT detectado (30ms). Ejecutando carrera completa auto-mantenida.</color>");
             }
-
-            piezaLiberadaEnEsteCiclo = false;
-            _pusherDebeExtenderse = false;
         }
-        else if (data.eject == 1)
-        {
-            _pusherDebeExtenderse = true;
-        }
+        // NOTA DE INGENIERÍA: Ignoramos 'data.eject == 0' para evitar que los flancos de bajada 
+        // rápidos destruyan el avance mecánico del gemelo digital.
 
-        targetPosEjector = _pusherDebeExtenderse ? posEjectExtendido : posEjectRetraido;
         sawDir = (float)data.saw;
 
         bool tieneOrdenDeReferencia = (data.move2Ref7 == 1 || data.move2Ref8 == 1 || data.move2Ref9 == 1 || data.move2Ref10 == 1);
@@ -170,19 +167,9 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                 }
                 else
                 {
-                    // Sentidos de giro por defecto
-                    if (data.move2Ref7 == 1 || data.move2Ref8 == 1)
-                    {
-                        sentidoGiro = -1; // Antihorario
-                    }
-                    else if (data.move2Ref9 == 1 || data.move2Ref10 == 1)
-                    {
-                        sentidoGiro = 1;  // Horario
-                    }
-                    else
-                    {
-                        sentidoGiro = (Mathf.DeltaAngle(anguloVirtualActual, targetAngleY) > 0) ? 1 : -1;
-                    }
+                    if (data.move2Ref7 == 1 || data.move2Ref8 == 1) sentidoGiro = -1; // Antihorario
+                    else if (data.move2Ref9 == 1 || data.move2Ref10 == 1) sentidoGiro = 1;  // Horario
+                    else sentidoGiro = (Mathf.DeltaAngle(anguloVirtualActual, targetAngleY) > 0) ? 1 : -1;
                 }
 
                 float diff = Mathf.DeltaAngle(anguloVirtualActual, targetAngleY);
@@ -200,7 +187,6 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
     {
         Transform piezaSujeta = null;
 
-        // 1. Buscamos recursivamente en todo el eyector
         foreach (Transform hijo in ejector.GetComponentsInChildren<Transform>())
         {
             if (hijo != ejector && hijo.name.ToLower().Contains("pieza"))
@@ -210,7 +196,6 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
             }
         }
 
-        // 2. Si no es hijo directo del eyector, buscamos en la estructura global de la mesa
         if (piezaSujeta == null)
         {
             foreach (Transform hijo in transform.GetComponentsInChildren<Transform>())
@@ -229,7 +214,6 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
 
             if (realCinta != null)
             {
-                // ESCUDO DE AUTODEFENSA: Si asignaste el script MPO_cinta_mqtt, obtenemos la cinta física real
                 ControladorCintaMPO_mqtt scriptCinta = realCinta.GetComponent<ControladorCintaMPO_mqtt>();
                 if (scriptCinta != null && scriptCinta.objetoCintaPadre != null)
                 {
@@ -261,11 +245,10 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                     piezaSujeta.localPosition = posDeseada;
 
                     Rigidbody rb = piezaSujeta.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        rb.isKinematic = true;
-                        rb.useGravity = false;
-                    }
+                    if (rb == null) rb = piezaSujeta.gameObject.AddComponent<Rigidbody>();
+
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
 
                     Physics.SyncTransforms();
                 }
