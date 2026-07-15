@@ -76,7 +76,16 @@ public class MPOBrazoPayload
 [Serializable] internal class JSON_DPSSensor { public bool dsi_sensor; public bool dso_sensor; }
 [Serializable] internal class JSON_DPSColor { public string color; }
 [Serializable] internal class JSON_SLDBelt { public bool cylinder_sensor; public bool entry_sensor; public float speed; public string ts; }
-[Serializable] internal class JSON_SLDCylinder { public string cyl_color; public bool active; }
+[Serializable]
+internal class JSON_SLDCylinder
+{
+    public string cyl_color;
+    public bool active;
+    public bool is_white; // ¡NUEVO!
+    public bool is_red;   // ¡NUEVO!
+    public bool is_blue;  // ¡NUEVO!
+    public string ts;     // ¡NUEVO!
+}
 [Serializable] internal class JSON_MPOBelt { public bool active; public bool exit_sensor; public string ts; }
 [Serializable] internal class JSON_MPOOven { public bool oven_sensor; public bool close_door; public bool lights; public bool move2Ref5; public bool move2Ref6; public bool open_door; public string ts; }
 
@@ -270,11 +279,26 @@ public class MQTTClient : MonoBehaviour
             try
             {
                 JSON_SLDCylinder data = JsonUtility.FromJson<JSON_SLDCylinder>(msg);
-                OnCylinderUpdateEvent?.Invoke(data.cyl_color.ToUpper(), data.active ? 1 : 0);
+                if (data != null)
+                {
+                    string colorFinal = "WHITE";
+
+                    // 1. Prioridad al cyl_color del mensaje
+                    if (!string.IsNullOrEmpty(data.cyl_color))
+                    {
+                        colorFinal = data.cyl_color.Replace("\"", "").Trim().ToUpper();
+                    }
+                    // 2. Respaldo por si se evalúa a través de los booleanos directos
+                    else if (data.is_red) colorFinal = "RED";
+                    else if (data.is_blue) colorFinal = "BLUE";
+                    else if (data.is_white) colorFinal = "WHITE";
+
+                    // Lanzamos el evento con el color correcto desinfectado
+                    OnCylinderUpdateEvent?.Invoke(colorFinal, data.active ? 1 : 0);
+                }
             }
             catch (Exception ex) { Debug.LogWarning("Error en dt/sld/cylinder: " + ex.Message); }
         }
-
         // --- ESTACIÓN DPS ---
         else if (topic == "dt/dps/dsi")
         {

@@ -42,10 +42,10 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public float posicionZLocalEnRampa = -0.0001335999f;
 
     // --- VARIABLES DE CONTROL INTERNO Y COLOR ---
-    private Transform piezaActual = null;          // Guarda la pieza que viaja actualmente por esta cinta
-    private string ultimoColorCilindro = "WHITE"; // Almacena el último color enviado por el topic de cilindros
-    private bool solicitarReaparicion = false;    // Bandera de hilos para reaparición
-    private bool flagCambiarColor = false;        // Bandera de hilos para cambio de color
+    private Transform piezaActual = null;
+    private string ultimoColorCilindro = "WHITE";
+    private bool solicitarReaparicion = false;
+    private bool flagCambiarColor = false;
 
     // Banderas de hilos seguras para el empuje a la rampa
     private bool flagEmpujarARampa = false;
@@ -96,31 +96,28 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     // Callback del topic f/sld/cylinder (Ocurre en el hilo de MQTT)
     void ActualizarColorDesdeCilindro(string color, int estado)
     {
-        ultimoColorCilindro = color;
+        if (string.IsNullOrEmpty(color)) return;
+
+        string colorLimpio = color.Replace("\"", "").Trim().ToUpper();
+
+        // Guardamos el color publicado de inmediato
+        ultimoColorCilindro = colorLimpio;
+
+        // Forzamos el cambio de color inmediato en el Update de Unity
+        flagCambiarColor = true;
 
         if (estado == 1)
         {
-            if (SensorCilindros)
-            {
-                flagCambiarColor = true;
-            }
-
-            colorParaEmpuje = color;
+            colorParaEmpuje = colorLimpio;
             flagEmpujarARampa = true;
         }
     }
 
+    // Callback del topic dt/sld/belt
     void ActualizarDatosCinta(SLDBeltPayload data)
     {
         velocidadActual = data.velocidad;
-
-        bool nuevoSensorCilindros = (data.SensorCilindros == 1);
-        if (!SensorCilindros && nuevoSensorCilindros)
-        {
-            Debug.Log($"<color=orange><b>[DEBUG SLD]:</b> ¡Pieza detectada en Sensor! Color objetivo actual: {ultimoColorCilindro}</color>");
-            flagCambiarColor = true;
-        }
-        SensorCilindros = nuevoSensorCilindros;
+        SensorCilindros = (data.SensorCilindros == 1);
 
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
         if (SensorEntrada && !nuevoSensorEntrada)
@@ -132,21 +129,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     void Update()
     {
-        // 1. Cambio de color seguro
+        // 1. Cambio de color inmediato tras publicación MQTT
         if (flagCambiarColor)
         {
             flagCambiarColor = false;
             EjecutarCambioColorPieza();
         }
 
-        // 2. Ejecutar el empuje de rampa de forma segura en el Hilo Principal
+        // 2. Ejecutar el empuje de rampa
         if (flagEmpujarARampa)
         {
             flagEmpujarARampa = false;
             EjecutarEmpujeHaciaRampa(colorParaEmpuje);
         }
 
-        // 3. Mover los eslabones (Sincronizado visualmente con MPO)
+        // 3. Mover los eslabones de la cinta
         if (velocidadActual > 0 && eslabonesOrdenados.Count > 0)
         {
             float deltaProgresoMPOStyle = velocidadActual * multiplicadorVelocidad * Time.deltaTime;
@@ -169,7 +166,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             }
         }
 
-        // 4. Traslación pura hacia el centro local de la rampa activa (Sin alterar rotaciones)
+        // 4. Traslación física a rampa
         if (piezaEnRampa != null)
         {
             piezaEnRampa.localPosition = Vector3.MoveTowards(
@@ -183,12 +180,12 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 Rigidbody rb = piezaEnRampa.GetComponent<Rigidbody>();
                 if (rb != null) rb.isKinematic = false;
 
-                Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Centros perfectamente alineados en {piezaEnRampa.parent.name}. Traslación finalizada.</color>");
+                Debug.Log($"<color=lime><b>[CINTA SLD]:</b> Traslación a rampa finalizada.</color>");
                 piezaEnRampa = null;
             }
         }
 
-        // 5. Reaparición segura en el hilo principal
+        // 5. Reaparición segura
         if (solicitarReaparicion)
         {
             solicitarReaparicion = false;
@@ -196,9 +193,57 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
+    // =======================================================================
+    // ESCÁNER DE JERARQUÍA REAL (CintaSLD -> raupenbelag -> pieza)
+    // Busca dinámicamente si algún eslabón de la cinta tiene como hijo la pieza
+    // =======================================================================
+    private Transform ObtenerPiezaEnCinta()
+    {
+        if (objetoCintaPadre == null) return null;
+
+        // Recorremos cada eslabón (raupenbelag) que cuelga del padre de la cinta
+        foreach (Transform eslabon in objetoCintaPadre)
+        {
+            // Buscamos si este eslabón tiene un hijo que sea la pieza (el clon)
+            // ¡Corregido "del" por "in" para evitar el error de compilación!
+            foreach (Transform hijo in eslabon)
+            {
+                string nombre = hijo.name.ToLower();
+                // Identificamos la pieza por nombre o tag
+                if (nombre.Contains("pieza") || nombre.Contains("workpiece") || hijo.CompareTag("Pieza"))
+                {
+                    return hijo;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Transform ObtenerPiezaSegura()
+    {
+        // 1. Buscamos primero en la jerarquía real de la cinta
+        Transform piezaEnCinta = ObtenerPiezaEnCinta();
+        if (piezaEnCinta != null)
+        {
+            piezaActual = piezaEnCinta; // Sincronizamos la variable interna
+            return piezaEnCinta;
+        }
+
+        // 2. Si no, devolvemos la que esté en la rampa
+        if (piezaEnRampa != null) return piezaEnRampa;
+
+        // 3. Fallback de seguridad
+        return piezaActual;
+    }
+
     private void EjecutarEmpujeHaciaRampa(string color)
     {
-        if (piezaActual == null) return;
+        Transform piezaParaEmpujar = ObtenerPiezaSegura();
+        if (piezaParaEmpujar == null)
+        {
+            Debug.LogWarning("<color=red><b>[CINTA SLD]:</b> Intento de empujar, pero no se encontró la pieza en la cinta.</color>");
+            return;
+        }
 
         Transform rampaDestino = null;
         switch (color.ToUpper())
@@ -210,24 +255,24 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
         if (rampaDestino != null)
         {
-            piezaEnRampa = piezaActual;
-            piezaActual = null;
+            piezaEnRampa = piezaParaEmpujar;
+            if (piezaParaEmpujar == piezaActual)
+            {
+                piezaActual = null;
+            }
 
             Vector3 centroRampaLocal = ObtenerCentroLocal(rampaDestino);
             Vector3 centroPiezaLocal = ObtenerCentroLocal(piezaEnRampa);
 
             piezaEnRampa.SetParent(rampaDestino, true);
 
-            // Calculamos la posición objetivo basada en centros geométricos
             posicionLocalObjetivo = centroRampaLocal - (piezaEnRampa.localRotation * centroPiezaLocal);
-
-            // ¡SOLUCIÓN!: Sobrescribimos el eje Z calculado con el tope manual exacto para que no traspase
             posicionLocalObjetivo.z = posicionZLocalEnRampa;
 
             Rigidbody rb = piezaEnRampa.GetComponent<Rigidbody>();
             if (rb != null) rb.isKinematic = true;
 
-            Debug.Log($"<color=orange><b>[CINTA SLD]:</b> Iniciando traslación corregida en eje Z hacia {rampaDestino.name}.</color>");
+            Debug.Log($"<color=orange><b>[CINTA SLD]:</b> Iniciando empuje de rampa hacia {rampaDestino.name}.</color>");
         }
     }
 
@@ -246,8 +291,12 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     private void EjecutarCambioColorPieza()
     {
-        Transform piezaAColorear = piezaActual != null ? piezaActual : piezaEnRampa;
-        if (piezaAColorear == null) return;
+        Transform piezaAColorear = ObtenerPiezaSegura();
+        if (piezaAColorear == null)
+        {
+            Debug.LogWarning($"<color=red><b>[CINTA SLD]:</b> Recibido color <b>{ultimoColorCilindro}</b>, pero no se encontró la pieza en la cinta.</color>");
+            return;
+        }
 
         Renderer renderizador = piezaAColorear.GetComponentInChildren<Renderer>();
         if (renderizador != null)
@@ -262,7 +311,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             }
 
             renderizador.material.color = colorObjetivo;
-            Debug.Log($"<color=cyan><b>[CINTA SLD]:</b> Color de la pieza cambiado a <b>{ultimoColorCilindro}</b>.</color>");
+            Debug.Log($"<color=cyan><b>[CINTA SLD]:</b> ¡PINTADO AL INSTANTE! Pieza '{piezaAColorear.name}' pintada de <b>{ultimoColorCilindro}</b>.</color>");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=yellow><b>[CINTA SLD]:</b> Se encontró la pieza '{piezaAColorear.name}', pero no tiene Renderer en sus hijos.</color>");
         }
     }
 
