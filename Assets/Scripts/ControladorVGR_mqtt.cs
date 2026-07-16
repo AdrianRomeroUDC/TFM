@@ -235,7 +235,9 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 }
                 else
                 {
-                    // Caída libre física original (¡Esto permite que golpee el horno y se autocalibre perfectamente!)
+                    // 🛡️ MODIFICACIÓN LIMPIA: El VGR se limita a soltar físicamente la pieza.
+                    // Ya no importa si cae en el horno, en la mesa o en el DSO. La física libre se activa siempre
+                    // y el DSO_proxy se encargará de magnetizarla de forma reactiva si cae en su trigger.
                     piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
                     BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
                     foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;

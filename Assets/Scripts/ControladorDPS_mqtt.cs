@@ -263,6 +263,12 @@ public class ControladorDPS_mqtt : MonoBehaviour
                 {
                     if (piezaDPS.transform.parent == plataformaDSI) break;
 
+                    if (piezaDPS.transform.parent == plataformaDSO)
+                    {
+                        Debug.Log("<color=cyan><b>[DPS]:</b> La pieza ya está acoplada y alineada en DSO. Se ignora caída física.</color>");
+                        break;
+                    }
+
                     if (piezaDPS.transform.parent != null &&
                         (piezaDPS.transform.parent.name.ToLower().Contains("cajon") ||
                          piezaDPS.transform.parent.name.ToLower().Contains("container")))
@@ -293,11 +299,64 @@ public class ControladorDPS_mqtt : MonoBehaviour
         }
     }
 
+    // ==========================================
+    // ALINEACIÓN MAGNÉTICA PERFECTA (Llamada por el Proxy de forma segura)
+    // ==========================================
+    public void AlinearPiezaEnDSO(Transform pieza)
+    {
+        if (plataformaDSO == null || pieza == null) return;
+
+        // 1. Soltamos del robot
+        pieza.SetParent(null);
+
+        // 2. Rotación exacta
+        pieza.rotation = plataformaDSO.rotation * Quaternion.Euler(-90f, 0f, 0f);
+
+        // 3. Posicionamiento dinámico en base a colisiones
+        Collider colliderPlatDSO = plataformaDSO.GetComponent<Collider>();
+        Vector3 centroPlatDSOMundo = (colliderPlatDSO != null) ? colliderPlatDSO.bounds.center : plataformaDSO.position;
+
+        BoxCollider colliderPiezaDSO = pieza.GetComponentInChildren<BoxCollider>();
+        Vector3 centroPiezaLocalDSO = (colliderPiezaDSO != null) ? colliderPiezaDSO.center : Vector3.zero;
+        centroPiezaLocalDSO.z = 0f;
+
+        Vector3 offsetMundoPiezaDSO = pieza.TransformDirection(centroPiezaLocalDSO);
+        Vector3 posicionFinalMundoDSO = centroPlatDSOMundo - offsetMundoPiezaDSO;
+        posicionFinalMundoDSO += pieza.up * offsetAlturaDSO;
+        pieza.position = posicionFinalMundoDSO;
+
+        // 4. Jerarquía
+        pieza.SetParent(plataformaDSO, true);
+
+        // 5. Centrado local fino en Z
+        Vector3 posLocalLimpiaDSO = pieza.localPosition;
+        posLocalLimpiaDSO.z = 0f;
+        pieza.localPosition = posLocalLimpiaDSO;
+
+        // 6. Apagar físicas (Fijado absoluto)
+        Rigidbody rb = pieza.GetComponent<Rigidbody>();
+        if (rb == null) rb = pieza.gameObject.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+
+        BoxCollider[] colliders = pieza.GetComponentsInChildren<BoxCollider>();
+        foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
+
+        // 7. Sincronizar punteros en el controlador
+        piezaDSO = pieza.gameObject;
+
+        if (pieza.gameObject == piezaDPS)
+        {
+            piezaDPS = pieza.gameObject;
+        }
+
+        Debug.Log("<color=lime><b>[DPS SNAPPING]:</b> Pieza acoplada y alineada magnéticamente en DSO de forma perfecta.</color>");
+    }
+
     void SustituirPorPrefabColor(string color)
     {
         GameObject piezaAColorar = null;
 
-        // Intentamos localizar la pieza colgada de la ventosa
         if (pinzaVGR != null)
         {
             foreach (Transform hijo in pinzaVGR.GetComponentsInChildren<Transform>())
@@ -310,10 +369,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
             }
         }
 
-        // =======================================================================
-        // CORRECCIÓN CLAVE: Si no hay pieza en la ventosa, descartamos la orden.
-        // Se ha eliminado por completo el fallback a 'piezaDPS'.
-        // =======================================================================
         if (piezaAColorar == null)
         {
             Debug.Log($"<color=orange><b>[DPS]:</b> Se recibió cambio de color '{color}' pero la ventosa del VGR está vacía. Comando descartado de forma segura.</color>");
@@ -344,7 +399,6 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
         ConfigurarFisicas(piezaNueva, "pieza_" + color.ToLower());
 
-        // Mantenemos la actualización de la referencia si coincide con piezaDPS por temas de limpieza
         if (piezaAColorar == piezaDPS)
         {
             piezaDPS = piezaNueva;

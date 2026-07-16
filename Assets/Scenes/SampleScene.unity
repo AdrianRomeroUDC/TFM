@@ -103337,6 +103337,7 @@ GameObject:
   - component: {fileID: 8720587205580296840}
   - component: {fileID: 8720587205580296841}
   - component: {fileID: 8720587205580296842}
+  - component: {fileID: 8720587205580296843}
   m_Layer: 0
   m_Name: 9V_163201_id2790_step
   m_TagString: Untagged
@@ -287424,6 +287425,18 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.00011442013, y: 0.00014999996, z: 0.00014910035}
   m_Center: {x: -0.000017790004, y: 3.94792e-13, z: 0.000046550194}
+--- !u!114 &8720587205580296843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2699666962978310460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2c72d96b488f494f982ab366f5a7c08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlataformaDSO_proxy
 --- !u!33 &8722141165628109180
 MeshFilter:
   m_ObjectHideFlags: 0
