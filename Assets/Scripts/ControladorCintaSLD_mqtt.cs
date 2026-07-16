@@ -55,6 +55,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     private bool flagEmpujarARampa = false;
     private string colorParaEmpuje = "";
 
+    // --- MEMORIA PARA EVITAR REBOTES EN MQTT ---
+    private bool ultimoEstadoActive = false;
+
     // Control de traslación hacia las rampas
     private Transform piezaEnRampa = null;
     private Vector3 posicionLocalObjetivo;
@@ -97,12 +100,10 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    // --- MODIFICADO: Ahora recibe el objeto completo JSON_SLDCylinder para coincidir con el delegado ---
     void ActualizarColorDesdeCilindro(JSON_SLDCylinder data)
     {
         if (data == null) return;
 
-        // Procesamos el color tal cual lo hacías antes, de forma segura
         string colorLimpio = null;
 
         if (!string.IsNullOrEmpty(data.cyl_color))
@@ -110,19 +111,18 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             colorLimpio = data.cyl_color.Replace("\"", "").Trim().ToUpper();
         }
 
-        // ==========================================
-        // NUEVO FILTRO: Si el color de MQTT viene vacío, 
-        // no hacemos nada para evitar errores.
-        // ==========================================
+        // 🛡️ FILTRO DE FLANCO DE SUBIDA (RISING EDGE)
+        // Detectamos únicamente cuando la señal pasa de False a True para evitar spam de warnings
+        bool nuevoActive = data.active;
+        bool flancoSubidaActive = nuevoActive && !ultimoEstadoActive;
+        ultimoEstadoActive = nuevoActive;
+
         if (string.IsNullOrEmpty(colorLimpio)) return;
 
-        // Guardamos el color publicado de inmediato
         ultimoColorCilindro = colorLimpio;
-        // Forzamos el cambio de color inmediato en el Update de Unity
         flagCambiarColor = true;
 
-        // data.active equivale al anterior "estado == 1"
-        if (data.active)
+        if (flancoSubidaActive)
         {
             colorParaEmpuje = colorLimpio;
             flagEmpujarARampa = true;
@@ -265,13 +265,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 piezaActual = null;
             }
 
-            // Calculamos los centros basándonos en la geometría pura local de las mallas
             Vector3 centroRampaLocal = ObtenerCentroLocal(rampaDestino);
             Vector3 centroPiezaLocal = ObtenerCentroLocal(piezaEnRampa);
 
             piezaEnRampa.SetParent(rampaDestino, true);
 
-            // Alineación perfecta en base a centros geométricos locales reales
             posicionLocalObjetivo = centroRampaLocal - (piezaEnRampa.localRotation * centroPiezaLocal);
             posicionLocalObjetivo.z = posicionZLocalEnRampa;
 
@@ -307,7 +305,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         Transform piezaAColorear = ObtenerPiezaSegura();
         if (piezaAColorear == null)
         {
-            // Cambiado a Log normal para no ensuciar la consola con Warnings falsos
             Debug.Log($"<b>[CINTA SLD]:</b> Intento de cambiar color a {ultimoColorCilindro}, pero la pieza no está en la cinta (puede estar en la rampa).");
             return;
         }
@@ -340,7 +337,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         Transform pieza = ControladorCintaMPO_mqtt.piezaEnTransito;
         bool esNuevaPiezaSpawneada = false;
 
-        // Comprobación segura de Auto-Sanación
         if (pieza == null)
         {
             if (prefabBaseGris == null)

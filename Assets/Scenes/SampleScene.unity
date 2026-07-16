@@ -10458,7 +10458,7 @@ MonoBehaviour:
   posicionEnPinza: {x: 0, y: -0.02, z: 0}
   rotacionEnPinza: {x: 0, y: 0, z: 0}
   offsetBusquedaVentosa: {x: 0, y: 0, z: 0}
-  radioBusquedaVentosa: 0.015
+  radioBusquedaVentosa: 0.0175
   mostrarGizmosVentosa: 1
   plcRot_Min: 0
   plcRot_Max: 1395
