@@ -43,8 +43,7 @@ public class ControladorHorno_mqtt : MonoBehaviour
     {
         while (MQTTClient.Instance == null) yield return null;
 
-        MQTTClient.Instance.OnHornoUpdateEvent += (data) =>
-        {
+        MQTTClient.Instance.OnHornoUpdateEvent += (data) => {
             lock (colaMensajes) { colaMensajes.Enqueue(data); }
         };
         Debug.Log("<color=cyan>Controlador Horno suscrito correctamente</color>");
@@ -89,10 +88,14 @@ public class ControladorHorno_mqtt : MonoBehaviour
             movimientoPlataforma = StartCoroutine(MoverObjeto(plataformaPieza, posPlataformaFuera, duracionMovimientoPlataforma));
         }
 
-        // SENSOR DEL HORNO: Solo actúa si detecta pieza (True).
+        // SENSOR DEL HORNO (Gestión de presencia bidireccional)
         if (data.ovenSensor == 1)
         {
             IntentarSpawnPiezaHorno();
+        }
+        else if (data.ovenSensor == 0)
+        {
+            IntentarLimpiezaPiezaHorno();
         }
     }
 
@@ -194,6 +197,45 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
     }
 
+    // ==========================================
+    // NUEVO MÉTODO: AUTO-LIMPIEZA DE LA PLATAFORMA DEL HORNO
+    // ==========================================
+    private void IntentarLimpiezaPiezaHorno()
+    {
+        if (plataformaPieza == null) return;
+
+        // 1. Evitar ejecuciones si no se ha calibrado la posición "Fuera" todavía
+        if (posPlataformaFuera == Vector3.zero) return;
+
+        // 2. Verificar si la plataforma está físicamente en la posición "Fuera" (con un margen de 1cm)
+        float distanciaAFuera = Vector3.Distance(plataformaPieza.position, posPlataformaFuera);
+        if (distanciaAFuera > 0.01f) return;
+
+        Transform plataformaReal = BuscarPlataformaRealHijo();
+        if (plataformaReal == null) return;
+
+        // 3. Buscar cualquier pieza que esté apoyada (que sea hija directa) en la plataforma del horno
+        List<GameObject> piezasEliminar = new List<GameObject>();
+        foreach (Transform hijo in plataformaReal)
+        {
+            string nombreHijo = hijo.name.ToLower();
+            if (nombreHijo.Contains("pieza") || hijo.CompareTag("Pieza"))
+            {
+                piezasEliminar.Add(hijo.gameObject);
+            }
+        }
+
+        // 4. Eliminar la pieza de la simulación
+        if (piezasEliminar.Count > 0)
+        {
+            Debug.Log($"<color=red><b>[HORNO LIMPIEZA]:</b> Sensor reporta vacío con plataforma fuera. Destruyendo {piezasEliminar.Count} pieza(s) de la plataforma del horno.</color>");
+            foreach (GameObject pieza in piezasEliminar)
+            {
+                Destroy(pieza);
+            }
+        }
+    }
+
     private IEnumerator MoverObjeto(Transform objeto, Vector3 destino, float duracion)
     {
         Vector3 inicio = objeto.position;
@@ -212,13 +254,13 @@ public class ControladorHorno_mqtt : MonoBehaviour
         objeto.position = destino;
     }
 
-    // --- EL NUEVO GIZMO VISUAL ---
+    // --- EL GIZMO VISUAL ---
     void OnDrawGizmosSelected()
     {
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
-        // 1. Dibujar el volumen de peligro en amarillo translúcido (Usamos DrawSphere que es la sólida)
+        // 1. Dibujar el volumen de peligro en amarillo translúcido
         Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.15f); // Amarillo suave y transparente
         Gizmos.DrawSphere(plataformaReal.position, distanciaLimiteVGR);
 
