@@ -44,6 +44,15 @@ public class ControladorVGR_mqtt : MonoBehaviour
     [Header("Ajustes")]
     public float lerpSpeed = 5f;
 
+    // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD DSI (MUNDIAL) ---
+    private bool dsiSensorActivo = false;
+    private bool verificarFalloAgarreDSI = false;
+    private float yMundialAlAgarrar = 0f;
+
+    // 🛡️ NUEVO: Memoria de transformación local de spawn
+    private Vector3 posicionLocalOriginalDSI;
+    private Quaternion rotacionLocalOriginalDSI;
+
     void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
     void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
     void CapturarVertMin() => unityVert_Min = ejeVertical.localPosition.y;
@@ -61,7 +70,9 @@ public class ControladorVGR_mqtt : MonoBehaviour
         while (MQTTClient.Instance == null) yield return null;
         MQTTClient.Instance.OnVGRPositionUpdateEvent += ActualizarPosicionDesdeMQTT;
         MQTTClient.Instance.OnVGRGripEvent += RecibirGripMQTT;
-        Debug.Log("<color=green>VGR Suscrito correctamente</color>");
+        MQTTClient.Instance.OnDPSPiezaDSIEvent += ActualizarSensorDSI;
+
+        Debug.Log("<color=green><b>[VGR SUSCRIPCIÓN]:</b> VGR Suscrito correctamente.</color>");
     }
 
     private void OnDisable()
@@ -70,6 +81,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
         {
             MQTTClient.Instance.OnVGRPositionUpdateEvent -= ActualizarPosicionDesdeMQTT;
             MQTTClient.Instance.OnVGRGripEvent -= RecibirGripMQTT;
+            MQTTClient.Instance.OnDPSPiezaDSIEvent -= ActualizarSensorDSI;
         }
     }
 
@@ -103,6 +115,52 @@ public class ControladorVGR_mqtt : MonoBehaviour
             float targetX = Mathf.Lerp(unityExt_Min, unityExt_Max, tE);
             ejeExtension.localPosition = Vector3.Lerp(ejeExtension.localPosition, new Vector3(targetX, ejeExtension.localPosition.y, ejeExtension.localPosition.z), speed);
         }
+
+        // --- SISTEMA ANTIFALLO EN ESPACIO MUNDIAL ---
+        if (verificarFalloAgarreDSI)
+        {
+            if (piezaEnganchada == null)
+            {
+                verificarFalloAgarreDSI = false;
+                return;
+            }
+
+            float deltaYMundial = Mathf.Abs(ejeVertical.position.y - yMundialAlAgarrar);
+
+            if (deltaYMundial > 0.015f) // 1.5 cm reales en el espacio 3D
+            {
+                Debug.Log($"<color=yellow><b>[VGR CHEQUEO MUNDIAL]:</b> Altura límite superada. Delta: {deltaYMundial:F4}m. dsi_sensor = {dsiSensorActivo}</color>");
+
+                if (dsiSensorActivo)
+                {
+                    // ¡FALLO! Devolvemos la pieza virtual a su posición exacta de spawn original
+                    Debug.Log("<color=red><b>[VGR FALLO AGARRE DSI]:</b> ¡FALLO! dsi_sensor = True. Devolviendo pieza virtual a la posición de spawn exacta.</color>");
+
+                    ControladorDPS_mqtt dps = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
+                    if (dps != null && dps.plataformaDSI != null)
+                    {
+                        piezaEnganchada.SetParent(dps.plataformaDSI);
+
+                        // RESTAURACIÓN DE PRECISIÓN ABSOLUTA
+                        piezaEnganchada.localPosition = posicionLocalOriginalDSI;
+                        piezaEnganchada.localRotation = rotacionLocalOriginalDSI;
+
+                        Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
+                        if (rb != null) rb.isKinematic = true;
+
+                        BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                        foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
+                    }
+                    piezaEnganchada = null;
+                }
+                else
+                {
+                    Debug.Log("<color=green><b>[VGR AGARRE ÉXITO]:</b> dsi_sensor = False. Agarre confirmado.</color>");
+                }
+
+                verificarFalloAgarreDSI = false;
+            }
+        }
     }
 
     private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
@@ -116,13 +174,17 @@ public class ControladorVGR_mqtt : MonoBehaviour
         cambioGripDetectado = true;
     }
 
+    private void ActualizarSensorDSI(bool detectado)
+    {
+        dsiSensorActivo = detectado;
+    }
+
     public void RegistrarContenedorBajoVentosa(ContenedorHBW_proxy contenedor) => contenedorActual = contenedor;
-    public ContenedorHBW_proxy ObtenerContenedorActual() => contenedorActual;
+    public ContenedorHBW_proxy @ObtenerContenedorActual() => contenedorActual;
     public Transform ObtenerPiezaEnganchada() => piezaEnganchada;
     public void AsignarPiezaEnganchada(Transform nuevaPieza)
     {
         piezaEnganchada = nuevaPieza;
-        Debug.Log($"<color=lime><b>[VGR ENLACE]:</b> Referencia de pieza actualizada a '{nuevaPieza.name}' por cambio de color.</color>");
     }
     public void SetPiezaCercana(Transform pieza) => piezaCercana = pieza;
 
@@ -142,50 +204,40 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
                     while (objetoActual != null)
                     {
-                        if (objetoActual.name.ToLower().StartsWith("pieza"))
-                        {
-                            piezaReal = objetoActual;
-                            break;
-                        }
-
-                        if (objetoActual.name.ToLower().Contains("cajon") ||
-                            objetoActual.name.ToLower().Contains("contenedor") ||
-                            objetoActual.name.ToLower().Contains("container"))
-                        {
-                            break;
-                        }
-
+                        if (objetoActual.name.ToLower().StartsWith("pieza")) { piezaReal = objetoActual; break; }
+                        if (objetoActual.name.ToLower().Contains("cajon") || objetoActual.name.ToLower().Contains("contenedor")) break;
                         objetoActual = objetoActual.parent;
                     }
 
-                    if (piezaReal != null)
-                    {
-                        piezaEnganchada = piezaReal;
-                        Debug.Log("<color=cyan><b>[VGR RADAR]:</b> Raíz de pieza fijada con éxito: </color>" + piezaEnganchada.name);
-                        break;
-                    }
-                    else if (col.name.ToLower().Contains("pieza"))
-                    {
-                        piezaEnganchada = col.transform;
-                        Debug.Log("<color=cyan><b>[VGR RADAR]:</b> Objeto pieza independiente fijado: </color>" + piezaEnganchada.name);
-                        break;
-                    }
+                    if (piezaReal != null) { piezaEnganchada = piezaReal; break; }
+                    else if (col.name.ToLower().Contains("pieza")) { piezaEnganchada = col.transform; break; }
                 }
             }
 
             if (piezaEnganchada != null)
             {
+                bool esDeDSI = piezaEnganchada.name.ToLower().Contains("dsi") ||
+                               (piezaEnganchada.parent != null && piezaEnganchada.parent.name.ToLower().Contains("dsi"));
+
+                // 💾 SALVAGUARDAMOS SU POSICIÓN DE SPAWN JUSTO ANTES DE DESVINCULARLA DE LA PLATAFORMA
+                if (esDeDSI)
+                {
+                    posicionLocalOriginalDSI = piezaEnganchada.localPosition;
+                    rotacionLocalOriginalDSI = piezaEnganchada.localRotation;
+
+                    verificarFalloAgarreDSI = true;
+                    yMundialAlAgarrar = ejeVertical.position.y;
+
+                    Debug.Log($"<color=orange><b>[VGR MONITOREO MUNDIAL]:</b> Altura inicial: {yMundialAlAgarrar:F6}. Posición original de spawn memorizada: {posicionLocalOriginalDSI}.</color>");
+                }
+
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
                 if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
-
                 rb.isKinematic = true;
                 rb.useGravity = false;
 
                 BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
-                foreach (BoxCollider col in colliders)
-                {
-                    if (col != null) col.isTrigger = true;
-                }
+                foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = true;
 
                 piezaEnganchada.SetParent(puntoAnclajeVentosa);
                 piezaEnganchada.position = puntoAnclajeVentosa.position;
@@ -200,19 +252,13 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 foreach (Transform hijo in puntoAnclajeVentosa)
                 {
-                    if (hijo.name.ToLower().Contains("pieza"))
-                    {
-                        piezaEnganchada = hijo;
-                        Debug.Log("<color=lime><b>[VGR SANACIÓN]:</b> Puntero recuperado con éxito: </color>" + piezaEnganchada.name);
-                        break;
-                    }
+                    if (hijo.name.ToLower().Contains("pieza")) { piezaEnganchada = hijo; break; }
                 }
             }
 
             if (piezaEnganchada != null)
             {
                 ContenedorHBW_proxy destinoFinal = contenedorActual;
-
                 if (destinoFinal == null)
                 {
                     Collider[] collidersAbajo = Physics.OverlapSphere(piezaEnganchada.position, 0.06f);
@@ -223,21 +269,14 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                 }
 
-                if (piezaEnganchada.parent == puntoAnclajeVentosa)
-                {
-                    piezaEnganchada.SetParent(null);
-                }
+                if (piezaEnganchada.parent == puntoAnclajeVentosa) piezaEnganchada.SetParent(null);
 
                 if (destinoFinal != null)
                 {
                     destinoFinal.AcoplarPiezaDirecto(piezaEnganchada);
-                    Debug.Log($"<color=orange><b>[VGR MQTT]:</b> Entrega confirmada en [{destinoFinal.name}].</color>");
                 }
                 else
                 {
-                    // 🛡️ MODIFICACIÓN LIMPIA: El VGR se limita a soltar físicamente la pieza.
-                    // Ya no importa si cae en el horno, en la mesa o en el DSO. La física libre se activa siempre
-                    // y el DSO_proxy se encargará de magnetizarla de forma reactiva si cae en su trigger.
                     piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
                     BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
                     foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;
@@ -251,6 +290,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 contenedorActual = null;
                 piezaEnganchada = null;
                 piezaCercana = null;
+                verificarFalloAgarreDSI = false;
             }
         }
     }
@@ -267,13 +307,41 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!mostrarGizmosVentosa || puntoAnclajeVentosa == null) return;
-        Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(centroBusquedaMundial, radioBusquedaVentosa);
-        Gizmos.color = new Color(0f, 1f, 1f, 0.3f);
-        Gizmos.DrawSphere(centroBusquedaMundial, radioBusquedaVentosa * 0.2f);
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(puntoAnclajeVentosa.position, centroBusquedaMundial);
+        if (mostrarGizmosVentosa && puntoAnclajeVentosa != null)
+        {
+            Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(centroBusquedaMundial, radioBusquedaVentosa);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(puntoAnclajeVentosa.position, centroBusquedaMundial);
+        }
+
+        if (verificarFalloAgarreDSI && ejeVertical != null)
+        {
+            Vector3 baseAgarre = new Vector3(ejeVertical.position.x, yMundialAlAgarrar, ejeVertical.position.z);
+            Vector3 posicionEjeActual = ejeVertical.position;
+
+            Vector3 limiteSuperior = baseAgarre + Vector3.up * 0.015f;
+            Vector3 limiteInferior = baseAgarre + Vector3.down * 0.015f;
+
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(baseAgarre, posicionEjeActual);
+
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(limiteSuperior, 0.003f);
+            Gizmos.DrawWireSphere(limiteInferior, 0.003f);
+
+            float deltaActual = Mathf.Abs(posicionEjeActual.y - yMundialAlAgarrar);
+            if (deltaActual > 0.015f)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawSphere(posicionEjeActual + Vector3.up * 0.01f, 0.006f);
+            }
+            else
+            {
+                Gizmos.color = Color.red;
+                Gizmos.DrawSphere(posicionEjeActual + Vector3.up * 0.01f, 0.004f);
+            }
+        }
     }
 }
