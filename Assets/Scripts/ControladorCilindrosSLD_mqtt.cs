@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 {
@@ -36,10 +37,15 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     // Control de estado y seguridad
     private float ultimoTiempoActivo = -99f;
 
-    // --- REFERENCIAS INDEPENDIENTES PARA EVITAR DESAPARICIONES ---
+    // --- REFERENCIAS INDEPENDIENTES DE PIEZAS ---
     private GameObject piezaBlanca = null;
     private GameObject piezaRoja = null;
     private GameObject piezaAzul = null;
+
+    // --- NUEVO: MEMORIA DE ESTADO DEL SENSOR (Evita borrados antes de activarse) ---
+    private bool sensorBlancoFueActivo = false;
+    private bool sensorRojoFueActivo = false;
+    private bool sensorAzulFueActivo = false;
 
     // --- PUENTE SEGURO PARA EVITAR CAÍDAS DE HILOS ---
     private JSON_SLDCylinder datosPendientes = null;
@@ -105,14 +111,14 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
             ultimoTiempoActivo = Time.time;
         }
 
-        // --- 2. CONTROL INDEPENDIENTE POR RAMPA (Spawn / Destrucción) ---
-        ControlarRampa("WHITE", data.is_white, cylColorLimpio, data.active, ref piezaBlanca);
-        ControlarRampa("RED", data.is_red, cylColorLimpio, data.active, ref piezaRoja);
-        ControlarRampa("BLUE", data.is_blue, cylColorLimpio, data.active, ref piezaAzul);
+        // --- 2. CONTROL INDEPENDIENTE POR RAMPA (Con paso de referencia del estado de memoria) ---
+        ControlarRampa("WHITE", data.is_white, cylColorLimpio, data.active, ref piezaBlanca, ref sensorBlancoFueActivo);
+        ControlarRampa("RED", data.is_red, cylColorLimpio, data.active, ref piezaRoja, ref sensorRojoFueActivo);
+        ControlarRampa("BLUE", data.is_blue, cylColorLimpio, data.active, ref piezaAzul, ref sensorAzulFueActivo);
     }
 
     // --- MÉTODO MODULAR DE CONTROL DE RAMPA ---
-    void ControlarRampa(string colorRampa, bool sensorActivo, string cylColorLimpio, bool cilindroActivo, ref GameObject piezaReferencia)
+    void ControlarRampa(string colorRampa, bool sensorActivo, string cylColorLimpio, bool cilindroActivo, ref GameObject piezaReferencia, ref bool sensorFueActivo)
     {
         Transform puntoElegido = null;
         switch (colorRampa)
@@ -126,52 +132,108 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
         if (sensorActivo)
         {
-            // Si el sensor físico detecta pieza pero en Unity aún no la hemos creado...
+            // 🛡️ Guardamos en la memoria que el sensor se ha activado al menos una vez
+            sensorFueActivo = true;
+
+            // Si en el script no tenemos registrada una pieza...
             if (piezaReferencia == null)
             {
-                bool coincideConCylColor = (cylColorLimpio == colorRampa);
-                float tiempoDesdeUltimoActive = Time.time - ultimoTiempoActivo;
-                bool activoRecientemente = tiempoDesdeUltimoActive < cooldownSpawn;
-
-                if (coincideConCylColor)
+                // CAPA 1: Buscamos si YA existe físicamente una pieza huérfana bajo esa rampa
+                GameObject piezaExistente = EncontrarPiezaHija(puntoElegido);
+                if (piezaExistente != null)
                 {
-                    Debug.Log($"<b>[SLD Spawn Omitido]</b> El sensor {colorRampa} coincide con cyl_color ({cylColorLimpio}).");
-                }
-                else if (cilindroActivo)
-                {
-                    Debug.LogWarning($"<b>[SLD Spawn Cancelado]</b> El cilindro está empujando para {colorRampa}.");
-                }
-                else if (activoRecientemente)
-                {
-                    Debug.LogWarning($"<b>[SLD Spawn Cancelado]</b> Cooldown activo para {colorRampa} ({tiempoDesdeUltimoActive:F2}s).");
+                    piezaReferencia = piezaExistente;
+                    Debug.Log($"<b>[SLD Rampa]</b> Se enlazó una pieza física ya existente en {puntoElegido.name}. Evitando duplicados.");
                 }
                 else
                 {
-                    Debug.Log($"<color=orange><b>[SLD Spawn Aprobado]</b> Cambio detectado en {colorRampa}. Spawneando...</color>");
-                    piezaReferencia = SpawnPieza(colorRampa, puntoElegido);
+                    // Si realmente está vacía, hacemos el spawn de seguridad normal
+                    bool coincideConCylColor = (cylColorLimpio == colorRampa);
+                    float tiempoDesdeUltimoActive = Time.time - ultimoTiempoActivo;
+                    bool activoRecientemente = tiempoDesdeUltimoActive < cooldownSpawn;
+
+                    if (coincideConCylColor)
+                    {
+                        Debug.Log($"<b>[SLD Spawn Omitido]</b> El sensor {colorRampa} coincide con cyl_color ({cylColorLimpio}).");
+                    }
+                    else if (cilindroActivo)
+                    {
+                        Debug.LogWarning($"<b>[SLD Spawn Cancelado]</b> El cilindro está empujando para {colorRampa}.");
+                    }
+                    else if (activoRecientemente)
+                    {
+                        Debug.LogWarning($"<b>[SLD Spawn Cancelado]</b> Cooldown activo para {colorRampa} ({tiempoDesdeUltimoActive:F2}s).");
+                    }
+                    else
+                    {
+                        Debug.Log($"<color=orange><b>[SLD Spawn Aprobado]</b> Cambio detectado en {colorRampa}. Spawneando...</color>");
+                        piezaReferencia = SpawnPieza(colorRampa, puntoElegido);
+                    }
                 }
             }
         }
         else
         {
-            // El sensor se ha apagado: Evaluamos si debemos destruir la pieza virtual
-            if (piezaReferencia != null)
+            // 🛡️ CANDADO CLAVE: El sensor está a false. Solo actuamos si el sensor estuvo a TRUE previamente.
+            if (sensorFueActivo)
             {
-                // Si el objeto ya no tiene de padre la rampa, es porque el VGR se la ha llevado
-                if (piezaReferencia.transform.parent != puntoElegido)
+                // Limpieza de la pieza registrada
+                if (piezaReferencia != null)
                 {
-                    Debug.Log($"<b>[SLD Clear]</b> El sensor {colorRampa} se apagó, pero la pieza fue trasladada (nuevo padre: {piezaReferencia.transform.parent.name}). Manteniendo pieza.");
-                    piezaReferencia = null; // Liberamos la referencia para que pueda volver a spawnear otra cuando toque
+                    // Si el objeto ya no tiene de padre la rampa, es porque el VGR se la ha llevado
+                    if (piezaReferencia.transform.parent != puntoElegido)
+                    {
+                        Debug.Log($"<b>[SLD Clear]</b> El sensor {colorRampa} se apagó, pero la pieza fue trasladada (nuevo padre: {piezaReferencia.transform.parent.name}). Manteniendo pieza.");
+                        piezaReferencia = null;
+                    }
+                    else
+                    {
+                        // Si sigue en la rampa, la destruimos
+                        Debug.Log($"<color=red><b>[SLD Clear]</b> El sensor {colorRampa} se ha apagado. Destruyendo pieza registrada.</color>");
+                        Destroy(piezaReferencia);
+                        piezaReferencia = null;
+                    }
                 }
-                else
+
+                // CAPA 2: BARRENDERO DE SEGURIDAD (Solo se ejecuta si el sensor estuvo activo primero)
+                List<GameObject> piezasHuerfanas = new List<GameObject>();
+                foreach (Transform hijo in puntoElegido)
                 {
-                    // Si el padre sigue siendo la rampa, se destruye de inmediato
-                    Debug.Log($"<color=red><b>[SLD Clear]</b> El sensor {colorRampa} se ha apagado. Destruyendo pieza virtual de la rampa.</color>");
-                    Destroy(piezaReferencia);
-                    piezaReferencia = null;
+                    string nombreHijo = hijo.name.ToLower();
+                    if (nombreHijo.Contains("pieza") || nombreHijo.Contains("workpiece") || hijo.CompareTag("Pieza") || nombreHijo.Contains("clone"))
+                    {
+                        piezasHuerfanas.Add(hijo.gameObject);
+                    }
                 }
+
+                if (piezasHuerfanas.Count > 0)
+                {
+                    Debug.Log($"<color=red><b>[SLD Sweep]</b> Se encontraron {piezasHuerfanas.Count} pieza(s) huérfana(s) en {puntoElegido.name} tras apagarse el sensor. Eliminando...</color>");
+                    foreach (GameObject go in piezasHuerfanas)
+                    {
+                        Destroy(go);
+                    }
+                }
+
+                // Reseteamos el estado de memoria de activación
+                sensorFueActivo = false;
             }
         }
+    }
+
+    // Método auxiliar para detectar si una pieza física ya existe bajo un punto de spawn
+    GameObject EncontrarPiezaHija(Transform punto)
+    {
+        if (punto == null) return null;
+        foreach (Transform hijo in punto)
+        {
+            string nombreHijo = hijo.name.ToLower();
+            if (nombreHijo.Contains("pieza") || nombreHijo.Contains("workpiece") || hijo.CompareTag("Pieza") || nombreHijo.Contains("clone"))
+            {
+                return hijo.gameObject;
+            }
+        }
+        return null;
     }
 
     GameObject SpawnPieza(string color, Transform puntoElegido)
@@ -182,22 +244,16 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
             return null;
         }
 
-        // 1. Instanciamos la pieza en la escena
         GameObject nuevaPieza = Instantiate(piezaBasePrefab);
-
-        // 2. Guardamos la escala real de tu prefab original
         Vector3 escalaPrefabOriginal = piezaBasePrefab.transform.localScale;
 
-        // 3. La hacemos hija de la rampa (reseteando localPosition y localRotation a 0)
         nuevaPieza.transform.SetParent(puntoElegido, false);
 
-        // 4. FORZAMOS POSICIÓN LOCAL CALIBRADA (De tu Imagen 2)
+        // Posición y rotación calibradas (Imagen 2)
         nuevaPieza.transform.localPosition = new Vector3(-8.7e-05f, 0.000151f, 0f);
-
-        // 5. FORZAMOS ROTACIÓN LOCAL CALIBRADA (De tu Imagen 2)
         nuevaPieza.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
 
-        // 6. MATEMÁTICA ANTI-DEFORMACIÓN
+        // Matemática anti-deformación CAD
         Vector3 escalaPadre = puntoElegido.lossyScale;
         nuevaPieza.transform.localScale = new Vector3(
             escalaPrefabOriginal.x / (escalaPadre.x != 0 ? escalaPadre.x : 1f),
@@ -205,10 +261,7 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
             escalaPrefabOriginal.z / (escalaPadre.z != 0 ? escalaPadre.z : 1f)
         );
 
-        // --- SE HA ELIMINADO EL CÓDIGO QUE CAMBIABA EL COLOR ---
-        // La pieza mantendrá por completo el material/color configurado en tu Prefab.
-
-        Debug.Log($"<color=green><b>[SLD Spawn ÉXITO]</b> Nueva pieza {color} creada recta en {puntoElegido.name} con escala corregida y color nativo de prefab.</color>");
+        Debug.Log($"<color=green><b>[SLD Spawn ÉXITO]</b> Nueva pieza {color} creada en {puntoElegido.name} con escala corregida y color nativo.</color>");
         return nuevaPieza;
     }
 
