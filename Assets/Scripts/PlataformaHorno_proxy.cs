@@ -2,6 +2,20 @@ using UnityEngine;
 
 public class PlataformaHorno_proxy : MonoBehaviour
 {
+    // =======================================================================
+    // COORDENADAS EXACTAS DE LA IMAGEN 2
+    // -6.2e-05f equivale exactamente a -0.000062f en Unity
+    // =======================================================================
+    private static readonly Vector3 posicionPerfectaImagen2 = new Vector3(-0.000154f, -0.000152f, -0.000062f);
+
+    public static Vector3 PosicionCalibradaPieza
+    {
+        get
+        {
+            return posicionPerfectaImagen2;
+        }
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
         // Solo se acopla si el impacto pertenece a la pieza y no tiene un padre activo
@@ -21,13 +35,17 @@ public class PlataformaHorno_proxy : MonoBehaviour
             rb.useGravity = false;
         }
 
-        // Emparentado inicial respetando la posición global de la colisión
+        // Emparentado inicial respetando la escala y posición global (Mantenemos TRUE para evitar deformaciones)
         pieza.SetParent(this.transform, true);
 
-        // Desfase milimétrico de calibración en el eje Y local preservando X y Z del impacto
-        Vector3 posicionLocalActual = pieza.localPosition;
-        pieza.localPosition = new Vector3(posicionLocalActual.x, -0.000152f, posicionLocalActual.z);
+        // Forzamos la posición local exacta a los valores de la Imagen 2
+        pieza.localPosition = posicionPerfectaImagen2;
 
-        Debug.Log($"[Horno]: Pieza {pieza.name} registrada en plataforma. Altura local Y fijada en -0.000152.");
+        // --- SISTEMA DE CAPTURA SILENCIOSA ---
+        PlayerPrefs.SetFloat("Horno_LocalX", posicionPerfectaImagen2.x);
+        PlayerPrefs.SetFloat("Horno_LocalZ", posicionPerfectaImagen2.z);
+        PlayerPrefs.Save();
+
+        Debug.Log($"[Horno]: Pieza {pieza.name} registrada en plataforma. Posición local fijada en la calibración de la Imagen 2: {posicionPerfectaImagen2}");
     }
 }

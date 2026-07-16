@@ -39,6 +39,7 @@ public class MPOHornoPayload
     public int lights;
     public int move2Ref5;
     public int move2Ref6;
+    public int ovenSensor;
     public string ts;
 }
 
@@ -407,7 +408,8 @@ public class MQTTClient : MonoBehaviour
                     lights = netData.lights ? 1 : 0,
                     move2Ref5 = netData.move2Ref5 ? 1 : 0,
                     move2Ref6 = netData.move2Ref6 ? 1 : 0,
-                    ts = netData.ts
+                    ts = netData.ts,
+                    ovenSensor = netData.oven_sensor ? 1 : 0
                 };
                 OnHornoUpdateEvent?.Invoke(legacyData);
             }

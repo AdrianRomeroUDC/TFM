@@ -137,21 +137,17 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 Collider[] collidersEnVentosa = Physics.OverlapSphere(centroBusquedaMundial, radioBusquedaVentosa);
                 foreach (Collider col in collidersEnVentosa)
                 {
-                    // 1. Rastreamos hacia arriba buscando la verdadera raíz "pieza_"
                     Transform objetoActual = col.transform;
                     Transform piezaReal = null;
 
                     while (objetoActual != null)
                     {
-                        // Si el objeto actual empieza por "pieza", hemos encontrado la raíz (ej: pieza_red)
                         if (objetoActual.name.ToLower().StartsWith("pieza"))
                         {
                             piezaReal = objetoActual;
                             break;
                         }
 
-                        // ESCUDO PROTECTOR: Si tocamos el contenedor, frenamos el bucle.
-                        // Esto evita que el robot confunda el contenedor con la pieza.
                         if (objetoActual.name.ToLower().Contains("cajon") ||
                             objetoActual.name.ToLower().Contains("contenedor") ||
                             objetoActual.name.ToLower().Contains("container"))
@@ -162,14 +158,12 @@ public class ControladorVGR_mqtt : MonoBehaviour
                         objetoActual = objetoActual.parent;
                     }
 
-                    // 2. Asignación validada de la pieza
                     if (piezaReal != null)
                     {
                         piezaEnganchada = piezaReal;
                         Debug.Log("<color=cyan><b>[VGR RADAR]:</b> Raíz de pieza fijada con éxito: </color>" + piezaEnganchada.name);
                         break;
                     }
-                    // Por si el objeto no tiene padres pero se llama pieza
                     else if (col.name.ToLower().Contains("pieza"))
                     {
                         piezaEnganchada = col.transform;
@@ -179,7 +173,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 }
             }
 
-            // Código original de agarre (fijación a la ventosa)
             if (piezaEnganchada != null)
             {
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
@@ -203,11 +196,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
         else
         {
-            // =======================================================================
-            // SOLUCIÓN: AUTO-SANACIÓN DEL PUNTERO AL SOLTAR
-            // Si la pieza cambió de color en el camino, 'piezaEnganchada' se volvió null.
-            // La rescatamos buscando directamente qué objeto cuelga de la ventosa.
-            // =======================================================================
             if (piezaEnganchada == null && puntoAnclajeVentosa != null)
             {
                 foreach (Transform hijo in puntoAnclajeVentosa)
@@ -225,8 +213,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 ContenedorHBW_proxy destinoFinal = contenedorActual;
 
-                // ESCUDO DE SEGURIDAD: Si el trigger falló por lag de frames mecánicos,
-                // lanzamos un radar esférico para forzar la detección del cajón que está abajo.
                 if (destinoFinal == null)
                 {
                     Collider[] collidersAbajo = Physics.OverlapSphere(piezaEnganchada.position, 0.06f);
@@ -249,7 +235,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 }
                 else
                 {
-                    // Caída libre si realmente se soltó en el vacío
+                    // Caída libre física original (¡Esto permite que golpee el horno y se autocalibre perfectamente!)
                     piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
                     BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
                     foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;

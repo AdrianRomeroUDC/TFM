@@ -3496,7 +3496,7 @@ MonoBehaviour:
   sensorEntradaObjeto: {fileID: 8836232917588539197}
   offsetBusqueda: {x: 0, y: 0, z: 0}
   mostrarGizmos: 1
-  multiplicadorVelocidad: 0.0096
+  multiplicadorVelocidad: 0.01
   velocidadActual: 0
   SensorEntrada: 0
   SensorCilindros: 0
@@ -10794,7 +10794,7 @@ MonoBehaviour:
   zTurntable: 0.001729
   xReposo: 0.0006319999
   xPickup: 0.0009
-  tiempoRecorridoHorizontal: 10
+  tiempoRecorridoHorizontal: 9
   tiempoRecorridoVertical: 0.1
   plataformaHorno: {fileID: 5194505733301100009}
   plataformaTurntable: {fileID: 8023815707679192106}
@@ -13282,6 +13282,7 @@ MonoBehaviour:
   puerta: {fileID: 177732133}
   plataformaPieza: {fileID: 1955133130}
   luzHorno: {fileID: 7771571069338089788}
+  prefabBaseGris: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
   posPuertaCerrada: {x: 0.99375594, y: 0.10059498, z: 2.1738}
   posPuertaAbierta: {x: 0.99375594, y: 0.12339844, z: 2.173781}
   posPlataformaFuera: {x: 0.99375594, y: 0.10059844, z: 2.2261808}
