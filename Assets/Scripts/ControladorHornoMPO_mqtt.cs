@@ -14,6 +14,10 @@ public class ControladorHorno_mqtt : MonoBehaviour
     [Tooltip("Arrastra aquí el prefab de tu pieza base gris (el mismo que usa el DPS).")]
     public GameObject prefabBaseGris;
 
+    [Header("Ajustes de Seguridad VGR")]
+    [Tooltip("Distancia límite (en metros) para considerar que el VGR está 'cerca' del horno. Si está más cerca de este valor con pieza, se cancela el spawn.")]
+    public float distanciaLimiteVGR = 0.15f;
+
     [Header("Posiciones (Usar clic derecho para capturar)")]
     [ContextMenuItem("Capturar Cerrada", "CapturarPuertaCerrada")] public Vector3 posPuertaCerrada;
     [ContextMenuItem("Capturar Abierta", "CapturarPuertaAbierta")] public Vector3 posPuertaAbierta;
@@ -39,7 +43,8 @@ public class ControladorHorno_mqtt : MonoBehaviour
     {
         while (MQTTClient.Instance == null) yield return null;
 
-        MQTTClient.Instance.OnHornoUpdateEvent += (data) => {
+        MQTTClient.Instance.OnHornoUpdateEvent += (data) =>
+        {
             lock (colaMensajes) { colaMensajes.Enqueue(data); }
         };
         Debug.Log("<color=cyan>Controlador Horno suscrito correctamente</color>");
@@ -118,15 +123,25 @@ public class ControladorHorno_mqtt : MonoBehaviour
             return;
         }
 
-        // 🛡️ ESCUDO DE PROTECCIÓN VGR
+        Transform plataformaReal = BuscarPlataformaRealHijo();
+        if (plataformaReal == null) return;
+
+        // 🛡️ ESCUDO DE PROTECCIÓN DISTANCIAL VGR
         ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
         if (vgr != null && vgr.ObtenerPiezaEnganchada() != null)
         {
-            Debug.Log("<color=yellow><b>[HORNO SPAWN]:</b> El VGR tiene una pieza sujeta. Se cancela el Spawn de respaldo para evitar colisiones en el aire.</color>");
-            return;
-        }
+            float distanciaAlHorno = Vector3.Distance(vgr.transform.position, plataformaReal.position);
 
-        Transform plataformaReal = BuscarPlataformaRealHijo();
+            if (distanciaAlHorno < distanciaLimiteVGR)
+            {
+                Debug.Log($"<color=yellow><b>[HORNO SPAWN]:</b> El VGR tiene una pieza sujeta y está CERCA del horno ({distanciaAlHorno:F3}m < {distanciaLimiteVGR}m). Se cancela el Spawn de respaldo.</color>");
+                return;
+            }
+            else
+            {
+                Debug.Log($"<color=cyan><b>[HORNO SPAWN]:</b> El VGR tiene una pieza pero está LEJOS ({distanciaAlHorno:F3}m >= {distanciaLimiteVGR}m). Se permite el Spawn de respaldo.</color>");
+            }
+        }
 
         Collider colPlat = plataformaReal.GetComponent<Collider>();
         Vector3 centroPlatMundo = (colPlat != null) ? colPlat.bounds.center : plataformaReal.position;
@@ -157,21 +172,16 @@ public class ControladorHorno_mqtt : MonoBehaviour
 
         if (!yaHayPieza)
         {
-            // 1. Instanciamos la pieza de respaldo
             GameObject nuevaPieza = Instantiate(prefabBaseGris);
             nuevaPieza.name = "pieza_base_horno";
-
             nuevaPieza.transform.localScale = prefabBaseGris.transform.localScale;
 
-            // 2. La emparentamos al hijo plataforma real de forma segura (Mantenemos TRUE para proteger la escala)
             nuevaPieza.transform.SetParent(plataformaReal, true);
 
-            // 3. Leemos la última posición real (que ahora es la de la Imagen 2) y la aplicamos
             Vector3 posicionSincronizada = PlataformaHorno_proxy.PosicionCalibradaPieza;
             nuevaPieza.transform.localPosition = posicionSincronizada;
             nuevaPieza.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
 
-            // Inmovilizamos físicas de la pieza de respaldo
             Rigidbody rb = nuevaPieza.GetComponent<Rigidbody>();
             if (rb == null) rb = nuevaPieza.AddComponent<Rigidbody>();
             rb.isKinematic = true;
@@ -200,5 +210,44 @@ public class ControladorHorno_mqtt : MonoBehaviour
             yield return null;
         }
         objeto.position = destino;
+    }
+
+    // --- EL NUEVO GIZMO VISUAL ---
+    void OnDrawGizmosSelected()
+    {
+        Transform plataformaReal = BuscarPlataformaRealHijo();
+        if (plataformaReal == null) return;
+
+        // 1. Dibujar el volumen de peligro en amarillo translúcido (Usamos DrawSphere que es la sólida)
+        Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.15f); // Amarillo suave y transparente
+        Gizmos.DrawSphere(plataformaReal.position, distanciaLimiteVGR);
+
+        // 2. Dibujar la silueta exterior en amarillo sólido
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(plataformaReal.position, distanciaLimiteVGR);
+
+        // 3. Trazar línea de estado hacia el VGR
+        ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
+        if (vgr != null)
+        {
+            float distanciaActual = Vector3.Distance(vgr.transform.position, plataformaReal.position);
+
+            if (vgr.ObtenerPiezaEnganchada() != null)
+            {
+                // Rojo si está cerca con pieza, Celeste si está lejos con pieza
+                Gizmos.color = (distanciaActual < distanciaLimiteVGR) ? Color.red : Color.cyan;
+            }
+            else
+            {
+                // Gris si no tiene pieza
+                Gizmos.color = Color.gray;
+            }
+
+            // Dibujar línea conectando ambos puntos
+            Gizmos.DrawLine(plataformaReal.position, vgr.transform.position);
+
+            // Una esfera pequeña en el VGR
+            Gizmos.DrawSphere(vgr.transform.position, 0.008f);
+        }
     }
 }

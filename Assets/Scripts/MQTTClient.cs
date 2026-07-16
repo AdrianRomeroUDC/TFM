@@ -6,7 +6,7 @@ using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
 // =================================================================
-// 1. ESTRUCTURAS DE COMPATIBILIDAD (Para no romper tus controladores)
+// 1. ESTRUCTURAS DE COMPATIBILIDAD
 // =================================================================
 [Serializable] public class HBWStockPayload { public string[] piezas; }
 [Serializable] public class VGRPositionData { public float rotation; public float vertical; public float extend; public string ts; }
@@ -14,117 +14,43 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class HBWPositionPayload { public float horizontal; public float vertical; public float extend; public string ts; }
 [Serializable] public class HBWBeltPayload { public float cintaHBWspeed; public string sentidoGiro; }
 
-[Serializable]
-public class SLDBeltPayload
-{
-    public float velocidad;
-    public int SensorEntrada;
-    public int SensorCilindros;
-    public string z_ts;
-}
-
-[Serializable]
-public class MPOBeltPayload
-{
-    public int estado;
-    public int sensorSalida;
-    public string z_ts;
-}
-
-[Serializable]
-public class MPOHornoPayload
-{
-    public int closeDoor;
-    public int openDoor;
-    public int lights;
-    public int move2Ref5;
-    public int move2Ref6;
-    public int ovenSensor;
-    public string ts;
-}
-
-// --- MODIFICADO: Añadido move2Ref8 a la estructura de la Turntable ---
-[Serializable]
-public class MPOTurntablePayload
-{
-    public int eject;
-    public int move2Ref7;
-    public int move2Ref8;
-    public int move2Ref9;
-    public int move2Ref10;
-    public int saw;
-    public int rotation;
-    public string ts;
-}
-
-// --- Estructura MPOBrazo adaptada al nuevo flujo de estados ---
-[Serializable]
-public class MPOBrazoPayload
-{
-    public bool move2Ref3;
-    public bool move2Ref4;
-    public bool lowering;
-    public bool vacuum;
-    public string ts;
-}
-
+[Serializable] public class SLDBeltPayload { public float velocidad; public int SensorEntrada; public int SensorCilindros; public string z_ts; }
+[Serializable] public class MPOBeltPayload { public int estado; public int sensorSalida; public string z_ts; }
+[Serializable] public class MPOHornoPayload { public int closeDoor; public int openDoor; public int lights; public int move2Ref5; public int move2Ref6; public int ovenSensor; public string ts; }
+[Serializable] public class MPOTurntablePayload { public int eject; public int move2Ref7; public int move2Ref8; public int move2Ref9; public int move2Ref10; public int saw; public int rotation; public string ts; }
+[Serializable] public class MPOBrazoPayload { public bool move2Ref3; public bool move2Ref4; public bool lowering; public bool vacuum; public string ts; }
 [Serializable] public class SSCLEDsPayload { public int LED_online; public int LEDs; }
 [Serializable] public class SSCCamaraPayload { public float pan; public float tilt; public string ts; }
 
 // =================================================================
-// 2. NUEVAS ESTRUCTURAS INTERNAS DE RED (Mapean los nuevos JSON)
+// 2. ESTRUCTURAS INTERNAS DE RED (Corregidas a PUBLIC para evitar el error)
 // =================================================================
-[Serializable] internal class JSON_DPSSensor { public bool dsi_sensor; public bool dso_sensor; }
-[Serializable] internal class JSON_DPSColor { public string color; }
-[Serializable] internal class JSON_SLDBelt { public bool cylinder_sensor; public bool entry_sensor; public float speed; public string ts; }
+[Serializable] public class JSON_DPSSensor { public bool dsi_sensor; public bool dso_sensor; }
+[Serializable] public class JSON_DPSColor { public string color; }
+[Serializable] public class JSON_SLDBelt { public bool cylinder_sensor; public bool entry_sensor; public float speed; public string ts; }
+
 [Serializable]
-internal class JSON_SLDCylinder
+public class JSON_SLDCylinder
 {
     public string cyl_color;
     public bool active;
-    public bool is_white; // ¡NUEVO!
-    public bool is_red;   // ¡NUEVO!
-    public bool is_blue;  // ¡NUEVO!
-    public string ts;     // ¡NUEVO!
-}
-[Serializable] internal class JSON_MPOBelt { public bool active; public bool exit_sensor; public string ts; }
-[Serializable] internal class JSON_MPOOven { public bool oven_sensor; public bool close_door; public bool lights; public bool move2Ref5; public bool move2Ref6; public bool open_door; public string ts; }
-
-// --- MODIFICADO: Añadido move2Ref8 a la deserialización JSON de la Turntable ---
-[Serializable]
-internal class JSON_MPOTurntable
-{
-    public bool eject;
-    public bool move2Ref7;
-    public bool move2Ref8;
-    public bool move2Ref9;
-    public bool move2Ref10;
-    public int rotation;
-    public int saw;
+    public bool is_white;
+    public bool is_red;
+    public bool is_blue;
     public string ts;
 }
 
+[Serializable] public class JSON_MPOBelt { public bool active; public bool exit_sensor; public string ts; }
+[Serializable] public class JSON_MPOOven { public bool oven_sensor; public bool close_door; public bool lights; public bool move2Ref5; public bool move2Ref6; public bool open_door; public string ts; }
+[Serializable] public class JSON_MPOTurntable { public bool eject; public bool move2Ref7; public bool move2Ref8; public bool move2Ref9; public bool move2Ref10; public int rotation; public int saw; public string ts; }
 [Serializable] public class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
 [Serializable] public class JSON_SSCCamera { public float pan; public float tilt; }
 [Serializable] public class JSON_HBWStock { public string[] stock; }
 [Serializable] public class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
-
-// --- Estructura interna de red MPO adaptada a Booleanos ---
-[Serializable]
-internal class JSON_MPOArm
-{
-    public bool move2Ref3;
-    public bool move2Ref4;
-    public bool lowering;
-    public bool vacuum;
-    public string ts;
-}
-
-// --- ESTRUCTURAS PARA EL ALMACÉN (f/i/stock) ---
-[Serializable] internal class JSON_Workpiece { public string id; public string type; public string state; }
-[Serializable] internal class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
-[Serializable] internal class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
-
+[Serializable] public class JSON_MPOArm { public bool move2Ref3; public bool move2Ref4; public bool lowering; public bool vacuum; public string ts; }
+[Serializable] public class JSON_Workpiece { public string id; public string type; public string state; }
+[Serializable] public class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
+[Serializable] public class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
 
 public class MQTTClient : MonoBehaviour
 {
@@ -135,18 +61,14 @@ public class MQTTClient : MonoBehaviour
     private string lastHBWJson = "";
     private string[] initialStock = null;
 
-    // --- PUENTE DE HILOS PARA POSICIONES CONTINUAS ---
     private VGRPositionData ultimoVGRPos = null;
     private bool hayNuevoVGRPos = false;
-
     private HBWPositionPayload ultimoHBWPos = null;
     private bool hayNuevoHBWPos = false;
 
     [Header("Configuración del Broker")]
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
     public int puerto = 8883;
-
-    [Header("Credenciales")]
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
 
@@ -154,45 +76,34 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
 
-    public delegate void OnCylinderUpdate(string color, int state);
+    // Delegado actualizado para recibir el objeto completo
+    public delegate void OnCylinderUpdate(JSON_SLDCylinder data);
     public event OnCylinderUpdate OnCylinderUpdateEvent;
 
     public delegate void OnDPSPiezaDSIUpdate(bool detectada);
     public event OnDPSPiezaDSIUpdate OnDPSPiezaDSIEvent;
-
     public delegate void OnDPSPiezaDSOUpdate(bool detectada);
     public event OnDPSPiezaDSOUpdate OnDPSPiezaDSOEvent;
-
     public delegate void OnDPSColorUpdate(string color);
     public event OnDPSColorUpdate OnDPSColorEvent;
-
     public delegate void OnVGRGripUpdate(bool activo);
     public event OnVGRGripUpdate OnVGRGripEvent;
-
     public delegate void OnHBWPiecesUpdate(string[] piezas);
     public event OnHBWPiecesUpdate OnHBWUpdatePiecesEvent;
-
     public delegate void OnVGRPositionUpdate(float rot, float vert, float ext);
     public event OnVGRPositionUpdate OnVGRPositionUpdateEvent;
-
     public delegate void OnHBWPositionUpdate(float hor, float vert, float ext);
     public event OnHBWPositionUpdate OnHBWPositionUpdateEvent;
-
     public delegate void OnBeltHBWUpdate(float speed, string direction);
     public event OnBeltHBWUpdate OnBeltHBWUpdateEvent;
-
     public delegate void OnHornoUpdate(MPOHornoPayload data);
     public event OnHornoUpdate OnHornoUpdateEvent;
-
     public delegate void OnMPOBeltUpdate(MPOBeltPayload data);
     public event OnMPOBeltUpdate OnMPOBeltUpdateEvent;
-
     public delegate void OnBrazoUpdate(MPOBrazoPayload data);
     public event OnBrazoUpdate OnBrazoUpdateEvent;
-
     public delegate void OnSSCLEDsUpdate(int ledOnline, int ledsValor);
     public event OnSSCLEDsUpdate OnSSCLEDsUpdateEvent;
-
     public delegate void OnSSCCamaraUpdate(float pan, float tilt);
     public event OnSSCCamaraUpdate OnSSCCamaraUpdateEvent;
 
@@ -279,26 +190,11 @@ public class MQTTClient : MonoBehaviour
         {
             try
             {
+                // Invocamos pasando el objeto completo
                 JSON_SLDCylinder data = JsonUtility.FromJson<JSON_SLDCylinder>(msg);
-                if (data != null)
-                {
-                    string colorFinal = "WHITE";
-
-                    // 1. Prioridad al cyl_color del mensaje
-                    if (!string.IsNullOrEmpty(data.cyl_color))
-                    {
-                        colorFinal = data.cyl_color.Replace("\"", "").Trim().ToUpper();
-                    }
-                    // 2. Respaldo por si se evalúa a través de los booleanos directos
-                    else if (data.is_red) colorFinal = "RED";
-                    else if (data.is_blue) colorFinal = "BLUE";
-                    else if (data.is_white) colorFinal = "WHITE";
-
-                    // Lanzamos el evento con el color correcto desinfectado
-                    OnCylinderUpdateEvent?.Invoke(colorFinal, data.active ? 1 : 0);
-                }
+                OnCylinderUpdateEvent?.Invoke(data);
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/sld/cylinder: " + ex.Message); }
+            catch { }
         }
         // --- ESTACIÓN DPS ---
         else if (topic == "dt/dps/dsi")

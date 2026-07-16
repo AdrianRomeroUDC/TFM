@@ -97,20 +97,32 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    // Callback del topic f/sld/cylinder (Ocurre en el hilo de MQTT)
-    void ActualizarColorDesdeCilindro(string color, int estado)
+    // --- MODIFICADO: Ahora recibe el objeto completo JSON_SLDCylinder para coincidir con el delegado ---
+    void ActualizarColorDesdeCilindro(JSON_SLDCylinder data)
     {
-        if (string.IsNullOrEmpty(color)) return;
+        if (data == null) return;
 
-        string colorLimpio = color.Replace("\"", "").Trim().ToUpper();
+        // Procesamos el color tal cual lo hacías antes, de forma segura
+        string colorLimpio = null;
+
+        if (!string.IsNullOrEmpty(data.cyl_color))
+        {
+            colorLimpio = data.cyl_color.Replace("\"", "").Trim().ToUpper();
+        }
+
+        // ==========================================
+        // NUEVO FILTRO: Si el color de MQTT viene vacío, 
+        // no hacemos nada para evitar errores.
+        // ==========================================
+        if (string.IsNullOrEmpty(colorLimpio)) return;
 
         // Guardamos el color publicado de inmediato
         ultimoColorCilindro = colorLimpio;
-
         // Forzamos el cambio de color inmediato en el Update de Unity
         flagCambiarColor = true;
 
-        if (estado == 1)
+        // data.active equivale al anterior "estado == 1"
+        if (data.active)
         {
             colorParaEmpuje = colorLimpio;
             flagEmpujarARampa = true;
@@ -270,23 +282,17 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    // =======================================================================
-    // CÁLCULO DE CENTRO GEOMÉTRICO LOCAL INMUNIZADO CONTRA ROTACIONES
-    // =======================================================================
     private Vector3 ObtenerCentroLocal(Transform objetivo)
     {
         if (objetivo == null) return Vector3.zero;
 
-        // Buscamos el MeshFilter para obtener los límites de la malla local (100% estables, sin importar la rotación)
         MeshFilter mf = objetivo.GetComponentInChildren<MeshFilter>();
         if (mf != null && mf.sharedMesh != null)
         {
-            // Convertimos el centro geométrico de la malla local al espacio de su root de forma limpia
             Vector3 centroMundo = mf.transform.TransformPoint(mf.sharedMesh.bounds.center);
             return objetivo.InverseTransformPoint(centroMundo);
         }
 
-        // Fallback de seguridad por si no tiene MeshFilter
         Renderer renderer = objetivo.GetComponentInChildren<Renderer>();
         if (renderer != null)
         {
@@ -301,7 +307,8 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         Transform piezaAColorear = ObtenerPiezaSegura();
         if (piezaAColorear == null)
         {
-            Debug.LogWarning($"<color=red><b>[CINTA SLD]:</b> Recibido color <b>{ultimoColorCilindro}</b>, pero no se encontró la pieza en la cinta.</color>");
+            // Cambiado a Log normal para no ensuciar la consola con Warnings falsos
+            Debug.Log($"<b>[CINTA SLD]:</b> Intento de cambiar color a {ultimoColorCilindro}, pero la pieza no está en la cinta (puede estar en la rampa).");
             return;
         }
 
@@ -342,7 +349,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 return;
             }
 
-            // 1. Instanciamos la pieza base de respaldo con su escala original 1:1
             GameObject nuevaPieza = Instantiate(prefabBaseGris);
             nuevaPieza.name = prefabBaseGris.name + "(Clone)";
             nuevaPieza.transform.localScale = prefabBaseGris.transform.localScale;
@@ -374,12 +380,10 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             rb.isKinematic = true;
             rb.useGravity = false;
 
-            // Emparentamos usando "true" para que Unity calcule la escala local compensada.
             pieza.SetParent(eslabonMasCercano, true);
 
             piezaActual = pieza;
 
-            // Aplicamos los offsets locales respecto al eslabón
             pieza.localPosition = offsetLocalPieza;
             pieza.localRotation = Quaternion.Euler(rotacionLocalPieza);
 

@@ -13284,6 +13284,7 @@ MonoBehaviour:
   plataformaPieza: {fileID: 1955133130}
   luzHorno: {fileID: 7771571069338089788}
   prefabBaseGris: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
+  distanciaLimiteVGR: 0.125
   posPuertaCerrada: {x: 0.99375594, y: 0.10059498, z: 2.1738}
   posPuertaAbierta: {x: 0.99375594, y: 0.12339844, z: 2.173781}
   posPlataformaFuera: {x: 0.99375594, y: 0.10059844, z: 2.2261808}
@@ -16025,7 +16026,12 @@ MonoBehaviour:
   pistonBlanco: {fileID: 1991905256}
   pistonRojo: {fileID: 1381773752}
   pistonAzul: {fileID: 1583995213}
+  piezaBasePrefab: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
+  spawnPointBlanco: {fileID: 8972519635171573006}
+  spawnPointRojo: {fileID: 4091309073054997913}
+  spawnPointAzul: {fileID: 8092191828404619852}
   velocidadPiston: 0.1
+  cooldownSpawn: 2
 --- !u!4 &1803506119
 Transform:
   m_ObjectHideFlags: 0
