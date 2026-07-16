@@ -10,6 +10,10 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     [Header("Referencias de Sensores Físicos (Arrastra el objeto 3D aquí)")]
     public Transform sensorEntradaObjeto;
 
+    [Header("Prefabs de Auto-Sanación (Fallback Spawner)")]
+    [Tooltip("Arrastra aquí el prefab de tu pieza base gris (el mismo que usa el DPS y el Horno).")]
+    public GameObject prefabBaseGris;
+
     [Header("Ajuste Fino de Escaneo (¡Para el Gizmo!)")]
     [Tooltip("Desfase local desde el sensor para centrar la búsqueda en la superficie útil superior de la cinta.")]
     public Vector3 offsetBusqueda = Vector3.zero;
@@ -193,24 +197,16 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    // =======================================================================
-    // ESCÁNER DE JERARQUÍA REAL (CintaSLD -> raupenbelag -> pieza)
-    // Busca dinámicamente si algún eslabón de la cinta tiene como hijo la pieza
-    // =======================================================================
     private Transform ObtenerPiezaEnCinta()
     {
         if (objetoCintaPadre == null) return null;
 
-        // Recorremos cada eslabón (raupenbelag) que cuelga del padre de la cinta
         foreach (Transform eslabon in objetoCintaPadre)
         {
-            // Buscamos si este eslabón tiene un hijo que sea la pieza (el clon)
-            // ¡Corregido "del" por "in" para evitar el error de compilación!
             foreach (Transform hijo in eslabon)
             {
                 string nombre = hijo.name.ToLower();
-                // Identificamos la pieza por nombre o tag
-                if (nombre.Contains("pieza") || nombre.Contains("workpiece") || hijo.CompareTag("Pieza"))
+                if (nombre.Contains("pieza") || name.Contains("workpiece") || hijo.CompareTag("Pieza"))
                 {
                     return hijo;
                 }
@@ -221,18 +217,14 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     private Transform ObtenerPiezaSegura()
     {
-        // 1. Buscamos primero en la jerarquía real de la cinta
         Transform piezaEnCinta = ObtenerPiezaEnCinta();
         if (piezaEnCinta != null)
         {
-            piezaActual = piezaEnCinta; // Sincronizamos la variable interna
+            piezaActual = piezaEnCinta;
             return piezaEnCinta;
         }
 
-        // 2. Si no, devolvemos la que esté en la rampa
         if (piezaEnRampa != null) return piezaEnRampa;
-
-        // 3. Fallback de seguridad
         return piezaActual;
     }
 
@@ -321,8 +313,30 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     private void EjecutarReaparicionPieza()
     {
+        if (sensorEntradaObjeto == null) return;
+
         Transform pieza = ControladorCintaMPO_mqtt.piezaEnTransito;
-        if (pieza == null || sensorEntradaObjeto == null) return;
+        bool esNuevaPiezaSpawneada = false;
+
+        // Comprobación segura de Auto-Sanación
+        if (pieza == null)
+        {
+            if (prefabBaseGris == null)
+            {
+                Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> ¡Falta asignar el Prefab Base Gris en el Inspector de la Cinta SLD!</color>");
+                return;
+            }
+
+            // 1. Instanciamos la pieza base de respaldo con su escala original 1:1
+            GameObject nuevaPieza = Instantiate(prefabBaseGris);
+            nuevaPieza.name = prefabBaseGris.name + "(Clone)";
+            nuevaPieza.transform.localScale = prefabBaseGris.transform.localScale;
+
+            pieza = nuevaPieza.transform;
+            esNuevaPiezaSpawneada = true;
+
+            Debug.Log("<color=yellow><b>[CINTA SLD]:</b> No venía pieza de la Cinta MPO. Generando pieza de respaldo.</color>");
+        }
 
         Vector3 puntoDeBusquedaMundial = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
         Transform eslabonMasCercano = null;
@@ -341,16 +355,35 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         if (eslabonMasCercano != null)
         {
             Rigidbody rb = pieza.GetComponent<Rigidbody>();
-            if (rb != null) rb.isKinematic = true;
+            if (rb == null) rb = pieza.gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
 
-            pieza.SetParent(eslabonMasCercano, false);
+            // =======================================================================
+            // 🛡️ PROTECCIÓN DE ESCALA CAD (Sincronización 1:1 con Horno/DSI/DSO)
+            // Emparentamos usando "true" para que Unity calcule la escala local compensada.
+            // =======================================================================
+            pieza.SetParent(eslabonMasCercano, true);
+
             piezaActual = pieza;
 
+            // Aplicamos los offsets locales respecto al eslabón
             pieza.localPosition = offsetLocalPieza;
             pieza.localRotation = Quaternion.Euler(rotacionLocalPieza);
 
             pieza.gameObject.SetActive(true);
-            ControladorCintaMPO_mqtt.piezaEnTransito = null;
+
+            if (!esNuevaPiezaSpawneada)
+            {
+                ControladorCintaMPO_mqtt.piezaEnTransito = null;
+            }
+        }
+        else
+        {
+            if (esNuevaPiezaSpawneada && pieza != null)
+            {
+                Destroy(pieza.gameObject);
+            }
         }
     }
 
