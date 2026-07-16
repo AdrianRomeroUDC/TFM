@@ -3497,7 +3497,7 @@ MonoBehaviour:
   prefabBaseGris: {fileID: 1874647114658911321, guid: 88992a74dcec52641bf8ab37d79ff53a, type: 3}
   offsetBusqueda: {x: 0, y: 0, z: 0}
   mostrarGizmos: 1
-  multiplicadorVelocidad: 0.0099
+  multiplicadorVelocidad: 0.01
   velocidadActual: 0
   SensorEntrada: 0
   SensorCilindros: 0

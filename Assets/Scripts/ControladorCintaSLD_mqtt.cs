@@ -206,7 +206,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             foreach (Transform hijo in eslabon)
             {
                 string nombre = hijo.name.ToLower();
-                if (nombre.Contains("pieza") || name.Contains("workpiece") || hijo.CompareTag("Pieza"))
+                if (nombre.Contains("pieza") || nombre.Contains("workpiece") || hijo.CompareTag("Pieza"))
                 {
                     return hijo;
                 }
@@ -253,11 +253,13 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 piezaActual = null;
             }
 
+            // Calculamos los centros basándonos en la geometría pura local de las mallas
             Vector3 centroRampaLocal = ObtenerCentroLocal(rampaDestino);
             Vector3 centroPiezaLocal = ObtenerCentroLocal(piezaEnRampa);
 
             piezaEnRampa.SetParent(rampaDestino, true);
 
+            // Alineación perfecta en base a centros geométricos locales reales
             posicionLocalObjetivo = centroRampaLocal - (piezaEnRampa.localRotation * centroPiezaLocal);
             posicionLocalObjetivo.z = posicionZLocalEnRampa;
 
@@ -268,17 +270,30 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
+    // =======================================================================
+    // CÁLCULO DE CENTRO GEOMÉTRICO LOCAL INMUNIZADO CONTRA ROTACIONES
+    // =======================================================================
     private Vector3 ObtenerCentroLocal(Transform objetivo)
     {
-        Renderer[] renderers = objetivo.GetComponentsInChildren<Renderer>();
-        if (renderers == null || renderers.Length == 0) return Vector3.zero;
+        if (objetivo == null) return Vector3.zero;
 
-        Bounds encapsulada = renderers[0].bounds;
-        for (int i = 1; i < renderers.Length; i++)
+        // Buscamos el MeshFilter para obtener los límites de la malla local (100% estables, sin importar la rotación)
+        MeshFilter mf = objetivo.GetComponentInChildren<MeshFilter>();
+        if (mf != null && mf.sharedMesh != null)
         {
-            encapsulada.Encapsulate(renderers[i].bounds);
+            // Convertimos el centro geométrico de la malla local al espacio de su root de forma limpia
+            Vector3 centroMundo = mf.transform.TransformPoint(mf.sharedMesh.bounds.center);
+            return objetivo.InverseTransformPoint(centroMundo);
         }
-        return objetivo.InverseTransformPoint(encapsulada.center);
+
+        // Fallback de seguridad por si no tiene MeshFilter
+        Renderer renderer = objetivo.GetComponentInChildren<Renderer>();
+        if (renderer != null)
+        {
+            return objetivo.InverseTransformPoint(renderer.bounds.center);
+        }
+
+        return Vector3.zero;
     }
 
     private void EjecutarCambioColorPieza()
@@ -359,10 +374,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             rb.isKinematic = true;
             rb.useGravity = false;
 
-            // =======================================================================
-            // 🛡️ PROTECCIÓN DE ESCALA CAD (Sincronización 1:1 con Horno/DSI/DSO)
             // Emparentamos usando "true" para que Unity calcule la escala local compensada.
-            // =======================================================================
             pieza.SetParent(eslabonMasCercano, true);
 
             piezaActual = pieza;
