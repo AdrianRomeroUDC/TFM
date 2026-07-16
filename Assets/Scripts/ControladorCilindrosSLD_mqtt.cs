@@ -37,6 +37,9 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     private bool piezaSpawned = false;
     private float ultimoTiempoActivo = -99f;
 
+    // --- PUENTE SEGURO PARA EVITAR CAÍDAS DE HILOS ---
+    private JSON_SLDCylinder datosPendientes = null;
+
     // --- LÓGICA DE SUSCRIPCIÓN ROBUSTA ---
     void Start()
     {
@@ -60,11 +63,16 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
             MQTTClient.Instance.OnCylinderUpdateEvent -= ProcesarComandoCilindro;
     }
 
-    // --- PROCESAMIENTO DE DATOS ---
+    // --- RECIBIR DATOS DE MQTT (Inmune a caídas de hilos) ---
     void ProcesarComandoCilindro(JSON_SLDCylinder data)
     {
         if (data == null) return;
+        datosPendientes = data; // Guardamos los datos de forma segura
+    }
 
+    // --- LÓGICA DE SPAWN SEGURA (Hilo principal de Unity) ---
+    void ProcesarDatosMQTTSeguro(JSON_SLDCylinder data)
+    {
         // --- 1. DETECCIÓN DEL SENSOR ACTIVO EN ESTE INSTANTE ---
         string colorSensor = "";
         if (data.is_white) colorSensor = "WHITE";
@@ -100,7 +108,6 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
         if (!algunSensorDetecta)
         {
-            // Al no haber piezas en los sensores, liberamos el candado
             if (piezaSpawned)
             {
                 Debug.Log("<b>[SLD Spawn]</b> Sensores despejados. Candado de spawn reseteado.");
@@ -109,7 +116,6 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
         }
         else if (algunSensorDetecta && !piezaSpawned)
         {
-            // Comprobamos si el color detectado por el sensor es idéntico al reportado en cyl_color
             bool coincideConCylColor = (cylColorLimpio == colorSensor);
 
             // Tiempos de seguridad
@@ -118,7 +124,6 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
             if (coincideConCylColor)
             {
-                // REGLA: Si cyl_color es BLUE y se activa is_blue, NO SPAWNEA
                 Debug.Log($"<b>[SLD Spawn Omitido]</b> El sensor activo ({colorSensor}) coincide con cyl_color ({cylColorLimpio}). Evitando duplicado.");
             }
             else if (data.active)
@@ -131,7 +136,6 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
             }
             else
             {
-                // REGLA: Si cyl_color es BLUE y se activa is_red (No coinciden), ¡SPAWNEA la pieza roja!
                 Debug.Log($"<color=orange><b>[SLD Spawn Aprobado]</b> Cambio detectado. cyl_color: '{cylColorLimpio}' | Sensor activo: '{colorSensor}'. Spawneando pieza...</color>");
                 SpawnPieza(colorSensor);
             }
@@ -150,22 +154,39 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
         switch (color)
         {
-            case "WHITE":
-                puntoElegido = spawnPointBlanco;
-                break;
-            case "RED":
-                puntoElegido = spawnPointRojo;
-                break;
-            case "BLUE":
-                puntoElegido = spawnPointAzul;
-                break;
+            case "WHITE": puntoElegido = spawnPointBlanco; break;
+            case "RED": puntoElegido = spawnPointRojo; break;
+            case "BLUE": puntoElegido = spawnPointAzul; break;
         }
 
         if (puntoElegido != null)
         {
-            Instantiate(piezaBasePrefab, puntoElegido.position, puntoElegido.rotation);
-            piezaSpawned = true; // Bloqueamos spawns repetidos de esta misma lectura
-            Debug.Log($"<color=green><b>[SLD Spawn ÉXITO]</b> Nueva pieza {color} creada en {puntoElegido.name}.</color>");
+            // 1. Instanciamos la pieza en la escena
+            GameObject nuevaPieza = Instantiate(piezaBasePrefab);
+
+            // 2. Guardamos la escala real de tu prefab original
+            Vector3 escalaPrefabOriginal = piezaBasePrefab.transform.localScale;
+
+            // 3. La hacemos hija de la rampa (pasamos 'false' para resetear posición y rotación local a 0 temporalmente)
+            nuevaPieza.transform.SetParent(puntoElegido, false);
+
+            // 4. FORZAMOS POSICIÓN LOCAL CALIBRADA (De tu Imagen 2)
+            nuevaPieza.transform.localPosition = new Vector3(-8.7e-05f, 0.000151f, 0f);
+
+            // 5. FORZAMOS ROTACIÓN LOCAL CALIBRADA (De tu Imagen 2)
+            nuevaPieza.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+
+            // 6. MATEMÁTICA ANTI-DEFORMACIÓN
+            // Corregimos la escala para que el tamaño del padre CAD no aplaste o estire la pieza
+            Vector3 escalaPadre = puntoElegido.lossyScale;
+            nuevaPieza.transform.localScale = new Vector3(
+                escalaPrefabOriginal.x / (escalaPadre.x != 0 ? escalaPadre.x : 1f),
+                escalaPrefabOriginal.y / (escalaPadre.y != 0 ? escalaPadre.y : 1f),
+                escalaPrefabOriginal.z / (escalaPadre.z != 0 ? escalaPadre.z : 1f)
+            );
+
+            piezaSpawned = true; // Bloqueamos el candado para evitar duplicados
+            Debug.Log($"<color=green><b>[SLD Spawn ÉXITO]</b> Nueva pieza {color} creada recta en {puntoElegido.name} con escala e inclinación corregidas.</color>");
         }
         else
         {
@@ -175,9 +196,17 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
     void Update()
     {
+        // 1. Mover pistones
         MoverPiston(pistonBlanco, targetBlanco, xReposoBlanco, xEstiradoBlanco);
         MoverPiston(pistonRojo, targetRojo, xReposoEstandar, xEstiradoEstandar);
         MoverPiston(pistonAzul, targetAzul, xReposoEstandar, xEstiradoEstandar);
+
+        // 2. Procesar datos de forma segura en el hilo principal
+        if (datosPendientes != null)
+        {
+            ProcesarDatosMQTTSeguro(datosPendientes);
+            datosPendientes = null; // Consumimos los datos
+        }
     }
 
     void MoverPiston(Transform piston, float estadoActual, float reposo, float estirado)
