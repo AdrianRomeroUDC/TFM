@@ -129,6 +129,20 @@ public class ControladorHorno_mqtt : MonoBehaviour
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
+        // =======================================================================
+        // NUEVO: FILTRO DE DETECCIÓN DEL BRAZO MPO EN Z_HORNO
+        // =======================================================================
+        ControladorBrazoMPO brazoMPO = Object.FindFirstObjectByType<ControladorBrazoMPO>();
+        if (brazoMPO != null && brazoMPO.ejeHorizontal != null)
+        {
+            float distanciaZ = Mathf.Abs(brazoMPO.ejeHorizontal.localPosition.z - brazoMPO.zHorno);
+            if (distanciaZ < 0.00005f) // Margen de precisión de 5 milímetros
+            {
+                Debug.Log($"<color=yellow><b>[HORNO SPAWN]:</b> El brazo MPO está en posición de horno Z ({distanciaZ:F5}m). Se bloquea el spawn.</color>");
+                return; // Cancelamos el spawn de inmediato
+            }
+        }
+
         // 🛡️ ESCUDO DE PROTECCIÓN DISTANCIAL VGR
         ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
         if (vgr != null && vgr.ObtenerPiezaEnganchada() != null)
