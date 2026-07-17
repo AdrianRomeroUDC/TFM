@@ -18,6 +18,10 @@ public class ControladorHorno_mqtt : MonoBehaviour
     [Tooltip("Distancia límite (en metros) para considerar que el VGR está 'cerca' del horno. Si está más cerca de este valor con pieza, se cancela el spawn.")]
     public float distanciaLimiteVGR = 0.15f;
 
+    [Header("Filtro Posicional (Brazo MPO)")]
+    [Tooltip("Margen de error permisible (en metros) para dictaminar si el brazo MPO se encuentra físicamente sobre el horno. Reducido a 5 milímetros.")]
+    public float margenErrorZ = 0.005f;
+
     [Header("Posiciones (Usar clic derecho para capturar)")]
     [ContextMenuItem("Capturar Cerrada", "CapturarPuertaCerrada")] public Vector3 posPuertaCerrada;
     [ContextMenuItem("Capturar Abierta", "CapturarPuertaAbierta")] public Vector3 posPuertaAbierta;
@@ -88,15 +92,37 @@ public class ControladorHorno_mqtt : MonoBehaviour
             movimientoPlataforma = StartCoroutine(MoverObjeto(plataformaPieza, posPlataformaFuera, duracionMovimientoPlataforma));
         }
 
-        // SENSOR DEL HORNO (Gestión de presencia bidireccional)
+        // SENSOR DEL HORNO (Gestión de presencia con filtro de Z del Brazo MPO)
         if (data.ovenSensor == 1)
         {
-            IntentarSpawnPiezaHorno();
+            if (EsElBrazoEnElHorno())
+            {
+                Debug.Log("<color=yellow><b>[HORNO]:</b> Sensor activo pero IGNORADO de forma segura. El brazo MPO está físicamente en la coordenada Z del horno.</color>");
+            }
+            else
+            {
+                IntentarSpawnPiezaHorno();
+            }
         }
         else if (data.ovenSensor == 0)
         {
             IntentarLimpiezaPiezaHorno();
         }
+    }
+
+    private bool EsElBrazoEnElHorno()
+    {
+        ControladorBrazoMPO brazoMPO = Object.FindFirstObjectByType<ControladorBrazoMPO>();
+        if (brazoMPO == null || brazoMPO.ejeHorizontal == null) return false;
+
+        // Calculamos la distancia absoluta entre la posición actual en Z del brazo y su coordenada zHorno guardada
+        float distanciaZ = Mathf.Abs(brazoMPO.ejeHorizontal.localPosition.z - brazoMPO.zHorno);
+
+        // Chivato en la consola para ayudarte a calibrar el margen con precisión milimétrica
+        Debug.Log($"[HORNO FILTRO]: Distancia Z actual del brazo al horno: {distanciaZ:F5}m. (Margen límite configurado: {margenErrorZ}m)");
+
+        // Si la distancia es menor que nuestro margen (por ejemplo, 5 milímetros), confirmamos que está allí
+        return distanciaZ < margenErrorZ;
     }
 
     private Transform BuscarPlataformaRealHijo()
@@ -129,21 +155,7 @@ public class ControladorHorno_mqtt : MonoBehaviour
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
-        // =======================================================================
-        // NUEVO: FILTRO DE DETECCIÓN DEL BRAZO MPO EN Z_HORNO
-        // =======================================================================
-        ControladorBrazoMPO brazoMPO = Object.FindFirstObjectByType<ControladorBrazoMPO>();
-        if (brazoMPO != null && brazoMPO.ejeHorizontal != null)
-        {
-            float distanciaZ = Mathf.Abs(brazoMPO.ejeHorizontal.localPosition.z - brazoMPO.zHorno);
-            if (distanciaZ < 0.00005f) // Margen de precisión de 5 milímetros
-            {
-                Debug.Log($"<color=yellow><b>[HORNO SPAWN]:</b> El brazo MPO está en posición de horno Z ({distanciaZ:F5}m). Se bloquea el spawn.</color>");
-                return; // Cancelamos el spawn de inmediato
-            }
-        }
-
-        // 🛡️ ESCUDO DE PROTECCIÓN DISTANCIAL VGR
+        // 🛡️ 1. ESCUDO DE PROTECCIÓN DISTANCIAL VGR
         ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
         if (vgr != null && vgr.ObtenerPiezaEnganchada() != null)
         {
@@ -154,16 +166,12 @@ public class ControladorHorno_mqtt : MonoBehaviour
                 Debug.Log($"<color=yellow><b>[HORNO SPAWN]:</b> El VGR tiene una pieza sujeta y está CERCA del horno ({distanciaAlHorno:F3}m < {distanciaLimiteVGR}m). Se cancela el Spawn de respaldo.</color>");
                 return;
             }
-            else
-            {
-                Debug.Log($"<color=cyan><b>[HORNO SPAWN]:</b> El VGR tiene una pieza pero está LEJOS ({distanciaAlHorno:F3}m >= {distanciaLimiteVGR}m). Se permite el Spawn de respaldo.</color>");
-            }
         }
 
         Collider colPlat = plataformaReal.GetComponent<Collider>();
         Vector3 centroPlatMundo = (colPlat != null) ? colPlat.bounds.center : plataformaReal.position;
 
-        // Evitar duplicaciones
+        // Evitar duplicaciones de piezas en Unity
         bool yaHayPieza = false;
         Collider[] collidersCercanos = Physics.OverlapSphere(centroPlatMundo, 0.05f);
 
@@ -211,24 +219,18 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // NUEVO MÉTODO: AUTO-LIMPIEZA DE LA PLATAFORMA DEL HORNO
-    // ==========================================
     private void IntentarLimpiezaPiezaHorno()
     {
         if (plataformaPieza == null) return;
 
-        // 1. Evitar ejecuciones si no se ha calibrado la posición "Fuera" todavía
         if (posPlataformaFuera == Vector3.zero) return;
 
-        // 2. Verificar si la plataforma está físicamente en la posición "Fuera" (con un margen de 1cm)
         float distanciaAFuera = Vector3.Distance(plataformaPieza.position, posPlataformaFuera);
         if (distanciaAFuera > 0.01f) return;
 
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
-        // 3. Buscar cualquier pieza que esté apoyada (que sea hija directa) en la plataforma del horno
         List<GameObject> piezasEliminar = new List<GameObject>();
         foreach (Transform hijo in plataformaReal)
         {
@@ -239,7 +241,6 @@ public class ControladorHorno_mqtt : MonoBehaviour
             }
         }
 
-        // 4. Eliminar la pieza de la simulación
         if (piezasEliminar.Count > 0)
         {
             Debug.Log($"<color=red><b>[HORNO LIMPIEZA]:</b> Sensor reporta vacío con plataforma fuera. Destruyendo {piezasEliminar.Count} pieza(s) de la plataforma del horno.</color>");
@@ -268,41 +269,24 @@ public class ControladorHorno_mqtt : MonoBehaviour
         objeto.position = destino;
     }
 
-    // --- EL GIZMO VISUAL ---
     void OnDrawGizmosSelected()
     {
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
-        // 1. Dibujar el volumen de peligro en amarillo translúcido
-        Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.15f); // Amarillo suave y transparente
+        Gizmos.color = new Color(1f, 0.92f, 0.016f, 0.15f);
         Gizmos.DrawSphere(plataformaReal.position, distanciaLimiteVGR);
-
-        // 2. Dibujar la silueta exterior en amarillo sólido
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(plataformaReal.position, distanciaLimiteVGR);
 
-        // 3. Trazar línea de estado hacia el VGR
         ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
         if (vgr != null)
         {
             float distanciaActual = Vector3.Distance(vgr.transform.position, plataformaReal.position);
+            Gizmos.color = (vgr.ObtenerPiezaEnganchada() != null) ?
+                ((distanciaActual < distanciaLimiteVGR) ? Color.red : Color.cyan) : Color.gray;
 
-            if (vgr.ObtenerPiezaEnganchada() != null)
-            {
-                // Rojo si está cerca con pieza, Celeste si está lejos con pieza
-                Gizmos.color = (distanciaActual < distanciaLimiteVGR) ? Color.red : Color.cyan;
-            }
-            else
-            {
-                // Gris si no tiene pieza
-                Gizmos.color = Color.gray;
-            }
-
-            // Dibujar línea conectando ambos puntos
             Gizmos.DrawLine(plataformaReal.position, vgr.transform.position);
-
-            // Una esfera pequeña en el VGR
             Gizmos.DrawSphere(vgr.transform.position, 0.008f);
         }
     }
