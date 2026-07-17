@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -67,6 +68,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     private Quaternion[] rotRailes;
     private float progresoCiclo = 0f;
 
+    // --- NUEVO: Bloque de propiedades de material para evitar lag ---
+    private MaterialPropertyBlock propBlock;
+
     void Start()
     {
         if (objetoCintaPadre == null)
@@ -74,6 +78,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             Debug.LogError("<color=red><b>[CINTA SLD - ERROR]:</b> ¡Falta asignar el Objeto Cinta Padre en el Inspector!</color>");
             return;
         }
+
+        // Inicializamos el bloque de propiedades una sola vez en el inicio
+        propBlock = new MaterialPropertyBlock();
 
         ConfigurarEslabones();
         InvokeRepeating("IntentarSuscripcion", 0f, 1f);
@@ -111,8 +118,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             colorLimpio = data.cyl_color.Replace("\"", "").Trim().ToUpper();
         }
 
-        // 🛡️ FILTRO DE FLANCO DE SUBIDA (RISING EDGE)
-        // Detectamos únicamente cuando la señal pasa de False a True para evitar spam de warnings
         bool nuevoActive = data.active;
         bool flancoSubidaActive = nuevoActive && !ultimoEstadoActive;
         ultimoEstadoActive = nuevoActive;
@@ -129,7 +134,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         }
     }
 
-    // Callback del topic dt/sld/belt
     void ActualizarDatosCinta(SLDBeltPayload data)
     {
         velocidadActual = data.velocidad;
@@ -300,6 +304,9 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         return Vector3.zero;
     }
 
+    // =======================================================================
+    // NUEVA FUNCIÓN OPTIMIZADA: SIN INSTANCIAR MATERIALES (Cero Lag)
+    // =======================================================================
     private void EjecutarCambioColorPieza()
     {
         Transform piezaAColorear = ObtenerPiezaSegura();
@@ -321,8 +328,17 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 default: colorObjetivo = Color.white; break;
             }
 
-            renderizador.material.color = colorObjetivo;
-            Debug.Log($"<color=cyan><b>[CINTA SLD]:</b> ¡PINTADO AL INSTANTE! Pieza '{piezaAColorear.name}' pintada de <b>{ultimoColorCilindro}</b>.</color>");
+            // 1. Obtenemos las propiedades de renderizado actuales de la pieza
+            renderizador.GetPropertyBlock(propBlock);
+
+            // 2. Modificamos el color directamente en la GPU usando el buffer seguro de propiedades
+            propBlock.SetColor("_Color", colorObjetivo);      // Para Shaders tradicionales / Standard
+            propBlock.SetColor("_BaseColor", colorObjetivo);  // Para Shaders modernos URP / HDRP
+
+            // 3. Devolvemos el bloque modificado al renderizador (Súper rápido y sin duplicar material en RAM)
+            renderizador.SetPropertyBlock(propBlock);
+
+            Debug.Log($"<color=cyan><b>[CINTA SLD]:</b> ¡PINTADO AL INSTANTE! Pieza '{piezaAColorear.name}' pintada de <b>{ultimoColorCilindro}</b> de forma ultra fluida.</color>");
         }
         else
         {
