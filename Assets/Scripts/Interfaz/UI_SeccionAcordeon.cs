@@ -1,24 +1,26 @@
 using UnityEngine;
-using UnityEngine.UI; // <-- ¡NUEVO! Necesario para usar el LayoutRebuilder
+using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
-public class SeccionAcordeon : MonoBehaviour
+public class UI_SeccionAcordeon : MonoBehaviour
 {
+    // ¡EL TRUCO!: Una variable estática que recuerda QUÉ sección concreta está abierta en toda la app
+    private static UI_SeccionAcordeon seccionAbiertaActualmente = null;
+
     [Header("Componentes del Acordeón")]
     public GameObject contenedorContenido;
-    public TMP_Text textoCabecera; // Este es el texto único con la flecha y el nombre
+    public TMP_Text textoCabecera;
 
     private bool estaAbierto = false;
 
-    // Referencias automáticas para guardar las cajas físicas de la UI
     private RectTransform miRectTransform;
     private RectTransform rectPadre;
 
-    private void Start()
+    private IEnumerator Start()
     {
         estaAbierto = false;
 
-        // Guardamos los componentes de posición automáticamente al arrancar
         miRectTransform = GetComponent<RectTransform>();
         if (transform.parent != null)
         {
@@ -26,49 +28,96 @@ public class SeccionAcordeon : MonoBehaviour
         }
 
         if (contenedorContenido != null) contenedorContenido.SetActive(false);
-        // Inicializamos con el símbolo de cerrado
+
+        // Aplica el símbolo de cerrado '►' al arrancar
         ActualizarFlecha();
+
+        yield return new WaitForEndOfFrame();
+
+        ForzarRecalculoMenu();
     }
 
     public void ToggleSeccion()
     {
+        // 1. Si el usuario va a ABRIR esta sección...
+        if (!estaAbierto)
+        {
+            // ...y resulta que ya había OTRA sección abierta en el menú, la obligamos a cerrarse
+            if (seccionAbiertaActualmente != null && seccionAbiertaActualmente != this)
+            {
+                seccionAbiertaActualmente.CerrarSeccionForzado();
+            }
+
+            // Ahora esta sección pasa a ser la reina del menú
+            seccionAbiertaActualmente = this;
+        }
+        else
+        {
+            // Si el usuario está cerrando voluntariamente esta misma sección, liberamos el trono
+            if (seccionAbiertaActualmente == this)
+            {
+                seccionAbiertaActualmente = null;
+            }
+        }
+
+        // 2. Continuamos con tu lógica normal de encendido/apagado
         estaAbierto = !estaAbierto;
 
         if (contenedorContenido != null)
             contenedorContenido.SetActive(estaAbierto);
 
         ActualizarFlecha();
+        ForzarRecalculoMenu();
+    }
 
-        // ¡NUEVO! Forzamos a Unity a recalcular todo el menú de arriba a abajo al instante
+    // ¡NUEVO!: Permite que otros scripts (como el ControladorMenu) cierren el acordeón de golpe
+    public static void CerrarCualquierSeccionAbierta()
+    {
+        if (seccionAbiertaActualmente != null)
+        {
+            seccionAbiertaActualmente.CerrarSeccionForzado();
+            seccionAbiertaActualmente = null; // Vaciamos el rastro
+        }
+    }
+
+    // ¡NUEVO!: Esta función la llamará una sección compañera cuando quiera que nos cerremos
+    public void CerrarSeccionForzado()
+    {
+        estaAbierto = false;
+
+        if (contenedorContenido != null)
+            contenedorContenido.SetActive(false);
+
+        ActualizarFlecha();
         ForzarRecalculoMenu();
     }
 
     private void ForzarRecalculoMenu()
     {
-        // 1. Sincroniza los datos internos de la pantalla
         Canvas.ForceUpdateCanvases();
 
-        // 2. Le dice a esta sección que adapte su tamaño al nuevo botón blanco
         if (miRectTransform != null)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(miRectTransform);
         }
 
-        // 3. Le dice al contenedor principal ('Secciones') que se reajuste y empuje
-        // de forma limpia a todas las demás secciones hacia abajo sin solaparse
         if (rectPadre != null)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(rectPadre);
         }
     }
 
+    private void UpdateVisuals() // Mantengo tu método intacto
+    {
+        ActualizarFlecha();
+    }
+
     private void ActualizarFlecha()
     {
         if (textoCabecera != null)
         {
-            // Tomamos el texto actual, quitamos el primer carácter y ponemos el nuevo
-            string nombreSeccion = textoCabecera.text.Substring(1); // Mantiene el resto del texto
-            string nuevaFlecha = estaAbierto ? "▼" : ">";
+            string nombreSeccion = textoCabecera.text.Substring(1);
+            string nuevaFlecha = estaAbierto ? "▲" : "►";
             textoCabecera.text = nuevaFlecha + nombreSeccion;
         }
     }
