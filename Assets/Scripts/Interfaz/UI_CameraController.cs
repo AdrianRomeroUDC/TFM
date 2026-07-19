@@ -10,6 +10,10 @@ public class UI_CameraController : MonoBehaviour
     [Header("Componentes de Renderizado Video")]
     public RawImage rawImageVideo;
 
+    [Header("Nuevos Ajustes Visuales y Paneles")]
+    public Image imagenFondoToggle;       // Arrastra aquí el 'Background' del botón ON-OFF
+    public GameObject panelVideoIzquierda; // Arrastra aquí el Panel de la izquierda entero
+
     [Header("Componentes de Control (Se arrastran aquí)")]
     public Toggle toggleCamara;       // Tu botón ON-OFF (LED)
     public Slider sliderFPS;          // Tu barra de FPS
@@ -23,6 +27,10 @@ public class UI_CameraController : MonoBehaviour
     private bool hayNuevaImagen = false;
     private readonly object bloqueoHilo = new object();
 
+    // Colores industriales personalizados (puedes cambiarlos desde aquí)
+    private readonly Color colorVerdeEncendido = new Color(0.2f, 0.75f, 0.2f, 1f);
+    private readonly Color colorRojoApagado = new Color(0.85f, 0.2f, 0.2f, 1f);
+
     void Start()
     {
         texturaVideo = new Texture2D(2, 2);
@@ -33,8 +41,9 @@ public class UI_CameraController : MonoBehaviour
         }
 
         ActualizarInteractividadUI();
+        ActualizarVisualesCamara(); // Nueva llamada para fijar el color y el panel al arrancar
 
-        // NUEVO: Asegurar negro al arrancar si el toggle está desactivado
+        // Asegurar negro al arrancar si el toggle está desactivado
         if (!IsCameraOn && rawImageVideo != null)
         {
             rawImageVideo.texture = null;
@@ -106,20 +115,18 @@ public class UI_CameraController : MonoBehaviour
 
         IsCameraOn = toggleCamara.isOn;
 
-        // Cambiar el estado de los botones (interactivos o grises)
+        // Cambiar el estado de los botones, el color del botón y la visibilidad del panel izquierdo
         ActualizarInteractividadUI();
+        ActualizarVisualesCamara();
 
         // =======================================================================
-        // NUEVA LÓGICA: Si se apaga, limpiamos la pantalla y la ponemos en negro
+        // LÓGICA DE TEXTURAS: Si se apaga, limpiamos la pantalla y la ponemos en negro
         // =======================================================================
         if (!IsCameraOn)
         {
             if (rawImageVideo != null)
             {
-                // Opción A: Dejar la textura vacía (se vuelve del color base, por defecto negro/gris)
                 rawImageVideo.texture = null;
-
-                // Opción B (Opcional): Si quieres asegurar un negro puro usando el color del componente:
                 rawImageVideo.color = Color.black;
             }
         }
@@ -127,7 +134,6 @@ public class UI_CameraController : MonoBehaviour
         {
             if (rawImageVideo != null)
             {
-                // Al encenderla, restauramos el color blanco base de la UI para que el video no se vea oscurecido
                 rawImageVideo.color = Color.white;
             }
         }
@@ -145,11 +151,9 @@ public class UI_CameraController : MonoBehaviour
     /// </summary>
     private void ActualizarInteractividadUI()
     {
-        // El slider y el dropdown se bloquean directamente
         if (sliderFPS != null) sliderFPS.interactable = IsCameraOn;
         if (dropdownGrados != null) dropdownGrados.interactable = IsCameraOn;
 
-        // Recorremos la lista de botones de movimiento y los bloqueamos todos a la vez
         if (botonesPTU != null)
         {
             foreach (Button boton in botonesPTU)
@@ -159,6 +163,24 @@ public class UI_CameraController : MonoBehaviour
                     boton.interactable = IsCameraOn;
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Controla de forma centralizada el color del Toggle y la visibilidad del panel izquierdo
+    /// </summary>
+    private void ActualizarVisualesCamara()
+    {
+        // 1. Cambiar el color del botón (Verde si está ON, Rojo si está OFF)
+        if (imagenFondoToggle != null)
+        {
+            imagenFondoToggle.color = IsCameraOn ? colorVerdeEncendido : colorRojoApagado;
+        }
+
+        // 2. Mostrar u ocultar el panel izquierdo del tirón
+        if (panelVideoIzquierda != null)
+        {
+            panelVideoIzquierda.SetActive(IsCameraOn);
         }
     }
 

@@ -104,6 +104,14 @@ public class UI_SeccionAcordeon : MonoBehaviour
         if (rectPadre != null)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(rectPadre);
+
+            // ¡NUEVO!: Si el menú está metido dentro de un ScrollRect, lo despierta
+            // para que la barra de scroll vertical se adapte al nuevo tamaño al instante.
+            ScrollRect scrollview = rectPadre.GetComponentInParent<ScrollRect>();
+            if (scrollview != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(scrollview.GetComponent<RectTransform>());
+            }
         }
     }
 
