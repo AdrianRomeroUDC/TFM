@@ -7,9 +7,6 @@ using System.Text.RegularExpressions;
 
 public class UI_StockController : MonoBehaviour
 {
-    [Header("--- Componente Reloj ---")]
-    [SerializeField] private TextMeshProUGUI textoReloj;
-
     [Header("--- Contenedores de Sprites ---")]
     [SerializeField] private Sprite spriteVacio;
     [SerializeField] private Sprite spriteAzul;
@@ -85,12 +82,6 @@ public class UI_StockController : MonoBehaviour
 
     void Update()
     {
-        // Actualizar Reloj
-        if (textoReloj != null)
-        {
-            textoReloj.text = DateTime.Now.ToString("dd/MM/yyyy   HH:mm:ss");
-        }
-
         // Si el tooltip está encendido, hacemos que siga la posición del ratón
         if (panelTooltip != null && panelTooltip.activeSelf)
         {
@@ -153,7 +144,7 @@ public class UI_StockController : MonoBehaviour
         // Eliminamos las etiquetas <color=#FFEA00> y </color> de la línea del ID
         Workpiece wp = slotBajoElCursor.piezaActual;
         txtTooltipContenido.text = $"<b>Ubicación:</b> {slotBajoElCursor.idSlot}\n" +
-                                   $"<b>ID:</b> {wp.id}\n" + 
+                                   $"<b>ID:</b> {wp.id}\n" +
                                    $"<b>Color:</b> {wp.type}\n" +
                                    $"<b>Estado:</b> {wp.state}";
 
