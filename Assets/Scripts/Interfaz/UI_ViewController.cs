@@ -21,52 +21,53 @@ public class UI_ViewController : MonoBehaviour
 
     private Coroutine corrutinaMovimiento;
 
-    void Start()
+    void Awake()
     {
         if (camaraPrincipal == null)
         {
             camaraPrincipal = Camera.main;
         }
 
-        // 🚀 SIMULA EL CLIC EN EL BOTÓN 0 AL ARRANCAR
-        StartCoroutine(SimularClicBotonVistaCero());
+        // ⚡ CORTE INSTANTÁNEO EN EL FOTOGRAMA 0 (Sin animaciones)
+        ColocarVistaInstantanea(0);
     }
 
-    private IEnumerator SimularClicBotonVistaCero()
+    void Start()
     {
-        // Esperamos 1 fotograma a que todo en la escena termine de inicializarse
-        yield return null;
-
-        // Ejecutamos exactamente la misma función que llama el botón
-        MoverAVistaIndex(0);
+        // Re-confirmamos en Start por si la escena tarda en cargar
+        ColocarVistaInstantanea(0);
     }
 
     /// <summary>
-    /// Función invocada tanto al arrancar como por el OnClick() del botón de la UI
+    /// Coloca la cámara al instante en las coordenadas exactas sin hacer animación
+    /// </summary>
+    public void ColocarVistaInstantanea(int index)
+    {
+        if (camaraPrincipal == null) camaraPrincipal = Camera.main;
+
+        if (listaVistas != null && index >= 0 && index < listaVistas.Length)
+        {
+            Transform destino = listaVistas[index].transformObjetivo;
+            if (destino != null && camaraPrincipal != null)
+            {
+                camaraPrincipal.transform.position = destino.position;
+                camaraPrincipal.transform.rotation = destino.rotation;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Mueve la cámara suavemente a la vista (Invocado al pulsar un botón de la UI)
     /// </summary>
     public void MoverAVistaIndex(int index)
     {
-        if (camaraPrincipal == null)
-        {
-            camaraPrincipal = Camera.main;
-        }
-
-        if (listaVistas == null || index < 0 || index >= listaVistas.Length)
-        {
-            Debug.LogWarning($"[UI_ViewController] El índice {index} está fuera de rango o la lista no está configurada.");
-            return;
-        }
+        if (listaVistas == null || index < 0 || index >= listaVistas.Length) return;
 
         Transform destino = listaVistas[index].transformObjetivo;
-
         if (destino != null && camaraPrincipal != null)
         {
             if (corrutinaMovimiento != null) StopCoroutine(corrutinaMovimiento);
             corrutinaMovimiento = StartCoroutine(TransicionarCamara(destino.position, destino.rotation));
-        }
-        else
-        {
-            Debug.LogWarning($"[UI_ViewController] Falta asignar la Cámara o el Transform Objetivo de la vista {index}.");
         }
     }
 

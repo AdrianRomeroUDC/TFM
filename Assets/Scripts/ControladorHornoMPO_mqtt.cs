@@ -32,6 +32,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
     public float duracionMovimientoPuerta = 1.5f;
     public float duracionMovimientoPlataforma = 1.0f;
 
+    // 🌐 LECTURA PÚBLICA DEL SENSOR EN TIEMPO REAL PARA EL BRAZO MPO
+    public bool SensorHornoActivo { get; private set; } = false;
+
     private Queue<MPOHornoPayload> colaMensajes = new Queue<MPOHornoPayload>();
     private Coroutine movimientoPuerta;
     private Coroutine movimientoPlataforma;
@@ -66,6 +69,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
 
     private void ProcesarHorno(MPOHornoPayload data)
     {
+        // Actualizamos la variable de estado pública para consulta externa del Brazo MPO
+        SensorHornoActivo = (data.ovenSensor == 1);
+
         if (luzHorno) luzHorno.enabled = (data.lights == 1);
 
         // MOVIMIENTO PUERTA
@@ -115,24 +121,20 @@ public class ControladorHorno_mqtt : MonoBehaviour
         ControladorBrazoMPO brazoMPO = Object.FindFirstObjectByType<ControladorBrazoMPO>();
         if (brazoMPO == null || brazoMPO.ejeHorizontal == null) return false;
 
-        // 1. ¿Está el brazo horizontalmente en la coordenada Z del horno?
         float distanciaZ = Mathf.Abs(brazoMPO.ejeHorizontal.localPosition.z - brazoMPO.zHorno);
         bool estaEnZHorno = distanciaZ < margenErrorZ;
 
-        // 2. ¿Está el brazo físicamente ABAJO? (Se ha separado de su posición de reposo en X)
         bool estaAbajo = false;
         if (brazoMPO.ejeVertical != null)
         {
             float desvioXReposo = Mathf.Abs(brazoMPO.ejeVertical.localPosition.x - brazoMPO.xReposo);
-            // Si el eje vertical se ha movido más de 2 milímetros hacia abajo respecto al reposo
             estaAbajo = desvioXReposo > 0.002f;
         }
 
-        // SOLO es un falso positivo si está en el horno (Z) Y ADEMÁS ha bajado (X)
         return estaEnZHorno && estaAbajo;
     }
 
-    private Transform BuscarPlataformaRealHijo()
+    public Transform BuscarPlataformaRealHijo()
     {
         if (plataformaPieza == null) return null;
 
@@ -162,7 +164,6 @@ public class ControladorHorno_mqtt : MonoBehaviour
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
-        // 🛡️ 1. ESCUDO DE PROTECCIÓN DISTANCIAL VGR
         ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
         if (vgr != null && vgr.ObtenerPiezaEnganchada() != null)
         {
@@ -173,16 +174,11 @@ public class ControladorHorno_mqtt : MonoBehaviour
                 Debug.Log($"<color=yellow><b>[HORNO SPAWN]:</b> El VGR tiene una pieza sujeta y está CERCA del horno ({distanciaAlHorno:F3}m < {distanciaLimiteVGR}m). Se cancela el Spawn de respaldo.</color>");
                 return;
             }
-            else
-            {
-                Debug.Log($"<color=cyan><b>[HORNO SPAWN]:</b> El VGR tiene una pieza pero está LEJOS ({distanciaAlHorno:F3}m >= {distanciaLimiteVGR}m). Se permite el Spawn de respaldo.</color>");
-            }
         }
 
         Collider colPlat = plataformaReal.GetComponent<Collider>();
         Vector3 centroPlatMundo = (colPlat != null) ? colPlat.bounds.center : plataformaReal.position;
 
-        // Evitar duplicaciones de piezas en Unity
         bool yaHayPieza = false;
         Collider[] collidersCercanos = Physics.OverlapSphere(centroPlatMundo, 0.05f);
 

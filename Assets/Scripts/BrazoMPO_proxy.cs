@@ -19,13 +19,16 @@ public class BrazoMPO_proxy : MonoBehaviour
         lastY = transform.position.y;
     }
 
-    // Exponer de forma pública si la ventosa tiene una pieza real sujeta
     public bool TienePieza()
     {
         return piezaActual != null;
     }
 
-    // Permite al controlador gatillar el escaneo exacto al terminar el descenso
+    public Transform ObtenerPiezaActual()
+    {
+        return piezaActual;
+    }
+
     public void ForzarEscaneoInmediato()
     {
         EscanearPiezaPorProximidad();
@@ -42,7 +45,6 @@ public class BrazoMPO_proxy : MonoBehaviour
         estaBajando = (currentY < lastY - 0.0001f);
         lastY = currentY;
 
-        // Escaneo automático de seguridad pasiva
         if (!estaBajando && cooldownSuelte <= 0f && piezaActual == null)
         {
             EscanearPiezaPorProximidad();
@@ -106,7 +108,33 @@ public class BrazoMPO_proxy : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
 
-        Debug.Log($"<color=lime><b>[Brazo MPO]:</b> Pieza '{pieza.name}' acoplada FISICAMENTE al ras.</color>");
+        Debug.Log($"<color=lime><b>[Brazo MPO]:</b> Pieza '{pieza.name}' acoplada FÍSICAMENTE al ras.</color>");
+    }
+
+    // 🛡️ MÉTODO DE REVERSIÓN: Cancela el agarre y restaura la pieza en el horno si falla el sensor
+    public void CancelarAgarreYDevolver(Transform nuevoPadre, Vector3 localPos, Quaternion localRot)
+    {
+        if (piezaActual == null) return;
+
+        Transform piezaADevolver = piezaActual;
+        piezaActual = null; // Desvinculamos la pieza de la ventosa
+
+        piezaADevolver.SetParent(nuevoPadre, true);
+        piezaADevolver.localPosition = localPos;
+        piezaADevolver.localRotation = localRot;
+
+        Rigidbody rb = piezaADevolver.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        BoxCollider[] colliders = piezaADevolver.GetComponentsInChildren<BoxCollider>();
+        foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
+
+        Debug.Log($"<color=red><b>[MPO FALLO AGARRE]:</b> Pieza '{piezaADevolver.name}' devuelta al horno. Coincide con sensor activo del PLC.</color>");
     }
 
     public void EjecutarRelease(Transform destino)
@@ -117,29 +145,24 @@ public class BrazoMPO_proxy : MonoBehaviour
 
             Transform piezaASueltar = piezaActual;
 
-            // Rompemos el lazo con el brazo y lo entregamos al destino real
             piezaASueltar.SetParent(destino, true);
 
             cooldownSuelte = 1f;
             piezaActual = null;
 
-            // Buscamos componentes proxy en el destino de forma tolerante (directo o en sub-objetos)
             PlataformaHorno_proxy horno = destino.GetComponent<PlataformaHorno_proxy>() ?? destino.GetComponentInChildren<PlataformaHorno_proxy>();
             PlataformaTurntable_proxy turntable = destino.GetComponent<PlataformaTurntable_proxy>() ?? destino.GetComponentInChildren<PlataformaTurntable_proxy>();
 
             if (horno != null)
             {
-                // Caso A: El destino es el horno
                 horno.AcoplarPiezaEnPuntoDeContacto(piezaASueltar);
             }
             else if (turntable != null)
             {
-                // Caso B: El destino es la mesa giratoria (¡NUEVO ACOPLE DIRECTO!)
                 turntable.AcoplarPiezaEnMesa(piezaASueltar);
             }
             else
             {
-                // Caso C: Cualquier otro destino (caída libre por gravedad)
                 Rigidbody rb = piezaASueltar.GetComponent<Rigidbody>() ?? piezaASueltar.gameObject.AddComponent<Rigidbody>();
                 rb.isKinematic = false;
                 rb.useGravity = true;
