@@ -19,7 +19,7 @@ public class ControladorHorno_mqtt : MonoBehaviour
     public float distanciaLimiteVGR = 0.15f;
 
     [Header("Filtro Posicional (Brazo MPO)")]
-    [Tooltip("Margen de error permisible (en metros) para dictaminar si el brazo MPO se encuentra físicamente sobre el horno. Reducido a 5 milímetros.")]
+    [Tooltip("Margen de error permisible (en metros) para dictaminar si el brazo MPO se encuentra físicamente sobre el horno.")]
     public float margenErrorZ = 0.005f;
 
     [Header("Posiciones (Usar clic derecho para capturar)")]
@@ -92,12 +92,12 @@ public class ControladorHorno_mqtt : MonoBehaviour
             movimientoPlataforma = StartCoroutine(MoverObjeto(plataformaPieza, posPlataformaFuera, duracionMovimientoPlataforma));
         }
 
-        // SENSOR DEL HORNO (Gestión de presencia con filtro de Z del Brazo MPO)
+        // SENSOR DEL HORNO (Gestión de presencia con filtro de Z y X del Brazo MPO)
         if (data.ovenSensor == 1)
         {
             if (EsElBrazoEnElHorno())
             {
-                Debug.Log("<color=yellow><b>[HORNO]:</b> Sensor activo pero IGNORADO de forma segura. El brazo MPO está físicamente en la coordenada Z del horno.</color>");
+                Debug.Log("<color=yellow><b>[HORNO]:</b> Sensor activo pero IGNORADO de forma segura. El brazo MPO está abajo obstruyendo físicamente la barrera de luz.</color>");
             }
             else
             {
@@ -115,14 +115,21 @@ public class ControladorHorno_mqtt : MonoBehaviour
         ControladorBrazoMPO brazoMPO = Object.FindFirstObjectByType<ControladorBrazoMPO>();
         if (brazoMPO == null || brazoMPO.ejeHorizontal == null) return false;
 
-        // Calculamos la distancia absoluta entre la posición actual en Z del brazo y su coordenada zHorno guardada
+        // 1. ¿Está el brazo horizontalmente en la coordenada Z del horno?
         float distanciaZ = Mathf.Abs(brazoMPO.ejeHorizontal.localPosition.z - brazoMPO.zHorno);
+        bool estaEnZHorno = distanciaZ < margenErrorZ;
 
-        // Chivato en la consola para ayudarte a calibrar el margen con precisión milimétrica
-        Debug.Log($"[HORNO FILTRO]: Distancia Z actual del brazo al horno: {distanciaZ:F5}m. (Margen límite configurado: {margenErrorZ}m)");
+        // 2. ¿Está el brazo físicamente ABAJO? (Se ha separado de su posición de reposo en X)
+        bool estaAbajo = false;
+        if (brazoMPO.ejeVertical != null)
+        {
+            float desvioXReposo = Mathf.Abs(brazoMPO.ejeVertical.localPosition.x - brazoMPO.xReposo);
+            // Si el eje vertical se ha movido más de 2 milímetros hacia abajo respecto al reposo
+            estaAbajo = desvioXReposo > 0.002f;
+        }
 
-        // Si la distancia es menor que nuestro margen (por ejemplo, 5 milímetros), confirmamos que está allí
-        return distanciaZ < margenErrorZ;
+        // SOLO es un falso positivo si está en el horno (Z) Y ADEMÁS ha bajado (X)
+        return estaEnZHorno && estaAbajo;
     }
 
     private Transform BuscarPlataformaRealHijo()
@@ -165,6 +172,10 @@ public class ControladorHorno_mqtt : MonoBehaviour
             {
                 Debug.Log($"<color=yellow><b>[HORNO SPAWN]:</b> El VGR tiene una pieza sujeta y está CERCA del horno ({distanciaAlHorno:F3}m < {distanciaLimiteVGR}m). Se cancela el Spawn de respaldo.</color>");
                 return;
+            }
+            else
+            {
+                Debug.Log($"<color=cyan><b>[HORNO SPAWN]:</b> El VGR tiene una pieza pero está LEJOS ({distanciaAlHorno:F3}m >= {distanciaLimiteVGR}m). Se permite el Spawn de respaldo.</color>");
             }
         }
 
