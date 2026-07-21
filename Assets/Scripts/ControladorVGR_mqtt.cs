@@ -48,10 +48,16 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private bool dsiSensorActivo = false;
     private bool verificarFalloAgarreDSI = false;
     private float yMundialAlAgarrar = 0f;
-
-    // 🛡️ NUEVO: Memoria de transformación local de spawn
     private Vector3 posicionLocalOriginalDSI;
     private Quaternion rotacionLocalOriginalDSI;
+
+    // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD SLD (RAMPAS BLANCA/ROJA/AZUL) ---
+    private bool verificarFalloAgarreSLD = false;
+    private string colorRampaMonitoreada = "";
+    private Vector3 posicionLocalOriginalSLD;
+    private Quaternion rotacionLocalOriginalSLD;
+    private Transform padreOriginalSLD;
+    private float yMundialAlAgarrarSLD = 0f;
 
     void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
     void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
@@ -116,49 +122,104 @@ public class ControladorVGR_mqtt : MonoBehaviour
             ejeExtension.localPosition = Vector3.Lerp(ejeExtension.localPosition, new Vector3(targetX, ejeExtension.localPosition.y, ejeExtension.localPosition.z), speed);
         }
 
-        // --- SISTEMA ANTIFALLO EN ESPACIO MUNDIAL ---
+        // --- 1. SISTEMA ANTIFALLO DSI EN ESPACIO MUNDIAL ---
         if (verificarFalloAgarreDSI)
         {
             if (piezaEnganchada == null)
             {
                 verificarFalloAgarreDSI = false;
-                return;
             }
-
-            float deltaYMundial = Mathf.Abs(ejeVertical.position.y - yMundialAlAgarrar);
-
-            if (deltaYMundial > 0.015f) // 1.5 cm reales en el espacio 3D
+            else
             {
-                Debug.Log($"<color=yellow><b>[VGR CHEQUEO MUNDIAL]:</b> Altura límite superada. Delta: {deltaYMundial:F4}m. dsi_sensor = {dsiSensorActivo}</color>");
+                float deltaYMundial = Mathf.Abs(ejeVertical.position.y - yMundialAlAgarrar);
 
-                if (dsiSensorActivo)
+                if (deltaYMundial > 0.015f) // 1.5 cm reales en el espacio 3D
                 {
-                    // ¡FALLO! Devolvemos la pieza virtual a su posición exacta de spawn original
-                    Debug.Log("<color=red><b>[VGR FALLO AGARRE DSI]:</b> ¡FALLO! dsi_sensor = True. Devolviendo pieza virtual a la posición de spawn exacta.</color>");
+                    Debug.Log($"<color=yellow><b>[VGR CHEQUEO DSI]:</b> Altura límite superada. Delta: {deltaYMundial:F4}m. dsi_sensor = {dsiSensorActivo}</color>");
 
-                    ControladorDPS_mqtt dps = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
-                    if (dps != null && dps.plataformaDSI != null)
+                    if (dsiSensorActivo)
                     {
-                        piezaEnganchada.SetParent(dps.plataformaDSI);
+                        Debug.Log("<color=red><b>[VGR FALLO AGARRE DSI]:</b> ¡FALLO! dsi_sensor = True. Devolviendo pieza virtual a la posición de spawn exacta.</color>");
 
-                        // RESTAURACIÓN DE PRECISIÓN ABSOLUTA
-                        piezaEnganchada.localPosition = posicionLocalOriginalDSI;
-                        piezaEnganchada.localRotation = rotacionLocalOriginalDSI;
+                        ControladorDPS_mqtt dps = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
+                        if (dps != null && dps.plataformaDSI != null)
+                        {
+                            piezaEnganchada.SetParent(dps.plataformaDSI);
+                            piezaEnganchada.localPosition = posicionLocalOriginalDSI;
+                            piezaEnganchada.localRotation = rotacionLocalOriginalDSI;
 
-                        Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
-                        if (rb != null) rb.isKinematic = true;
+                            Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
+                            if (rb != null) rb.isKinematic = true;
 
-                        BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
-                        foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
+                            BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                            foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
+                        }
+                        piezaEnganchada = null;
                     }
-                    piezaEnganchada = null;
-                }
-                else
-                {
-                    Debug.Log("<color=green><b>[VGR AGARRE ÉXITO]:</b> dsi_sensor = False. Agarre confirmado.</color>");
-                }
+                    else
+                    {
+                        Debug.Log("<color=green><b>[VGR AGARRE ÉXITO DSI]:</b> dsi_sensor = False. Agarre confirmado.</color>");
+                    }
 
-                verificarFalloAgarreDSI = false;
+                    verificarFalloAgarreDSI = false;
+                }
+            }
+        }
+
+        // --- 2. SISTEMA ANTIFALLO SLD (RAMPAS BLANCA/ROJA/AZUL) EN ESPACIO MUNDIAL ---
+        if (verificarFalloAgarreSLD)
+        {
+            if (piezaEnganchada == null)
+            {
+                verificarFalloAgarreSLD = false;
+            }
+            else
+            {
+                float deltaYMundialSLD = Mathf.Abs(ejeVertical.position.y - yMundialAlAgarrarSLD);
+
+                if (deltaYMundialSLD > 0.015f) // 1.5 cm reales
+                {
+                    ControladorCilindrosSLD_mqtt sld = Object.FindFirstObjectByType<ControladorCilindrosSLD_mqtt>();
+                    bool sensorRampaActivo = false;
+
+                    if (sld != null)
+                    {
+                        switch (colorRampaMonitoreada)
+                        {
+                            case "WHITE": sensorRampaActivo = sld.IsWhiteSensorActivo; break;
+                            case "RED": sensorRampaActivo = sld.IsRedSensorActivo; break;
+                            case "BLUE": sensorRampaActivo = sld.IsBlueSensorActivo; break;
+                        }
+                    }
+
+                    Debug.Log($"<color=yellow><b>[VGR CHEQUEO SLD]:</b> Altura límite superada. Delta: {deltaYMundialSLD:F4}m. Sensor {colorRampaMonitoreada} = {sensorRampaActivo}</color>");
+
+                    if (sensorRampaActivo)
+                    {
+                        Debug.Log($"<color=red><b>[VGR FALLO AGARRE SLD]:</b> ¡FALLO! Sensor {colorRampaMonitoreada} = True. Devolviendo pieza a la rampa de origen.</color>");
+
+                        if (padreOriginalSLD != null)
+                        {
+                            piezaEnganchada.SetParent(padreOriginalSLD);
+                            piezaEnganchada.localPosition = posicionLocalOriginalSLD;
+                            piezaEnganchada.localRotation = rotacionLocalOriginalSLD;
+
+                            Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
+                            if (rb != null) rb.isKinematic = true;
+
+                            BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
+                            foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = false;
+                        }
+
+                        piezaEnganchada = null;
+                    }
+                    else
+                    {
+                        Debug.Log($"<color=green><b>[VGR AGARRE ÉXITO SLD]:</b> Sensor {colorRampaMonitoreada} = False. Agarre confirmado en la ventosa.</color>");
+                    }
+
+                    verificarFalloAgarreSLD = false;
+                }
             }
         }
     }
@@ -216,10 +277,10 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
             if (piezaEnganchada != null)
             {
+                // A. VERIFICACIÓN DSI
                 bool esDeDSI = piezaEnganchada.name.ToLower().Contains("dsi") ||
                                (piezaEnganchada.parent != null && piezaEnganchada.parent.name.ToLower().Contains("dsi"));
 
-                // 💾 SALVAGUARDAMOS SU POSICIÓN DE SPAWN JUSTO ANTES DE DESVINCULARLA DE LA PLATAFORMA
                 if (esDeDSI)
                 {
                     posicionLocalOriginalDSI = piezaEnganchada.localPosition;
@@ -228,7 +289,35 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     verificarFalloAgarreDSI = true;
                     yMundialAlAgarrar = ejeVertical.position.y;
 
-                    Debug.Log($"<color=orange><b>[VGR MONITOREO MUNDIAL]:</b> Altura inicial: {yMundialAlAgarrar:F6}. Posición original de spawn memorizada: {posicionLocalOriginalDSI}.</color>");
+                    Debug.Log($"<color=orange><b>[VGR MONITOREO DSI]:</b> Altura inicial: {yMundialAlAgarrar:F6}. Posición original memorizada: {posicionLocalOriginalDSI}.</color>");
+                }
+
+                // B. VERIFICACIÓN SLD (RAMPAS BLANCA, ROJA, AZUL)
+                ControladorCilindrosSLD_mqtt sldScript = Object.FindFirstObjectByType<ControladorCilindrosSLD_mqtt>();
+                Transform padreActual = piezaEnganchada.parent;
+
+                if (sldScript != null && padreActual != null)
+                {
+                    string colorRampa = "";
+                    if (padreActual == sldScript.spawnPointBlanco || padreActual.name.ToLower().Contains("blanco") || padreActual.name.ToLower().Contains("white"))
+                        colorRampa = "WHITE";
+                    else if (padreActual == sldScript.spawnPointRojo || padreActual.name.ToLower().Contains("rojo") || padreActual.name.ToLower().Contains("red"))
+                        colorRampa = "RED";
+                    else if (padreActual == sldScript.spawnPointAzul || padreActual.name.ToLower().Contains("azul") || padreActual.name.ToLower().Contains("blue"))
+                        colorRampa = "BLUE";
+
+                    if (!string.IsNullOrEmpty(colorRampa))
+                    {
+                        posicionLocalOriginalSLD = piezaEnganchada.localPosition;
+                        rotacionLocalOriginalSLD = piezaEnganchada.localRotation;
+                        padreOriginalSLD = padreActual;
+                        colorRampaMonitoreada = colorRampa;
+
+                        verificarFalloAgarreSLD = true;
+                        yMundialAlAgarrarSLD = ejeVertical.position.y;
+
+                        Debug.Log($"<color=orange><b>[VGR MONITOREO SLD]:</b> Pieza atrapada en rampa {colorRampa}. Guardada posición local de rampa: {posicionLocalOriginalSLD}.</color>");
+                    }
                 }
 
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
@@ -291,6 +380,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 piezaEnganchada = null;
                 piezaCercana = null;
                 verificarFalloAgarreDSI = false;
+                verificarFalloAgarreSLD = false;
             }
         }
     }
@@ -330,18 +420,16 @@ public class ControladorVGR_mqtt : MonoBehaviour
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(limiteSuperior, 0.003f);
             Gizmos.DrawWireSphere(limiteInferior, 0.003f);
+        }
 
-            float deltaActual = Mathf.Abs(posicionEjeActual.y - yMundialAlAgarrar);
-            if (deltaActual > 0.015f)
-            {
-                Gizmos.color = Color.green;
-                Gizmos.DrawSphere(posicionEjeActual + Vector3.up * 0.01f, 0.006f);
-            }
-            else
-            {
-                Gizmos.color = Color.red;
-                Gizmos.DrawSphere(posicionEjeActual + Vector3.up * 0.01f, 0.004f);
-            }
+        if (verificarFalloAgarreSLD && ejeVertical != null)
+        {
+            Vector3 baseAgarreSLD = new Vector3(ejeVertical.position.x, yMundialAlAgarrarSLD, ejeVertical.position.z);
+            Vector3 posicionEjeActual = ejeVertical.position;
+
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawLine(baseAgarreSLD, posicionEjeActual);
+            Gizmos.DrawWireSphere(baseAgarreSLD + Vector3.up * 0.015f, 0.004f);
         }
     }
 }

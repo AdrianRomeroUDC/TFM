@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class ControladorCilindrosSLD_mqtt : MonoBehaviour
@@ -18,6 +19,11 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     public Transform spawnPointRojo;
     [Tooltip("Punto de aparición para la pieza azul")]
     public Transform spawnPointAzul;
+
+    // 🌐 ESTADOS PÚBLICOS DE LOS SENSORES PARA LECTURA DEL VGR
+    public bool IsWhiteSensorActivo { get; private set; } = false;
+    public bool IsRedSensorActivo { get; private set; } = false;
+    public bool IsBlueSensorActivo { get; private set; } = false;
 
     // Coordenadas Estándar (Rojo y Azul)
     private float xReposoEstandar = 0.001122198f;
@@ -42,7 +48,7 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     private GameObject piezaRoja = null;
     private GameObject piezaAzul = null;
 
-    // --- NUEVO: MEMORIA DE ESTADO DEL SENSOR (Evita borrados antes de activarse) ---
+    // --- MEMORIA DE ESTADO DEL SENSOR (Evita borrados antes de activarse) ---
     private bool sensorBlancoFueActivo = false;
     private bool sensorRojoFueActivo = false;
     private bool sensorAzulFueActivo = false;
@@ -50,7 +56,6 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     // --- PUENTE SEGURO PARA EVITAR CAÍDAS DE HILOS ---
     private JSON_SLDCylinder datosPendientes = null;
 
-    // --- LÓGICA DE SUSCRIPCIÓN ROBUSTA ---
     void Start()
     {
         Debug.Log("<b>[SLD System]</b> Iniciando script y buscando cliente MQTT...");
@@ -73,17 +78,20 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
             MQTTClient.Instance.OnCylinderUpdateEvent -= ProcesarComandoCilindro;
     }
 
-    // --- RECIBIR DATOS DE MQTT (Inmune a caídas de hilos) ---
     void ProcesarComandoCilindro(JSON_SLDCylinder data)
     {
         if (data == null) return;
-        datosPendientes = data; // Guardamos los datos de forma segura
+        datosPendientes = data;
     }
 
-    // --- LÓGICA DE SPAWN SEGURA (Hilo principal de Unity) ---
     void ProcesarDatosMQTTSeguro(JSON_SLDCylinder data)
     {
-        // --- 1. DETERMINACIÓN DEL COLOR PARA EL MOVIMIENTO DEL PISTÓN ---
+        // 1. Guardar lectura pública de sensores de rampa para el VGR
+        IsWhiteSensorActivo = data.is_white;
+        IsRedSensorActivo = data.is_red;
+        IsBlueSensorActivo = data.is_blue;
+
+        // --- DETERMINACIÓN DEL COLOR PARA EL MOVIMIENTO DEL PISTÓN ---
         string colorSensor = "";
         if (data.is_white) colorSensor = "WHITE";
         else if (data.is_red) colorSensor = "RED";
@@ -105,19 +113,17 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
         else if (colorFinal == "RED") targetRojo = valor;
         else if (colorFinal == "BLUE") targetAzul = valor;
 
-        // Registrar si el cilindro se activa físicamente
         if (data.active)
         {
             ultimoTiempoActivo = Time.time;
         }
 
-        // --- 2. CONTROL INDEPENDIENTE POR RAMPA (Con paso de referencia del estado de memoria) ---
+        // --- CONTROL INDEPENDIENTE POR RAMPA ---
         ControlarRampa("WHITE", data.is_white, cylColorLimpio, data.active, ref piezaBlanca, ref sensorBlancoFueActivo);
         ControlarRampa("RED", data.is_red, cylColorLimpio, data.active, ref piezaRoja, ref sensorRojoFueActivo);
         ControlarRampa("BLUE", data.is_blue, cylColorLimpio, data.active, ref piezaAzul, ref sensorAzulFueActivo);
     }
 
-    // --- MÉTODO MODULAR DE CONTROL DE RAMPA ---
     void ControlarRampa(string colorRampa, bool sensorActivo, string cylColorLimpio, bool cilindroActivo, ref GameObject piezaReferencia, ref bool sensorFueActivo)
     {
         Transform puntoElegido = null;
@@ -132,13 +138,10 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
         if (sensorActivo)
         {
-            // 🛡️ Guardamos en la memoria que el sensor se ha activado al menos una vez
             sensorFueActivo = true;
 
-            // Si en el script no tenemos registrada una pieza...
             if (piezaReferencia == null)
             {
-                // CAPA 1: Buscamos si YA existe físicamente una pieza huérfana bajo esa rampa
                 GameObject piezaExistente = EncontrarPiezaHija(puntoElegido);
                 if (piezaExistente != null)
                 {
@@ -147,7 +150,6 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
                 }
                 else
                 {
-                    // Si realmente está vacía, hacemos el spawn de seguridad normal
                     bool coincideConCylColor = (cylColorLimpio == colorRampa);
                     float tiempoDesdeUltimoActive = Time.time - ultimoTiempoActivo;
                     bool activoRecientemente = tiempoDesdeUltimoActive < cooldownSpawn;
@@ -174,28 +176,24 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
         }
         else
         {
-            // 🛡️ CANDADO CLAVE: El sensor está a false. Solo actuamos si el sensor estuvo a TRUE previamente.
             if (sensorFueActivo)
             {
-                // Limpieza de la pieza registrada
                 if (piezaReferencia != null)
                 {
-                    // Si el objeto ya no tiene de padre la rampa, es porque el VGR se la ha llevado
                     if (piezaReferencia.transform.parent != puntoElegido)
                     {
-                        Debug.Log($"<b>[SLD Clear]</b> El sensor {colorRampa} se apagó, pero la pieza fue trasladada (nuevo padre: {piezaReferencia.transform.parent.name}). Manteniendo pieza.");
+                        string nombrePadre = (piezaReferencia.transform.parent != null) ? piezaReferencia.transform.parent.name : "Ninguno (Raíz de la escena)";
+                        Debug.Log($"<b>[SLD Clear]</b> El sensor {colorRampa} se apagó, pero la pieza fue trasladada (nuevo padre: {nombrePadre}). Manteniendo pieza.");
                         piezaReferencia = null;
                     }
                     else
                     {
-                        // Si sigue en la rampa, la destruimos
                         Debug.Log($"<color=red><b>[SLD Clear]</b> El sensor {colorRampa} se ha apagado. Destruyendo pieza registrada.</color>");
                         Destroy(piezaReferencia);
                         piezaReferencia = null;
                     }
                 }
 
-                // CAPA 2: BARRENDERO DE SEGURIDAD (Solo se ejecuta si el sensor estuvo activo primero)
                 List<GameObject> piezasHuerfanas = new List<GameObject>();
                 foreach (Transform hijo in puntoElegido)
                 {
@@ -215,13 +213,11 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
                     }
                 }
 
-                // Reseteamos el estado de memoria de activación
                 sensorFueActivo = false;
             }
         }
     }
 
-    // Método auxiliar para detectar si una pieza física ya existe bajo un punto de spawn
     GameObject EncontrarPiezaHija(Transform punto)
     {
         if (punto == null) return null;
@@ -249,11 +245,9 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
         nuevaPieza.transform.SetParent(puntoElegido, false);
 
-        // Posición y rotación calibradas (Imagen 2)
         nuevaPieza.transform.localPosition = new Vector3(-8.7e-05f, 0.000151f, 0f);
         nuevaPieza.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
 
-        // Matemática anti-deformación CAD
         Vector3 escalaPadre = puntoElegido.lossyScale;
         nuevaPieza.transform.localScale = new Vector3(
             escalaPrefabOriginal.x / (escalaPadre.x != 0 ? escalaPadre.x : 1f),
@@ -267,16 +261,14 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
 
     void Update()
     {
-        // 1. Mover pistones
         MoverPiston(pistonBlanco, targetBlanco, xReposoBlanco, xEstiradoBlanco);
         MoverPiston(pistonRojo, targetRojo, xReposoEstandar, xEstiradoEstandar);
         MoverPiston(pistonAzul, targetAzul, xReposoEstandar, xEstiradoEstandar);
 
-        // 2. Procesar datos de forma segura en el hilo principal
         if (datosPendientes != null)
         {
             ProcesarDatosMQTTSeguro(datosPendientes);
-            datosPendientes = null; // Consumimos los datos
+            datosPendientes = null;
         }
     }
 
