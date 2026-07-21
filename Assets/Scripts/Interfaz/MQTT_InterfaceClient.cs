@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
@@ -28,6 +29,9 @@ public class MQTT_InterfaceClient : MonoBehaviour
     private MqttClient client;
     private readonly object lockObject = new object();
 
+    // 🚀 CACHÉ: Guarda el último stock conocido para la interfaz de pedidos
+    public StockPayload UltimoStock { get; private set; }
+
     // Colas para puente de hilos
     private Queue<Bme680Payload> bmeQueue = new Queue<Bme680Payload>();
     private Queue<LdrPayload> ldrQueue = new Queue<LdrPayload>();
@@ -40,9 +44,9 @@ public class MQTT_InterfaceClient : MonoBehaviour
     public event Action<string> OnCameraImageEvent;
     public event Action<StockPayload> OnStockUpdateEvent;
 
-    [Header("Configuración del Broker")]
-    public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
-    public int puerto = 8883;
+    [Header("Configuración del Broker Mosquitto Local")]
+    public string brokerHost = "10.113.36.36";
+    public int puerto = 1884;
 
     [Header("Credenciales")]
     public string usuario = "LearningFactory";
@@ -52,51 +56,97 @@ public class MQTT_InterfaceClient : MonoBehaviour
     {
         if (instance == null) instance = this;
         else { Destroy(gameObject); return; }
-        Connect();
+
+        string clientIdShort = "Unity_" + UnityEngine.Random.Range(10000, 99999);
+        Task.Run(() => ConnectAsync(clientIdShort));
     }
 
     void Update()
     {
+        List<Bme680Payload> bmeLista = null;
+        List<LdrPayload> ldrLista = null;
+        List<StockPayload> stockLista = null;
+        List<string> camLista = null;
+
         lock (lockObject)
         {
-            while (bmeQueue.Count > 0) OnBmeEnvironmentEvent?.Invoke(bmeQueue.Dequeue());
-            while (ldrQueue.Count > 0) OnLdrLightEvent?.Invoke(ldrQueue.Dequeue());
-            while (camQueue.Count > 0) OnCameraImageEvent?.Invoke(camQueue.Dequeue());
-            while (stockQueue.Count > 0) OnStockUpdateEvent?.Invoke(stockQueue.Dequeue());
+            if (bmeQueue.Count > 0) { bmeLista = new List<Bme680Payload>(bmeQueue); bmeQueue.Clear(); }
+            if (ldrQueue.Count > 0) { ldrLista = new List<LdrPayload>(ldrQueue); ldrQueue.Clear(); }
+
+            if (stockQueue.Count > 0)
+            {
+                stockLista = new List<StockPayload>(stockQueue);
+                // Guardamos la versión más reciente en la propiedad de caché
+                UltimoStock = stockLista[stockLista.Count - 1];
+                stockQueue.Clear();
+            }
+
+            if (camQueue.Count > 0) { camLista = new List<string>(camQueue); camQueue.Clear(); }
         }
+
+        if (bmeLista != null) foreach (var item in bmeLista) OnBmeEnvironmentEvent?.Invoke(item);
+        if (ldrLista != null) foreach (var item in ldrLista) OnLdrLightEvent?.Invoke(item);
+        if (stockLista != null) foreach (var item in stockLista) OnStockUpdateEvent?.Invoke(item);
+        if (camLista != null) foreach (var item in camLista) OnCameraImageEvent?.Invoke(item);
     }
 
-    void Connect()
+    private void ConnectAsync(string clientId)
     {
         try
         {
             client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
 
-            client.Connect(Guid.NewGuid().ToString(), usuario, contrasena);
+            client.Connect(clientId, usuario, contrasena);
 
-            string[] topics = { "i/cam", "i/bme680", "i/ldr", "f/i/stock" };
-            client.Subscribe(topics, new byte[] { 0, 0, 0, 0 });
-            Debug.Log("<color=green>MQTT Conectado</color>");
+            if (client.IsConnected)
+            {
+                string[] topics = { "i/cam", "i/bme680", "i/ldr", "f/i/stock" };
+                client.Subscribe(topics, new byte[] { 0, 0, 0, 0 });
+
+                Debug.Log($"<color=green><b>[MQTT] ¡CONECTADO CON ÉXITO! ID: {clientId} en {brokerHost}:{puerto}</b></color>");
+            }
+            else
+            {
+                Debug.LogError("[MQTT] El broker rechazó la conexión (comprueba usuario/contraseña).");
+            }
         }
-        catch (Exception ex) { Debug.LogError("Error MQTT: " + ex.Message); }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[MQTT] Error al conectar a {brokerHost}:{puerto} -> {ex.Message}");
+        }
     }
 
     private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
     {
-        string msg = Encoding.UTF8.GetString(e.Message).Trim().Replace("True", "true").Replace("False", "false");
         string topic = e.Topic;
+        byte[] bytesMensaje = e.Message;
 
         lock (lockObject)
         {
             try
             {
-                if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msg));
-                else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msg));
-                else if (topic == "i/cam") camQueue.Enqueue(JsonUtility.FromJson<CameraPayload>(msg).data);
-                else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msg));
+                if (topic == "i/cam")
+                {
+                    string msgCam = Encoding.UTF8.GetString(bytesMensaje).Trim();
+                    CameraPayload camData = JsonUtility.FromJson<CameraPayload>(msgCam);
+
+                    if (camData != null && !string.IsNullOrEmpty(camData.data))
+                    {
+                        camQueue.Clear();
+                        camQueue.Enqueue(camData.data);
+                    }
+                }
+                else
+                {
+                    string msg = Encoding.UTF8.GetString(bytesMensaje).Trim().Replace("True", "true").Replace("False", "false");
+
+                    if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msg));
+                    else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msg));
+                    else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msg));
+                }
             }
-            catch (Exception ex) { Debug.LogWarning($"Error parseando JSON: {ex.Message}"); }
+            catch (Exception ex) { Debug.LogWarning($"Error parseando JSON en {topic}: {ex.Message}"); }
         }
     }
 
@@ -108,6 +158,11 @@ public class MQTT_InterfaceClient : MonoBehaviour
         if (client != null && client.IsConnected)
         {
             client.Publish(topic, Encoding.UTF8.GetBytes(json), MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE, false);
+            Debug.Log($"<color=cyan><b>[MQTT Enviado]</b> {topic}: {json}</color>");
+        }
+        else
+        {
+            Debug.LogWarning($"<color=orange>[MQTT Aviso] Intentaste enviar a '{topic}', pero el cliente aún no está conectado.</color>");
         }
     }
 
@@ -149,16 +204,12 @@ public class MQTT_InterfaceClient : MonoBehaviour
         PublishJson("c/bme680", JsonUtility.ToJson(payload));
     }
 
-    // =======================================================================
-    // MÉTODO MODIFICADO: Envío crítico controlado antes de la desconexión total
-    // =======================================================================
     private void OnApplicationQuit()
     {
         if (client != null && client.IsConnected)
         {
             try
             {
-                // 1. Construimos el payload exacto usando las clases del script
                 CamConfigPayload payloadApagado = new CamConfigPayload
                 {
                     ts = GetISO8601Timestamp(),
@@ -166,32 +217,18 @@ public class MQTT_InterfaceClient : MonoBehaviour
                     fps = 15
                 };
 
-                // 2. Convertimos el objeto a JSON estructurado string
                 string jsonApagado = JsonUtility.ToJson(payloadApagado);
 
-                // 3. Forzamos la publicación directa usando QoS 1 (Asegura entrega en brokers Cloud)
                 client.Publish("c/cam",
                                Encoding.UTF8.GetBytes(jsonApagado),
                                MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
                                false);
 
-                Debug.Log("<color=red><b>[MQTT Interface] Comando on:false enviado con éxito a c/cam</b></color>");
-
-                // 4. CRÍTICO: Congelamos el hilo de Unity 250 milisegundos. 
-                // Esto le da tiempo real a los buffers de Windows/Mac para vaciar la cola TCP hacia HiveMQ
                 System.Threading.Thread.Sleep(250);
             }
-            catch (Exception ex)
-            {
-                Debug.LogError("Error al procesar el envío de apagado de cámara: " + ex.Message);
-            }
-
-            // 5. Procedemos al cierre seguro de la conexión
-            try
-            {
-                client.Disconnect();
-            }
             catch { }
+
+            try { client.Disconnect(); } catch { }
         }
     }
 }

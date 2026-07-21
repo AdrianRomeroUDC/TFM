@@ -6,26 +6,28 @@ using System;
 public class ControladorMenu : MonoBehaviour
 {
     [Header("Mi Panel Desplegable Principal")]
-    [Tooltip("Arrastra aquí el Panel_LateralMenu")]
     public GameObject panelLateral;
 
     [Header("Cierre al Clicar Fuera")]
-    [Tooltip("Arrastra aquí el objeto FondoCierre")]
     public GameObject fondoCierre;
 
     [Header("Reloj Digital de la Cabecera")]
-    [Tooltip("Arrastra aquí tu objeto de texto Texto_FechaHora")]
     public TMP_Text textoReloj;
 
     private RectTransform rectPanel;
-    private VerticalLayoutGroup layoutSecciones;
+    private RectTransform rectSecciones;
+    private float ultimoSegundoActualizado = -1f;
 
     private void Start()
     {
         if (panelLateral != null)
         {
             rectPanel = panelLateral.GetComponent<RectTransform>();
-            layoutSecciones = panelLateral.GetComponentInChildren<VerticalLayoutGroup>();
+            VerticalLayoutGroup layout = panelLateral.GetComponentInChildren<VerticalLayoutGroup>();
+            if (layout != null)
+            {
+                rectSecciones = layout.GetComponent<RectTransform>();
+            }
             panelLateral.SetActive(false);
         }
 
@@ -35,15 +37,16 @@ public class ControladorMenu : MonoBehaviour
 
     private void Update()
     {
-        if (textoReloj != null)
+        // 🚀 OPTIMIZACIÓN: Solo redibuja la hora 1 vez por segundo
+        if (textoReloj != null && Time.time - ultimoSegundoActualizado >= 1f)
         {
+            ultimoSegundoActualizado = Time.time;
             string fecha = DateTime.Now.ToString("dd / MM / yyyy");
             string hora = DateTime.Now.ToString("HH:mm:ss");
             textoReloj.text = fecha + "\n" + hora;
         }
     }
 
-    // Vinculado al botón de las 3 rayas
     public void ToggleMenu()
     {
         if (panelLateral != null)
@@ -53,7 +56,6 @@ public class ControladorMenu : MonoBehaviour
         }
     }
 
-    // Vinculado al Event Trigger (Pointer Click) de FondoCierre
     public void CerrarDesdeFuera()
     {
         CambiarEstadoMenu(false);
@@ -66,22 +68,11 @@ public class ControladorMenu : MonoBehaviour
 
         if (activar)
         {
-            Canvas.ForceUpdateCanvases();
-
-            if (layoutSecciones != null)
-            {
-                RectTransform rectSecciones = layoutSecciones.GetComponent<RectTransform>();
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rectSecciones);
-            }
-
-            if (rectPanel != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rectPanel);
-            }
+            if (rectSecciones != null) LayoutRebuilder.MarkLayoutForRebuild(rectSecciones);
+            if (rectPanel != null) LayoutRebuilder.MarkLayoutForRebuild(rectPanel);
         }
         else
         {
-            // Si cerramos el menú, obligamos a las secciones a encogerse
             UI_SeccionAcordeon.CerrarCualquierSeccionAbierta();
         }
     }

@@ -1,34 +1,34 @@
 using UnityEngine;
-using UnityEngine.UI;   // Necesario para Toggle, Slider y Button
-using TMPro;            // Necesario para el Dropdown de TextMeshPro
+using UnityEngine.UI;
+using TMPro;
 using System;
 
 public class UI_CameraController : MonoBehaviour
 {
-    // Cambiado a false por defecto para que empiece apagado
+    // Propiedad global para saber en toda la app si la cámara está encendida
     public static bool IsCameraOn { get; private set; } = false;
 
     [Header("Componentes de Renderizado Video")]
     public RawImage rawImageVideo;
 
-    [Header("Nuevos Ajustes Visuales y Paneles")]
-    public Image imagenFondoToggle;       // Arrastra aquí el 'Background' del botón ON-OFF
-    public GameObject panelVideoIzquierda; // Arrastra aquí el Panel de la cámara entero
+    [Header("Ajustes Visuales y Paneles")]
+    public Image imagenFondoToggle;       // Background del botón ON-OFF (LED)
+    public GameObject panelVideoIzquierda; // Panel contenedor de la cámara
 
-    [Header("Componentes de Control (Se arrastran aquí)")]
-    public Toggle toggleCamara;       // Tu botón ON-OFF (LED)
-    public Slider sliderFPS;          // Tu barra de FPS
-    public TMP_Dropdown dropdownGrados; // El dropdown de los grados
+    [Header("Componentes de Control")]
+    public Toggle toggleCamara;          // Botón ON-OFF
+    public Slider sliderFPS;             // Barra de FPS
+    public TMP_Dropdown dropdownGrados;   // Dropdown de grados PTU
 
     [Header("Botones de Movimiento a bloquear")]
-    public Button[] botonesPTU;       // Lista donde meterás las flechas y el botón Home
+    public Button[] botonesPTU;          // Lista de botones PTU
 
     private Texture2D texturaVideo;
     private string proximaBase64 = "";
     private bool hayNuevaImagen = false;
     private readonly object bloqueoHilo = new object();
 
-    // Colores industriales personalizados
+    // Colores industriales para el LED
     private readonly Color colorVerdeEncendido = new Color(0.2f, 0.75f, 0.2f, 1f);
     private readonly Color colorRojoApagado = new Color(0.85f, 0.2f, 0.2f, 1f);
 
@@ -36,30 +36,110 @@ public class UI_CameraController : MonoBehaviour
     {
         texturaVideo = new Texture2D(2, 2);
 
-        // Forzamos el estado a APAGADO al arrancar
+        // Estado inicial: APAGADO
         IsCameraOn = false;
 
+        // 🚀 AUTOMATIZACIÓN: Escuchamos los cambios del Toggle y Slider por código
         if (toggleCamara != null)
         {
-            toggleCamara.isOn = false; // Desmarcamos el Toggle visualmente
+            toggleCamara.isOn = false;
+            toggleCamara.onValueChanged.RemoveAllListeners();
+            toggleCamara.onValueChanged.AddListener(OnToggleCamaraCambiado);
         }
 
-        // Aplicamos la interfaz en estado apagado (oculta panel, pone LED rojo y deshabilita botones)
+        if (sliderFPS != null)
+        {
+            sliderFPS.onValueChanged.RemoveAllListeners();
+            sliderFPS.onValueChanged.AddListener(OnSliderFpsCambiado);
+        }
+
+        // Aplicamos el estado inicial apagado a la UI
         ActualizarInteractividadUI();
         ActualizarVisualesCamara();
 
-        // Asegurar pantalla en negro al arrancar
         if (rawImageVideo != null)
         {
             rawImageVideo.texture = null;
             rawImageVideo.color = Color.black;
         }
 
+        // Suscripción a eventos MQTT
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnCameraImageEvent += AlRecibirImagenBase64;
         }
     }
+
+    private void OnDestroy()
+    {
+        if (MQTT_InterfaceClient.Instance != null)
+        {
+            MQTT_InterfaceClient.Instance.OnCameraImageEvent -= AlRecibirImagenBase64;
+        }
+    }
+
+    // =======================================================================
+    // GESTIÓN DE EVENTOS DE LA UI
+    // =======================================================================
+
+    /// <summary>
+    /// Se ejecuta automáticamente cuando el usuario pulsa el Toggle ON/OFF
+    /// </summary>
+    private void OnToggleCamaraCambiado(bool estadoEncendido)
+    {
+        IsCameraOn = estadoEncendido;
+
+        ActualizarInteractividadUI();
+        ActualizarVisualesCamara();
+
+        // Limpiar pantalla si se apaga
+        if (rawImageVideo != null)
+        {
+            if (!IsCameraOn)
+            {
+                rawImageVideo.texture = null;
+                rawImageVideo.color = Color.black;
+            }
+            else
+            {
+                rawImageVideo.color = Color.white;
+            }
+        }
+
+        // Enviamos la orden por MQTT
+        EnviarConfiguracionMqtt();
+    }
+
+    /// <summary>
+    /// Se ejecuta automáticamente cuando el usuario mueve el Slider de FPS
+    /// </summary>
+    private void OnSliderFpsCambiado(float valorFps)
+    {
+        // 🚀 LA CLAVE: Solo envía a MQTT si la cámara YA ESTÁ ENCENDIDA
+        // Esto evita apagar la cámara o enviar comandos cuando está OFF.
+        if (IsCameraOn)
+        {
+            EnviarConfiguracionMqtt();
+        }
+    }
+
+    /// <summary>
+    /// Construye y envía el JSON de configuración a Mosquitto respetando el estado actual
+    /// </summary>
+    public void EnviarConfiguracionMqtt()
+    {
+        int fpsSeleccionados = (sliderFPS != null) ? Mathf.RoundToInt(sliderFPS.value) : 15;
+
+        if (MQTT_InterfaceClient.Instance != null)
+        {
+            MQTT_InterfaceClient.Instance.SendCameraConfig(IsCameraOn, fpsSeleccionados);
+            Debug.Log($"<color=cyan>[MQTT Cámara] Enviado -> Estado: {IsCameraOn}, FPS: {fpsSeleccionados}</color>");
+        }
+    }
+
+    // =======================================================================
+    // PROCESAMIENTO DE IMAGEN BASE64
+    // =======================================================================
 
     private void AlRecibirImagenBase64(string base64Data)
     {
@@ -114,46 +194,10 @@ public class UI_CameraController : MonoBehaviour
         }
     }
 
-    public void EnviarConfiguracionActual()
-    {
-        if (toggleCamara == null || sliderFPS == null) return;
+    // =======================================================================
+    // ACTUALIZACIÓN DE ELEMENTOS VISUALES
+    // =======================================================================
 
-        IsCameraOn = toggleCamara.isOn;
-
-        // Cambiar el estado de los botones, el color del botón y la visibilidad del panel
-        ActualizarInteractividadUI();
-        ActualizarVisualesCamara();
-
-        // =======================================================================
-        // LÓGICA DE TEXTURAS: Si se apaga, limpiamos la pantalla y la ponemos en negro
-        // =======================================================================
-        if (!IsCameraOn)
-        {
-            if (rawImageVideo != null)
-            {
-                rawImageVideo.texture = null;
-                rawImageVideo.color = Color.black;
-            }
-        }
-        else
-        {
-            if (rawImageVideo != null)
-            {
-                rawImageVideo.color = Color.white;
-            }
-        }
-
-        int fpsSeleccionados = Mathf.RoundToInt(sliderFPS.value);
-
-        if (MQTT_InterfaceClient.Instance != null)
-        {
-            MQTT_InterfaceClient.Instance.SendCameraConfig(IsCameraOn, fpsSeleccionados);
-        }
-    }
-
-    /// <summary>
-    /// Activa o desactiva la interacción de todos los mandos según el estado de la cámara
-    /// </summary>
     private void ActualizarInteractividadUI()
     {
         if (sliderFPS != null) sliderFPS.interactable = IsCameraOn;
@@ -171,29 +215,16 @@ public class UI_CameraController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Controla de forma centralizada el color del Toggle y la visibilidad del panel
-    /// </summary>
     private void ActualizarVisualesCamara()
     {
-        // 1. Cambiar el color del botón (Verde si está ON, Rojo si está OFF)
         if (imagenFondoToggle != null)
         {
             imagenFondoToggle.color = IsCameraOn ? colorVerdeEncendido : colorRojoApagado;
         }
 
-        // 2. Mostrar u ocultar el panel entero
         if (panelVideoIzquierda != null)
         {
             panelVideoIzquierda.SetActive(IsCameraOn);
-        }
-    }
-
-    private void OnDestroy()
-    {
-        if (MQTT_InterfaceClient.Instance != null)
-        {
-            MQTT_InterfaceClient.Instance.OnCameraImageEvent -= AlRecibirImagenBase64;
         }
     }
 }

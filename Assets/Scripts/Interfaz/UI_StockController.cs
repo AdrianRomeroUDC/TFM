@@ -46,6 +46,12 @@ public class UI_StockController : MonoBehaviour
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnStockUpdateEvent += ActualizarPanelAlmacen;
+
+            // 🚀 SOLUCIÓN: Si ya se había recibido el stock retenido antes de que la UI arrancara, lo pintamos ya
+            if (MQTT_InterfaceClient.Instance.UltimoStock != null)
+            {
+                ActualizarPanelAlmacen(MQTT_InterfaceClient.Instance.UltimoStock);
+            }
         }
 
         // 2. Vinculación de los eventos Click de los botones de pedido
@@ -70,7 +76,6 @@ public class UI_StockController : MonoBehaviour
 
     void Update()
     {
-        // Si el tooltip está encendido, hacemos que siga la posición del ratón
         if (panelTooltip != null && panelTooltip.activeSelf)
         {
             if (UnityEngine.InputSystem.Mouse.current != null)
