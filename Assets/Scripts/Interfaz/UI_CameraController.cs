@@ -39,11 +39,12 @@ public class UI_CameraController : MonoBehaviour
         // Estado inicial: APAGADO
         IsCameraOn = false;
 
-        // 🚀 AUTOMATIZACIÓN: Escuchamos los cambios del Toggle y Slider por código
+        // AUTOMATIZACIÓN: Escuchamos los cambios del Toggle y Slider por código
         if (toggleCamara != null)
         {
             toggleCamara.isOn = false;
-            toggleCamara.onValueChanged.RemoveAllListeners();
+            // toggleCamara.onValueChanged.RemoveAllListeners(); 
+
             toggleCamara.onValueChanged.AddListener(OnToggleCamaraCambiado);
         }
 
@@ -115,7 +116,7 @@ public class UI_CameraController : MonoBehaviour
     /// </summary>
     private void OnSliderFpsCambiado(float valorFps)
     {
-        // 🚀 LA CLAVE: Solo envía a MQTT si la cámara YA ESTÁ ENCENDIDA
+        // LA CLAVE: Solo envía a MQTT si la cámara YA ESTÁ ENCENDIDA
         // Esto evita apagar la cámara o enviar comandos cuando está OFF.
         if (IsCameraOn)
         {
@@ -217,10 +218,12 @@ public class UI_CameraController : MonoBehaviour
 
     private void ActualizarVisualesCamara()
     {
+        /*
         if (imagenFondoToggle != null)
         {
             imagenFondoToggle.color = IsCameraOn ? colorVerdeEncendido : colorRojoApagado;
         }
+        */
 
         if (panelVideoIzquierda != null)
         {
