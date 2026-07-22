@@ -45,7 +45,7 @@ public class PlataformaDSO_proxy : MonoBehaviour
         Transform actual = t;
         while (actual != null)
         {
-            if (actual.name.ToLower().StartsWith("pieza") || actual.CompareTag("Pieza"))
+            if (actual.name.ToLower().Contains("pieza"))
             {
                 return actual;
             }
