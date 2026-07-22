@@ -827,7 +827,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -926,6 +926,7 @@ GameObject:
   - component: {fileID: 52851677}
   - component: {fileID: 52851676}
   - component: {fileID: 52851678}
+  - component: {fileID: 52851681}
   m_Layer: 5
   m_Name: TopButton
   m_TagString: Untagged
@@ -1064,6 +1065,18 @@ RectTransform:
   m_AnchoredPosition: {x: 180, y: 0}
   m_SizeDelta: {x: 50, y: 75}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &52851681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 52851675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &59957041
 GameObject:
   m_ObjectHideFlags: 0
@@ -1648,6 +1661,7 @@ GameObject:
   - component: {fileID: 75501069}
   - component: {fileID: 75501068}
   - component: {fileID: 75501071}
+  - component: {fileID: 75501072}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -1786,6 +1800,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &75501072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 75501066}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &78921629
 GameObject:
   m_ObjectHideFlags: 0
@@ -5754,6 +5780,7 @@ GameObject:
   - component: {fileID: 242496381}
   - component: {fileID: 242496380}
   - component: {fileID: 242496379}
+  - component: {fileID: 242496383}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -5880,6 +5907,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 242496377}
   m_CullTransparentMesh: 1
+--- !u!114 &242496383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 242496377}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &245254894
 GameObject:
   m_ObjectHideFlags: 0
@@ -6166,7 +6205,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -6388,6 +6427,7 @@ GameObject:
   - component: {fileID: 267286621}
   - component: {fileID: 267286620}
   - component: {fileID: 267286623}
+  - component: {fileID: 267286624}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -6526,6 +6566,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &267286624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 267286618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &268922258
 GameObject:
   m_ObjectHideFlags: 0
@@ -8092,6 +8144,7 @@ GameObject:
   - component: {fileID: 354304269}
   - component: {fileID: 354304268}
   - component: {fileID: 354304271}
+  - component: {fileID: 354304272}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -8230,6 +8283,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &354304272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 354304266}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &359876875
 GameObject:
   m_ObjectHideFlags: 0
@@ -9314,6 +9379,7 @@ GameObject:
   - component: {fileID: 416122738}
   - component: {fileID: 416122737}
   - component: {fileID: 416122740}
+  - component: {fileID: 416122741}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -9452,6 +9518,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &416122741
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 416122735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &426498658
 GameObject:
   m_ObjectHideFlags: 0
@@ -12288,7 +12366,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -13767,7 +13845,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -17726,6 +17804,7 @@ GameObject:
   - component: {fileID: 967094408}
   - component: {fileID: 967094407}
   - component: {fileID: 967094410}
+  - component: {fileID: 967094411}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -17864,6 +17943,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &967094411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 967094405}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &973520530
 GameObject:
   m_ObjectHideFlags: 0
@@ -21146,6 +21237,7 @@ GameObject:
   - component: {fileID: 1213419069}
   - component: {fileID: 1213419068}
   - component: {fileID: 1213419070}
+  - component: {fileID: 1213419073}
   m_Layer: 5
   m_Name: LeftButton
   m_TagString: Untagged
@@ -21284,6 +21376,18 @@ RectTransform:
   m_AnchoredPosition: {x: 100, y: -75}
   m_SizeDelta: {x: 75, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1213419073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1213419067}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &1217463143
 GameObject:
   m_ObjectHideFlags: 0
@@ -22136,6 +22240,7 @@ GameObject:
   - component: {fileID: 1250933167}
   - component: {fileID: 1250933166}
   - component: {fileID: 1250933169}
+  - component: {fileID: 1250933170}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -22274,6 +22379,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &1250933170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1250933164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &1255815986
 GameObject:
   m_ObjectHideFlags: 0
@@ -23336,6 +23453,7 @@ GameObject:
   - component: {fileID: 1320464519}
   - component: {fileID: 1320464518}
   - component: {fileID: 1320464517}
+  - component: {fileID: 1320464521}
   m_Layer: 5
   m_Name: CentralButton
   m_TagString: Untagged
@@ -23474,6 +23592,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1320464515}
   m_CullTransparentMesh: 1
+--- !u!114 &1320464521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1320464515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &1321217009
 GameObject:
   m_ObjectHideFlags: 0
@@ -27767,6 +27897,7 @@ GameObject:
   - component: {fileID: 1567919288}
   - component: {fileID: 1567919287}
   - component: {fileID: 1567919286}
+  - component: {fileID: 1567919290}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -27893,6 +28024,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1567919284}
   m_CullTransparentMesh: 1
+--- !u!114 &1567919290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567919284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &1568875942
 GameObject:
   m_ObjectHideFlags: 0
@@ -30000,7 +30143,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -31701,6 +31844,7 @@ GameObject:
   - component: {fileID: 1761474289}
   - component: {fileID: 1761474288}
   - component: {fileID: 1761474290}
+  - component: {fileID: 1761474293}
   m_Layer: 5
   m_Name: BottomButton
   m_TagString: Untagged
@@ -31839,6 +31983,18 @@ RectTransform:
   m_AnchoredPosition: {x: 180, y: -150}
   m_SizeDelta: {x: 50, y: 75}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1761474293
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1761474287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &1762086510
 GameObject:
   m_ObjectHideFlags: 0
@@ -31852,6 +32008,7 @@ GameObject:
   - component: {fileID: 1762086513}
   - component: {fileID: 1762086512}
   - component: {fileID: 1762086515}
+  - component: {fileID: 1762086516}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -31990,6 +32147,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &1762086516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1762086510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &1765597591
 GameObject:
   m_ObjectHideFlags: 0
@@ -33473,7 +33642,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -35316,7 +35485,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -36732,6 +36901,7 @@ GameObject:
   - component: {fileID: 1977742410}
   - component: {fileID: 1977742409}
   - component: {fileID: 1977742412}
+  - component: {fileID: 1977742413}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -36870,6 +37040,18 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &1977742413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1977742407}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PasarScrollAlPadre
 --- !u!1 &1989007974
 GameObject:
   m_ObjectHideFlags: 0
@@ -36883,6 +37065,7 @@ GameObject:
   - component: {fileID: 1989007976}
   - component: {fileID: 1989007975}
   - component: {fileID: 1989007977}
+  - component: {fileID: 1989007980}
   m_Layer: 5
   m_Name: RightButton
   m_TagString: Untagged
@@ -37021,6 +37204,18 @@ RectTransform:
   m_AnchoredPosition: {x: 260, y: -75}
   m_SizeDelta: {x: 75, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1989007980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1989007974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &1991905255
 GameObject:
   m_ObjectHideFlags: 0
@@ -38000,7 +38195,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -39133,6 +39328,7 @@ GameObject:
   - component: {fileID: 2115997842}
   - component: {fileID: 2115997841}
   - component: {fileID: 2115997840}
+  - component: {fileID: 2115997844}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -39259,6 +39455,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2115997838}
   m_CullTransparentMesh: 1
+--- !u!114 &2115997844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2115997838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e51be933181fc3447bc8ff60ed19991e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_ScrollButtons
 --- !u!1 &2116921195
 GameObject:
   m_ObjectHideFlags: 0
