@@ -59,6 +59,11 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private Transform padreOriginalSLD;
     private float yMundialAlAgarrarSLD = 0f;
 
+    // --- 🎯 VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN HORNO ---
+    private bool verificarFalloEntregaHorno = false;
+    private float yMundialAlSoltarHorno = 0f;
+    private Transform piezaMonitoreadaHorno = null;
+
     void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
     void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
     void CapturarVertMin() => unityVert_Min = ejeVertical.localPosition.y;
@@ -222,6 +227,49 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 }
             }
         }
+
+        // --- 🎯 3. SISTEMA ANTIFALLO ENTREGA EN HORNO (AL SUBIR EL VGR) ---
+        if (verificarFalloEntregaHorno)
+        {
+            float deltaYMundialHorno = Mathf.Abs(ejeVertical.position.y - yMundialAlSoltarHorno);
+
+            if (deltaYMundialHorno > 0.015f) // El VGR ha subido 1.5 cm desde que soltó la pieza
+            {
+                ControladorHorno_mqtt horno = Object.FindFirstObjectByType<ControladorHorno_mqtt>();
+                bool sensorHornoActivo = (horno != null && horno.SensorHornoActivo);
+
+                Debug.Log($"<color=yellow><b>[VGR CHEQUEO HORNO]:</b> VGR subió. Delta: {deltaYMundialHorno:F4}m. Sensor Horno real = {sensorHornoActivo}</color>");
+
+                if (!sensorHornoActivo)
+                {
+                    Debug.Log("<color=red><b>[VGR FALLO ENTREGA HORNO]:</b> ¡FALLO! Sensor Horno = False (no hay pieza real). Eliminando pieza fantasma de la simulación.</color>");
+
+                    if (piezaMonitoreadaHorno != null)
+                    {
+                        Destroy(piezaMonitoreadaHorno.gameObject);
+                    }
+                    else if (horno != null)
+                    {
+                        // Limpieza preventiva directa sobre la plataforma por si perdió el puntero
+                        Transform platReal = horno.BuscarPlataformaRealHijo();
+                        if (platReal != null)
+                        {
+                            foreach (Transform h in platReal)
+                            {
+                                if (h.name.ToLower().Contains("pieza")) Destroy(h.gameObject);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.Log("<color=green><b>[VGR ENTREGA ÉXITO HORNO]:</b> Sensor Horno = True. Entrega confirmada en el horno real.</color>");
+                }
+
+                verificarFalloEntregaHorno = false;
+                piezaMonitoreadaHorno = null;
+            }
+        }
     }
 
     private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
@@ -241,7 +289,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     }
 
     public void RegistrarContenedorBajoVentosa(ContenedorHBW_proxy contenedor) => contenedorActual = contenedor;
-    public ContenedorHBW_proxy @ObtenerContenedorActual() => contenedorActual;
+    public ContenedorHBW_proxy ObtenerContenedorActual() => contenedorActual;
     public Transform ObtenerPiezaEnganchada() => piezaEnganchada;
     public void AsignarPiezaEnganchada(Transform nuevaPieza)
     {
@@ -347,6 +395,27 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
             if (piezaEnganchada != null)
             {
+                Transform piezaASoltar = piezaEnganchada;
+
+                // 🎯 C. DETECCIÓN Y MONITOREO DE ENTREGA EN EL HORNO
+                ControladorHorno_mqtt hornoScript = Object.FindFirstObjectByType<ControladorHorno_mqtt>();
+                if (hornoScript != null)
+                {
+                    Transform platReal = hornoScript.BuscarPlataformaRealHijo();
+                    if (platReal != null)
+                    {
+                        float distanciaAlHorno = Vector3.Distance(puntoAnclajeVentosa.position, platReal.position);
+                        if (distanciaAlHorno < 0.25f) // Si estamos soltando la pieza cerca del horno
+                        {
+                            piezaMonitoreadaHorno = piezaASoltar;
+                            verificarFalloEntregaHorno = true;
+                            yMundialAlSoltarHorno = ejeVertical.position.y;
+
+                            Debug.Log("<color=orange><b>[VGR MONITOREO HORNO]:</b> Pieza soltada en el Horno. Iniciando monitoreo al subir el VGR...</color>");
+                        }
+                    }
+                }
+
                 ContenedorHBW_proxy destinoFinal = contenedorActual;
                 if (destinoFinal == null)
                 {
@@ -430,6 +499,16 @@ public class ControladorVGR_mqtt : MonoBehaviour
             Gizmos.color = Color.magenta;
             Gizmos.DrawLine(baseAgarreSLD, posicionEjeActual);
             Gizmos.DrawWireSphere(baseAgarreSLD + Vector3.up * 0.015f, 0.004f);
+        }
+
+        if (verificarFalloEntregaHorno && ejeVertical != null)
+        {
+            Vector3 baseSoltarHorno = new Vector3(ejeVertical.position.x, yMundialAlSoltarHorno, ejeVertical.position.z);
+            Vector3 posicionEjeActual = ejeVertical.position;
+
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(baseSoltarHorno, posicionEjeActual);
+            Gizmos.DrawWireSphere(baseSoltarHorno + Vector3.up * 0.015f, 0.004f);
         }
     }
 }
