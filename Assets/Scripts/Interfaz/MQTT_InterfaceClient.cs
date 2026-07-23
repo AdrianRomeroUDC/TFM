@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -29,7 +30,10 @@ public class MQTT_InterfaceClient : MonoBehaviour
     private MqttClient client;
     private readonly object lockObject = new object();
 
-    // 🚀 CACHÉ: Guarda el último stock conocido para la interfaz de pedidos
+    // Flag seguro entre hilos
+    private volatile bool estaActivo = true;
+
+    // CACHÉ: Guarda el último stock conocido para la interfaz de pedidos
     public StockPayload UltimoStock { get; private set; }
 
     // Colas para puente de hilos
@@ -61,6 +65,16 @@ public class MQTT_InterfaceClient : MonoBehaviour
         Task.Run(() => ConnectAsync(clientIdShort));
     }
 
+    void OnEnable()
+    {
+        estaActivo = true;
+    }
+
+    void OnDisable()
+    {
+        estaActivo = false;
+    }
+
     void Update()
     {
         List<Bme680Payload> bmeLista = null;
@@ -76,7 +90,6 @@ public class MQTT_InterfaceClient : MonoBehaviour
             if (stockQueue.Count > 0)
             {
                 stockLista = new List<StockPayload>(stockQueue);
-                // Guardamos la versión más reciente en la propiedad de caché
                 UltimoStock = stockLista[stockLista.Count - 1];
                 stockQueue.Clear();
             }
@@ -104,32 +117,39 @@ public class MQTT_InterfaceClient : MonoBehaviour
                 string[] topics = { "i/cam", "i/bme680", "i/ldr", "f/i/stock" };
                 client.Subscribe(topics, new byte[] { 0, 0, 0, 0 });
 
-                Debug.Log($"<color=green><b>[MQTT] ¡CONECTADO CON ÉXITO! ID: {clientId} en {brokerHost}:{puerto}</b></color>");
+                Debug.Log($"<color=green><b>[MQTT Interfaz] ¡CONECTADO CON ÉXITO! ID: {clientId} en {brokerHost}:{puerto}</b></color>");
             }
             else
             {
-                Debug.LogError("[MQTT] El broker rechazó la conexión (comprueba usuario/contraseña).");
+                Debug.LogError("[MQTT Interfaz] El broker rechazó la conexión.");
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[MQTT] Error al conectar a {brokerHost}:{puerto} -> {ex.Message}");
+            Debug.LogError($"[MQTT Interfaz] Error al conectar a {brokerHost}:{puerto} -> {ex.Message}");
         }
     }
 
     private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
     {
-        string topic = e.Topic;
-        byte[] bytesMensaje = e.Message;
+        // Uso de variable de C# pura libre de excepciones de Unity en hilos secundarios
+        if (!estaActivo) return;
 
+        string topic = e.Topic;
+        string msg = Encoding.UTF8.GetString(e.Message).Trim();
+
+        ProcesarMensajeExterno(topic, msg);
+    }
+
+    public void ProcesarMensajeExterno(string topic, string msg)
+    {
         lock (lockObject)
         {
             try
             {
                 if (topic == "i/cam")
                 {
-                    string msgCam = Encoding.UTF8.GetString(bytesMensaje).Trim();
-                    CameraPayload camData = JsonUtility.FromJson<CameraPayload>(msgCam);
+                    CameraPayload camData = JsonUtility.FromJson<CameraPayload>(msg);
 
                     if (camData != null && !string.IsNullOrEmpty(camData.data))
                     {
@@ -139,11 +159,11 @@ public class MQTT_InterfaceClient : MonoBehaviour
                 }
                 else
                 {
-                    string msg = Encoding.UTF8.GetString(bytesMensaje).Trim().Replace("True", "true").Replace("False", "false");
+                    string msgClean = msg.Replace("True", "true").Replace("False", "false");
 
-                    if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msg));
-                    else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msg));
-                    else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msg));
+                    if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msgClean));
+                    else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msgClean));
+                    else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msgClean));
                 }
             }
             catch (Exception ex) { Debug.LogWarning($"Error parseando JSON en {topic}: {ex.Message}"); }

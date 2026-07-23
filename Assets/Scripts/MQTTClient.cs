@@ -1,12 +1,15 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
 // =================================================================
-// 1. ESTRUCTURAS DE COMPATIBILIDAD
+// ESTRUCTURAS DE DATOS
 // =================================================================
 [Serializable] public class HBWStockPayload { public string[] piezas; }
 [Serializable] public class VGRPositionData { public float rotation; public float vertical; public float extend; public string ts; }
@@ -22,9 +25,6 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class SSCLEDsPayload { public int LED_online; public int LEDs; }
 [Serializable] public class SSCCamaraPayload { public float pan; public float tilt; public string ts; }
 
-// =================================================================
-// 2. ESTRUCTURAS INTERNAS DE RED (Corregidas a PUBLIC para evitar el error)
-// =================================================================
 [Serializable] public class JSON_DPSSensor { public bool dsi_sensor; public bool dso_sensor; }
 [Serializable] public class JSON_DPSColor { public string color; }
 [Serializable] public class JSON_SLDBelt { public bool cylinder_sensor; public bool entry_sensor; public float speed; public string ts; }
@@ -61,14 +61,19 @@ public class MQTTClient : MonoBehaviour
     private string lastHBWJson = "";
     private string[] initialStock = null;
 
-    private VGRPositionData ultimoVGRPos = null;
-    private bool hayNuevoVGRPos = false;
-    private HBWPositionPayload ultimoHBWPos = null;
-    private bool hayNuevoHBWPos = false;
+    private volatile bool estaActivo = true;
+
+    private struct MensajeMQTT
+    {
+        public string topic;
+        public string payload;
+    }
+    private Queue<MensajeMQTT> colaMensajesRed = new Queue<MensajeMQTT>();
+    private readonly object lockCola = new object();
 
     [Header("Configuración del Broker")]
-    public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
-    public int puerto = 8883;
+    public string brokerHost = "10.113.36.36";
+    public int puerto = 1884;
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
 
@@ -76,7 +81,6 @@ public class MQTTClient : MonoBehaviour
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
 
-    // Delegado actualizado para recibir el objeto completo
     public delegate void OnCylinderUpdate(JSON_SLDCylinder data);
     public event OnCylinderUpdate OnCylinderUpdateEvent;
 
@@ -113,43 +117,67 @@ public class MQTTClient : MonoBehaviour
     {
         if (instance == null) instance = this;
         else { Destroy(gameObject); return; }
-        Connect();
+    }
+
+    void OnEnable()
+    {
+        estaActivo = true;
+        if (client == null || !client.IsConnected)
+        {
+            Connect();
+        }
+    }
+
+    void OnDisable()
+    {
+        estaActivo = false;
     }
 
     void Update()
     {
-        VGRPositionData vgrAProcesar = null;
-        HBWPositionPayload hbwAProcesar = null;
+        List<MensajeMQTT> copiaMensajes = null;
 
-        lock (colaMensajes)
+        lock (lockCola)
         {
-            if (hayNuevoVGRPos)
+            if (colaMensajesRed.Count > 0)
             {
-                vgrAProcesar = ultimoVGRPos;
-                hayNuevoVGRPos = false;
-            }
-            if (hayNuevoHBWPos)
-            {
-                hbwAProcesar = ultimoHBWPos;
-                hayNuevoHBWPos = false;
+                copiaMensajes = new List<MensajeMQTT>(colaMensajesRed);
+                colaMensajesRed.Clear();
             }
         }
 
-        if (vgrAProcesar != null) OnVGRPositionUpdateEvent?.Invoke(vgrAProcesar.rotation, vgrAProcesar.vertical, vgrAProcesar.extend);
-        if (hbwAProcesar != null) OnHBWPositionUpdateEvent?.Invoke(hbwAProcesar.horizontal, hbwAProcesar.vertical, hbwAProcesar.extend);
+        if (copiaMensajes != null)
+        {
+            foreach (var msg in copiaMensajes)
+            {
+                ProcesarMensajeExterno(msg.topic, msg.payload);
+            }
+        }
     }
 
-    void Connect()
+    public void Connect()
     {
         try
         {
-            client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
+            bool usarSSL = (puerto == 8883);
+
+            if (usarSSL)
+            {
+                System.Net.ServicePointManager.ServerCertificateValidationCallback = RemoteCertificateValidationHandler;
+                client = new MqttClient(brokerHost, puerto, true, null, null, MqttSslProtocols.TLSv1_2, RemoteCertificateValidationHandler);
+            }
+            else
+            {
+                client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
+            }
+
             client.MqttMsgPublishReceived += OnMessageReceived;
-            client.Connect(Guid.NewGuid().ToString(), usuario, contrasena);
+            string clientId = "Unity_Directo_" + UnityEngine.Random.Range(1000, 9999);
+            client.Connect(clientId, usuario, contrasena);
 
             if (client.IsConnected)
             {
-                Debug.Log("<color=green><b>MQTT Conectado</b></color>");
+                Debug.Log($"<color=green><b>[MQTT Directo] ¡CONECTADO CON ÉXITO! a {brokerHost}:{puerto}</b></color>");
 
                 string[] topics = {
                     "dt/sld/belt", "dt/sld/cylinder", "dt/dps/dsi", "dt/dps/dso", "dt/dps/color", "dt/vgr/grip",
@@ -160,76 +188,112 @@ public class MQTTClient : MonoBehaviour
                 byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
             }
+            else
+            {
+                Debug.LogError("❌ [MQTT Directo] Conexión rechazada por el Broker.");
+            }
         }
-        catch (Exception ex) { Debug.LogError("Error MQTT: " + ex.Message); }
+        catch (Exception ex)
+        {
+            Debug.LogError("❌ [MQTT Directo] Error al conectar: " + ex.Message);
+        }
+    }
+
+    private bool RemoteCertificateValidationHandler(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+    {
+        return true;
     }
 
     private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
     {
-        string msg = Encoding.UTF8.GetString(e.Message).Trim().Replace("True", "true").Replace("False", "false");
-        string topic = e.Topic;
+        if (!estaActivo) return;
 
-        // --- ESTACIÓN SLD ---
+        string msg = Encoding.UTF8.GetString(e.Message).Trim();
+
+        lock (lockCola)
+        {
+            colaMensajesRed.Enqueue(new MensajeMQTT { topic = e.Topic, payload = msg });
+        }
+    }
+
+    public void ProcesarMensajeExterno(string topic, string msg)
+    {
+        if (string.IsNullOrEmpty(msg)) return;
+        msg = msg.Replace("True", "true").Replace("False", "false");
+
         if (topic == "dt/sld/belt")
         {
             try
             {
                 JSON_SLDBelt netData = JsonUtility.FromJson<JSON_SLDBelt>(msg);
-                SLDBeltPayload legacyData = new SLDBeltPayload
+                if (netData != null)
                 {
-                    velocidad = netData.speed,
-                    SensorEntrada = netData.entry_sensor ? 1 : 0,
-                    SensorCilindros = netData.cylinder_sensor ? 1 : 0,
-                    z_ts = netData.ts
-                };
-                OnBeltUpdateEvent?.Invoke(legacyData);
+                    SLDBeltPayload legacyData = new SLDBeltPayload
+                    {
+                        velocidad = netData.speed,
+                        SensorEntrada = netData.entry_sensor ? 1 : 0,
+                        SensorCilindros = netData.cylinder_sensor ? 1 : 0,
+                        z_ts = netData.ts
+                    };
+                    OnBeltUpdateEvent?.Invoke(legacyData);
+                }
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/sld/belt: " + ex.Message); }
+            catch { }
         }
         else if (topic == "dt/sld/cylinder")
         {
             try
             {
-                // Invocamos pasando el objeto completo
                 JSON_SLDCylinder data = JsonUtility.FromJson<JSON_SLDCylinder>(msg);
-                OnCylinderUpdateEvent?.Invoke(data);
+                if (data != null) OnCylinderUpdateEvent?.Invoke(data);
             }
             catch { }
         }
-        // --- ESTACIÓN DPS ---
         else if (topic == "dt/dps/dsi")
         {
-            try { OnDPSPiezaDSIEvent?.Invoke(JsonUtility.FromJson<JSON_DPSSensor>(msg).dsi_sensor); } catch { }
+            try
+            {
+                var data = JsonUtility.FromJson<JSON_DPSSensor>(msg);
+                if (data != null) OnDPSPiezaDSIEvent?.Invoke(data.dsi_sensor);
+            }
+            catch { }
         }
         else if (topic == "dt/dps/dso")
         {
-            try { OnDPSPiezaDSOEvent?.Invoke(JsonUtility.FromJson<JSON_DPSSensor>(msg).dso_sensor); } catch { }
+            try
+            {
+                var data = JsonUtility.FromJson<JSON_DPSSensor>(msg);
+                if (data != null) OnDPSPiezaDSOEvent?.Invoke(data.dso_sensor);
+            }
+            catch { }
         }
         else if (topic == "dt/dps/color")
         {
-            try { OnDPSColorEvent?.Invoke(JsonUtility.FromJson<JSON_DPSColor>(msg).color.ToUpper()); } catch { }
+            try
+            {
+                var data = JsonUtility.FromJson<JSON_DPSColor>(msg);
+                if (data != null && !string.IsNullOrEmpty(data.color)) OnDPSColorEvent?.Invoke(data.color.ToUpper());
+            }
+            catch { }
         }
-
-        // --- ESTACIÓN VGR ---
         else if (topic == "dt/vgr/grip")
         {
-            try { OnVGRGripEvent?.Invoke(JsonUtility.FromJson<VGRGripPayload>(msg).active); } catch { }
+            try
+            {
+                var data = JsonUtility.FromJson<VGRGripPayload>(msg);
+                if (data != null) OnVGRGripEvent?.Invoke(data.active);
+            }
+            catch { }
         }
         else if (topic == "dt/vgr/pos")
         {
             try
             {
                 VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
-                lock (colaMensajes)
-                {
-                    ultimoVGRPos = data;
-                    hayNuevoVGRPos = true;
-                }
+                if (data != null) OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend);
             }
             catch { }
         }
-
-        // --- PROCESAMIENTO ALMACÉN HBW (f/i/stock) ---
         else if (topic == "f/i/stock")
         {
             lastHBWJson = msg;
@@ -243,7 +307,7 @@ public class MQTTClient : MonoBehaviour
 
                     foreach (var item in data.stockItems)
                     {
-                        if (string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
+                        if (item == null || string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
 
                         int col = char.ToUpper(item.location[0]) - 'A';
                         int row = item.location[1] - '1';
@@ -261,23 +325,16 @@ public class MQTTClient : MonoBehaviour
 
                     initialStock = flatStock;
                     OnHBWUpdatePiecesEvent?.Invoke(flatStock);
-
-                    client.Unsubscribe(new string[] { "f/i/stock" });
-                    Debug.Log("<color=cyan><b>[MQTT] f/i/stock procesado correctamente. Canal cerrado.</b></color>");
                 }
             }
-            catch (Exception ex) { Debug.LogWarning("Error procesando f/i/stock: " + ex.Message); }
+            catch { }
         }
         else if (topic == "dt/hbw/pos")
         {
             try
             {
                 HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
-                lock (colaMensajes)
-                {
-                    ultimoHBWPos = data;
-                    hayNuevoHBWPos = true;
-                }
+                if (data != null) OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.extend);
             }
             catch { }
         }
@@ -286,102 +343,110 @@ public class MQTTClient : MonoBehaviour
             try
             {
                 JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
-                OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
+                if (netData != null) OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
             }
-            catch (Exception ex) { Debug.LogWarning("Error al procesar dt/hbw/belt: " + ex.Message); }
+            catch { }
         }
-
-        // --- ESTACIÓN MPO ---
         else if (topic == "dt/mpo/oven")
         {
             try
             {
                 JSON_MPOOven netData = JsonUtility.FromJson<JSON_MPOOven>(msg);
-                MPOHornoPayload legacyData = new MPOHornoPayload
+                if (netData != null)
                 {
-                    closeDoor = netData.close_door ? 1 : 0,
-                    openDoor = netData.open_door ? 1 : 0,
-                    lights = netData.lights ? 1 : 0,
-                    move2Ref5 = netData.move2Ref5 ? 1 : 0,
-                    move2Ref6 = netData.move2Ref6 ? 1 : 0,
-                    ts = netData.ts,
-                    ovenSensor = netData.oven_sensor ? 1 : 0
-                };
-                OnHornoUpdateEvent?.Invoke(legacyData);
+                    MPOHornoPayload legacyData = new MPOHornoPayload
+                    {
+                        closeDoor = netData.close_door ? 1 : 0,
+                        openDoor = netData.open_door ? 1 : 0,
+                        lights = netData.lights ? 1 : 0,
+                        move2Ref5 = netData.move2Ref5 ? 1 : 0,
+                        move2Ref6 = netData.move2Ref6 ? 1 : 0,
+                        ts = netData.ts,
+                        ovenSensor = netData.oven_sensor ? 1 : 0
+                    };
+                    OnHornoUpdateEvent?.Invoke(legacyData);
+                }
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/oven: " + ex.Message); }
+            catch { }
         }
         else if (topic == "dt/mpo/turntable")
         {
             try
             {
                 JSON_MPOTurntable netData = JsonUtility.FromJson<JSON_MPOTurntable>(msg);
-                MPOTurntablePayload legacyData = new MPOTurntablePayload
+                if (netData != null)
                 {
-                    eject = netData.eject ? 1 : 0,
-                    move2Ref7 = netData.move2Ref7 ? 1 : 0,
-                    move2Ref8 = netData.move2Ref8 ? 1 : 0,
-                    move2Ref9 = netData.move2Ref9 ? 1 : 0,
-                    move2Ref10 = netData.move2Ref10 ? 1 : 0,
-                    rotation = netData.rotation,
-                    saw = netData.saw,
-                    ts = netData.ts
-                };
-                lock (colaMensajes) { colaMensajes.Enqueue(legacyData); }
+                    MPOTurntablePayload legacyData = new MPOTurntablePayload
+                    {
+                        eject = netData.eject ? 1 : 0,
+                        move2Ref7 = netData.move2Ref7 ? 1 : 0,
+                        move2Ref8 = netData.move2Ref8 ? 1 : 0,
+                        move2Ref9 = netData.move2Ref9 ? 1 : 0,
+                        move2Ref10 = netData.move2Ref10 ? 1 : 0,
+                        rotation = netData.rotation,
+                        saw = netData.saw,
+                        ts = netData.ts
+                    };
+                    lock (colaMensajes) { colaMensajes.Enqueue(legacyData); }
+                }
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/turntable: " + ex.Message); }
+            catch { }
         }
         else if (topic == "dt/mpo/belt")
         {
             try
             {
                 JSON_MPOBelt netData = JsonUtility.FromJson<JSON_MPOBelt>(msg);
-                MPOBeltPayload legacyData = new MPOBeltPayload
+                if (netData != null)
                 {
-                    estado = netData.active ? 1 : 0,
-                    sensorSalida = netData.exit_sensor ? 1 : 0,
-                    z_ts = netData.ts
-                };
-                OnMPOBeltUpdateEvent?.Invoke(legacyData);
+                    MPOBeltPayload legacyData = new MPOBeltPayload
+                    {
+                        estado = netData.active ? 1 : 0,
+                        sensorSalida = netData.exit_sensor ? 1 : 0,
+                        z_ts = netData.ts
+                    };
+                    OnMPOBeltUpdateEvent?.Invoke(legacyData);
+                }
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/belt: " + ex.Message); }
+            catch { }
         }
         else if (topic == "dt/mpo/arm")
         {
             try
             {
                 JSON_MPOArm netData = JsonUtility.FromJson<JSON_MPOArm>(msg);
-                MPOBrazoPayload legacyData = new MPOBrazoPayload
+                if (netData != null)
                 {
-                    move2Ref3 = netData.move2Ref3,
-                    move2Ref4 = netData.move2Ref4,
-                    lowering = netData.lowering,
-                    vacuum = netData.vacuum,
-                    ts = netData.ts
-                };
-                OnBrazoUpdateEvent?.Invoke(legacyData);
+                    MPOBrazoPayload legacyData = new MPOBrazoPayload
+                    {
+                        move2Ref3 = netData.move2Ref3,
+                        move2Ref4 = netData.move2Ref4,
+                        lowering = netData.lowering,
+                        vacuum = netData.vacuum,
+                        ts = netData.ts
+                    };
+                    OnBrazoUpdateEvent?.Invoke(legacyData);
+                }
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/mpo/arm: " + ex.Message); }
+            catch { }
         }
-
-        // --- ESTACIÓN SSC ---
         else if (topic == "dt/ssc/leds")
         {
             try
             {
                 JSON_SSCLEDs data = JsonUtility.FromJson<JSON_SSCLEDs>(msg);
-                OnSSCLEDsUpdateEvent?.Invoke(data.led_online, data.leds_semaphore);
+                if (data != null) OnSSCLEDsUpdateEvent?.Invoke(data.led_online, data.leds_semaphore);
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/ssc/leds: " + ex.Message); }
+            catch { }
         }
         else if (topic == "dt/ssc/camera")
         {
             try
             {
                 JSON_SSCCamera data = JsonUtility.FromJson<JSON_SSCCamera>(msg);
-                OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
+                if (data != null) OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
             }
-            catch (Exception ex) { Debug.LogWarning("Error en dt/ssc/camera: " + ex.Message); }
+            catch { }
         }
     }
 
