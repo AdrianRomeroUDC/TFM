@@ -35,9 +35,9 @@ public class InfluxDBClient : MonoBehaviour
         string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
         string isoHasta = hasta.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
 
-        Debug.Log($"<color=cyan>[InfluxDB DEBUG] 🔍 Consultando rango UTC: {isoDesde} hasta {isoHasta}</color>");
+        Debug.Log($"<color=cyan>[InfluxDB] 🔍 Descargando histórico UTC: {isoDesde} hasta {isoHasta}</color>");
 
-        // 2. Consulta Flux: extrae _value (payload), topic y se ordena estrictamente por _time
+        // 2. Consulta Flux optimizada
         string fluxQuery = $@"
             from(bucket: ""{bucket}"")
               |> range(start: {isoDesde}, stop: {isoHasta})
@@ -60,86 +60,78 @@ public class InfluxDBClient : MonoBehaviour
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError($"❌ [InfluxDB DEBUG] Error HTTP {request.responseCode}: {request.error}\n{request.downloadHandler.text}");
+                Debug.LogError($"❌ [InfluxDB] Error HTTP {request.responseCode}: {request.error}\n{request.downloadHandler.text}");
                 yield break;
             }
 
             string csvRespuesta = request.downloadHandler.text;
-            Debug.Log($"<color=cyan>[InfluxDB DEBUG] 📄 CSV recibido con éxito. Tamaño total: {csvRespuesta.Length} caracteres.</color>");
-
-            // 3. Parsear CSV detallado
-            List<RegistroInflux> registros = ParsearCSVConDepuracion(csvRespuesta);
+            List<RegistroInflux> registros = ParsearCSVDirecto(csvRespuesta);
 
             if (registros.Count == 0)
             {
-                Debug.LogWarning("⚠️ [InfluxDB DEBUG] 0 registros válidos tras el parseo del CSV.");
+                Debug.LogWarning("⚠️ [InfluxDB] No se encontraron registros en el rango seleccionado.");
                 yield break;
             }
 
-            Debug.Log($"<color=green>✅ [InfluxDB DEBUG] Total de registros listos para reproducir: {registros.Count}</color>");
-            Debug.Log($"<color=green>⏱️ [InfluxDB DEBUG] Primer evento de la lista -> Hora: {registros[0].timestamp:yyyy-MM-dd HH:mm:ss} | Topic: {registros[0].topic}</color>");
-            Debug.Log($"<color=green>⏱️ [InfluxDB DEBUG] Último evento de la lista -> Hora: {registros[registros.Count - 1].timestamp:yyyy-MM-dd HH:mm:ss} | Topic: {registros[registros.Count - 1].topic}</color>");
+            Debug.Log($"<color=green>✅ [InfluxDB] {registros.Count} eventos descargados y almacenados en memoria. Iniciando reproducción fluida...</color>");
 
             // =======================================================================
-            // ⏰ MOTOR DE RELOJ VIRTUAL CON TRAZA DE INYECCIÓN
+            // 🚀 MOTOR DE REPRODUCCIÓN FLUIDO SIN LAG
             // =======================================================================
-            DateTime tiempoSimulado = desde;
+            double totalSegundosRango = (hasta - desde).TotalSeconds;
+            double segundosSimuladosTranscurridos = 0;
             int idxMensaje = 0;
 
-            while (tiempoSimulado <= hasta)
-            {
-                // Actualizar reloj UI de la cabecera
-                alCambiarTiempo?.Invoke(tiempoSimulado);
+            // Aseguramos orden cronológico estricto
+            registros.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
 
-                // Inyectar todos los mensajes que correspondan a este instante virtual
+            DateTime tiempoInicioReal = registros[0].timestamp;
+
+            while (segundosSimuladosTranscurridos < totalSegundosRango && idxMensaje < registros.Count)
+            {
+                // Avanzar el tiempo simulado basándonos en el DeltaTime real del equipo y la velocidad elegida
+                float deltaReal = Time.deltaTime;
+                segundosSimuladosTranscurridos += deltaReal * Mathf.Max(0.1f, multiplicadorVelocidad);
+
+                // Calcular la hora virtual actual del reloj
+                DateTime tiempoSimuladoLocal = desde.AddSeconds(segundosSimuladosTranscurridos);
+                if (tiempoSimuladoLocal > hasta) tiempoSimuladoLocal = hasta;
+
+                // Actualizar la interfaz de usuario con la hora actual
+                alCambiarTiempo?.Invoke(tiempoSimuladoLocal);
+
+                // Inyectar de golpe todos los mensajes que correspondan a este bloque temporal acumulado
                 while (idxMensaje < registros.Count)
                 {
-                    DateTime tsLocal = registros[idxMensaje].timestamp.ToLocalTime();
+                    DateTime tsMensajeLocal = registros[idxMensaje].timestamp.ToLocalTime();
 
-                    if (tsLocal <= tiempoSimulado)
+                    if (tsMensajeLocal <= tiempoSimuladoLocal)
                     {
                         var reg = registros[idxMensaje];
-
-                        // 🔍 TRAZA INDIVIDUAL DE CADA MENSAJE INYECTADO
-                        Debug.Log($"<color=yellow>[INYECCIÓN HISTÓRICA] Reloj: {tiempoSimulado:HH:mm:ss} | Evento Time: {tsLocal:HH:mm:ss} | Topic: {reg.topic} | Payload: {reg.payloadJson}</color>");
-
                         InyectarMensaje(reg.topic, reg.payloadJson);
                         idxMensaje++;
                     }
                     else
                     {
-                        break;
+                        break; // El mensaje pertenece a un futuro posterior al tiempo simulado actual
                     }
                 }
 
                 yield return null;
-                float delta = Time.deltaTime * Mathf.Max(0.1f, multiplicadorVelocidad);
-                tiempoSimulado = tiempoSimulado.AddSeconds(delta);
             }
 
-            // Inyectar sobrantes al alcanzar el final
-            while (idxMensaje < registros.Count)
-            {
-                var reg = registros[idxMensaje];
-                InyectarMensaje(reg.topic, reg.payloadJson);
-                idxMensaje++;
-            }
-
+            // Marcar fin de reproducción en la UI
             alCambiarTiempo?.Invoke(hasta);
-            Debug.Log("<color=green>✅ [InfluxDB DEBUG] Reproducción histórica completada con éxito.</color>");
+            Debug.Log("<color=green>✅ [InfluxDB] Reproducción histórica finalizada sin retardo.</color>");
         }
     }
 
-    /// <summary>
-    /// Parsea el CSV imprimiendo información de diagnóstico en la consola de Unity
-    /// </summary>
-    private List<RegistroInflux> ParsearCSVConDepuracion(string csvData)
+    private List<RegistroInflux> ParsearCSVDirecto(string csvData)
     {
         List<RegistroInflux> lista = new List<RegistroInflux>();
         string[] lineas = csvData.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 
         int colTime = -1, colValue = -1, colTopic = -1, colMeasurement = -1;
-        int lineasProcesadas = 0;
 
         foreach (string linea in lineas)
         {
@@ -177,13 +169,9 @@ public class InfluxDBClient : MonoBehaviour
                         topic = topicStr,
                         payloadJson = payloadRaw
                     });
-
-                    lineasProcesadas++;
                 }
             }
         }
-
-        Debug.Log($"<color=cyan>[InfluxDB DEBUG] Líneas analizadas del CSV: {lineasProcesadas} registros extraídos correctamente.</color>");
         return lista;
     }
 
@@ -226,6 +214,7 @@ public class InfluxDBClient : MonoBehaviour
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
+        // Tratar exactamente igual que los mensajes de red del broker MQTT
         if (MQTTClient.Instance != null)
         {
             MQTTClient.Instance.ProcesarMensajeExterno(topic, payloadJson);
