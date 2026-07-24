@@ -39,12 +39,13 @@ public class UI_ControladorMenu : MonoBehaviour
     public ModoOrigen modoSeleccionado = ModoOrigen.MQTT_Directo;
     public EstadoSimulacion estadoActual = EstadoSimulacion.Detenido;
 
-    private ModoOrigen? modoEnEjecucion = null;
+    private ModoOrigen? modoEnEjecucion = ModoOrigen.MQTT_Directo; // MQTT activo por defecto al iniciar
 
     private RectTransform rectPanel;
     private RectTransform rectSecciones;
     private float ultimoSegundoActualizado = -1f;
     private Coroutine corrutinaReplayBBDD;
+    private bool historicoCompletado = false;
 
     // Variables estáticas para persistir la selección tras el RESET de escena por cambio de modo
     private static bool autoStartPendiente = false;
@@ -61,6 +62,8 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void Start()
     {
+        historicoCompletado = false;
+
         // --- 1. INICIALIZACIÓN MENÚ LATERAL ---
         if (panelLateral != null)
         {
@@ -114,6 +117,7 @@ public class UI_ControladorMenu : MonoBehaviour
             {
                 modoSeleccionado = toggleModoBBDD.isOn ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
             }
+            modoEnEjecucion = ModoOrigen.MQTT_Directo;
             ActualizarEstadoBotones();
         }
     }
@@ -159,7 +163,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void Update()
     {
-        if (estadoActual == EstadoSimulacion.Detenido || modoEnEjecucion == ModoOrigen.MQTT_Directo)
+        if (!historicoCompletado && (estadoActual == EstadoSimulacion.Detenido || modoEnEjecucion == ModoOrigen.MQTT_Directo))
         {
             if (textoReloj != null && Time.time - ultimoSegundoActualizado >= 1f)
             {
@@ -168,10 +172,6 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
     }
-
-    // =======================================================================
-    // LÓGICA DEL MENÚ LATERAL Y CIERRE FUERA
-    // =======================================================================
 
     public void ToggleMenu()
     {
@@ -203,61 +203,49 @@ public class UI_ControladorMenu : MonoBehaviour
         }
     }
 
-    // =======================================================================
-    // 🎮 CONTROL DE SIMULACIÓN Y BOTÓN PLAY/RESET
-    // =======================================================================
-
     private void OnToggleModoCambiado(bool modoBBDDActivo)
     {
         modoSeleccionado = modoBBDDActivo ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
+        historicoCompletado = false;
 
-        // 🟢 Habilitar el botón Play al cambiar de modo para permitir arrancar
-        if (btnPlay != null) btnPlay.interactable = true;
-        if (btnReset != null) btnReset.interactable = true;
+        // 🟢 Evalúa si el modo seleccionado difiere del que está corriendo para habilitar/deshabilitar Play
+        ActualizarEstadoBotones();
 
         Debug.Log($"<color=cyan>[Simulación] Modo seleccionado en UI: {modoSeleccionado}</color>");
     }
 
     private void ActualizarEstadoBotones()
     {
-        // 🟢 Deshabilitar el botón Play al inicio porque ya arranca funcionando
-        if (btnPlay != null) btnPlay.interactable = false;
+        // El botón Play solo está habilitado si el modo seleccionado es DIFERENTE al modo en ejecución
+        if (btnPlay != null)
+        {
+            btnPlay.interactable = (modoSeleccionado != modoEnEjecucion);
+        }
         if (btnReset != null) btnReset.interactable = true;
     }
 
     public void OnBotonPlayPulsado()
     {
-        if (estadoActual == EstadoSimulacion.Reproduciendo && modoEnEjecucion != modoSeleccionado)
-        {
-            Debug.Log("<color=yellow>⚠️ Cambio de modo detectado. Reseteando la escena...</color>");
+        Debug.Log("<color=yellow>🔄 Botón Play pulsado. Limpiando escena y reseteando...</color>");
 
-            autoStartPendiente = true;
-            autoStartModo = modoSeleccionado;
-            if (inputFechaInicio != null) autoStartFechaIni = inputFechaInicio.text;
-            if (inputHoraInicio != null) autoStartHoraIni = inputHoraInicio.text;
-            if (inputFechaFin != null) autoStartFechaFin = inputFechaFin.text;
-            if (inputHoraFin != null) autoStartHoraFin = inputHoraFin.text;
+        autoStartPendiente = true;
+        autoStartModo = modoSeleccionado;
+        if (inputFechaInicio != null) autoStartFechaIni = inputFechaInicio.text;
+        if (inputHoraInicio != null) autoStartHoraIni = inputHoraInicio.text;
+        if (inputFechaFin != null) autoStartFechaFin = inputFechaFin.text;
+        if (inputHoraFin != null) autoStartHoraFin = inputHoraFin.text;
 
-            RecargarEscenaLimpia();
-            return;
-        }
-
-        if (estadoActual == EstadoSimulacion.Reproduciendo)
-        {
-            Debug.Log("<color=cyan>🔄 Rearmando conexión de simulación...</color>");
-        }
-
-        ArrancarSimulacion();
+        RecargarEscenaLimpia();
     }
 
     private void ArrancarSimulacion()
     {
         estadoActual = EstadoSimulacion.Reproduciendo;
         modoEnEjecucion = modoSeleccionado;
+        historicoCompletado = false;
         Time.timeScale = 1.0f;
 
-        // 🟢 Deshabilitar Play una vez pulsado para que no se pulse repetidas veces
-        if (btnPlay != null) btnPlay.interactable = false;
+        ActualizarEstadoBotones();
 
         if (modoSeleccionado == ModoOrigen.MQTT_Directo)
         {
@@ -306,7 +294,7 @@ public class UI_ControladorMenu : MonoBehaviour
     private void DetenerYResetearEstado()
     {
         estadoActual = EstadoSimulacion.Detenido;
-        modoEnEjecucion = null;
+        modoEnEjecucion = null; // Permite que se pueda volver a pulsar Play
         Time.timeScale = 1.0f;
 
         if (corrutinaReplayBBDD != null)
@@ -319,12 +307,8 @@ public class UI_ControladorMenu : MonoBehaviour
         if (MQTT_InterfaceClient.Instance != null) MQTT_InterfaceClient.Instance.enabled = false;
 
         SetFechasInteractables(true);
-        ActualizarEstadoBotones();
+        if (btnPlay != null) btnPlay.interactable = true;
     }
-
-    // =======================================================================
-    // 🗄️ REPRODUCCIÓN HISTÓRICO BBDD
-    // =======================================================================
 
     private IEnumerator ProcesarHistoricoBBDD(DateTime desde, DateTime hasta)
     {
@@ -352,13 +336,10 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
 
+        historicoCompletado = true;
         Debug.Log("<color=green>✅ Fin de la reproducción BBDD.</color>");
         DetenerYResetearEstado();
     }
-
-    // =======================================================================
-    // 🛠️ UTILIDADES DE FORMATO Y RELOJ
-    // =======================================================================
 
     private void ActualizarTextoReloj(DateTime fechaHora)
     {
