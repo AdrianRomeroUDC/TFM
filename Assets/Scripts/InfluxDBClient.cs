@@ -31,24 +31,57 @@ public class InfluxDBClient : MonoBehaviour
 
     public IEnumerator DescargarYReproducirHistorico(DateTime desde, DateTime hasta, float multiplicadorVelocidad, Action<DateTime> alCambiarTiempo)
     {
-        // 1. Convertir rango UI a formato UTC ISO para InfluxDB
         string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
         string isoHasta = hasta.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
 
-        Debug.Log($"<color=cyan>[InfluxDB] 🔍 Descargando histórico UTC: {isoDesde} hasta {isoHasta}</color>");
+        Debug.Log($"<color=cyan>[InfluxDB] 🔍 Consulta de histórico UTC: {isoDesde} hasta {isoHasta}</color>");
 
-        // 2. Consulta Flux optimizada
-        string fluxQuery = $@"
+        string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
+
+        // =======================================================================
+        // 1. CARGAR ÚLTIMO ESTADO PREVIO (Almacén y Sensores antes de 'isoDesde')
+        // =======================================================================
+        string fluxQueryPrevio = $@"
+            from(bucket: ""{bucket}"")
+              |> range(start: 1970-01-01T00:00:00Z, stop: {isoDesde})
+              |> filter(fn: (r) => r[""_field""] == ""payload"")
+              |> last()";
+
+        using (UnityWebRequest reqPrevio = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(fluxQueryPrevio);
+            reqPrevio.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            reqPrevio.downloadHandler = new DownloadHandlerBuffer();
+
+            reqPrevio.SetRequestHeader("Authorization", "Token " + token);
+            reqPrevio.SetRequestHeader("Content-Type", "application/vnd.flux");
+            reqPrevio.SetRequestHeader("Accept", "text/csv");
+
+            yield return reqPrevio.SendWebRequest();
+
+            if (reqPrevio.result == UnityWebRequest.Result.Success)
+            {
+                List<RegistroInflux> estadosPrevios = ParsearCSVDirecto(reqPrevio.downloadHandler.text);
+                Debug.Log($"<color=cyan>[InfluxDB] 📦 Cargando {estadosPrevios.Count} estados previos para inicializar almacén y sensores al inicio ({desde:HH:mm:ss})...</color>");
+                foreach (var estado in estadosPrevios)
+                {
+                    InyectarMensaje(estado.topic, estado.payloadJson);
+                }
+            }
+        }
+
+        // =======================================================================
+        // 2. DESCARGAR Y REPRODUCIR EL RANGO SELECCIONADO
+        // =======================================================================
+        string fluxQueryRango = $@"
             from(bucket: ""{bucket}"")
               |> range(start: {isoDesde}, stop: {isoHasta})
               |> filter(fn: (r) => r[""_field""] == ""payload"")
               |> sort(columns: [""_time""])";
 
-        string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
-
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
-            byte[] bodyRaw = Encoding.UTF8.GetBytes(fluxQuery);
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(fluxQueryRango);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
 
@@ -69,38 +102,29 @@ public class InfluxDBClient : MonoBehaviour
 
             if (registros.Count == 0)
             {
-                Debug.LogWarning("⚠️ [InfluxDB] No se encontraron registros en el rango seleccionado.");
-                yield break;
+                Debug.LogWarning("⚠️ [InfluxDB] No se encontraron registros dentro del rango seleccionado (se aplicaron únicamente los estados previos).");
+            }
+            else
+            {
+                Debug.Log($"<color=green>✅ [InfluxDB] {registros.Count} eventos listos para reproducción.</color>");
             }
 
-            Debug.Log($"<color=green>✅ [InfluxDB] {registros.Count} eventos descargados y almacenados en memoria. Iniciando reproducción fluida...</color>");
-
-            // =======================================================================
-            // 🚀 MOTOR DE REPRODUCCIÓN FLUIDO SIN LAG
-            // =======================================================================
             double totalSegundosRango = (hasta - desde).TotalSeconds;
             double segundosSimuladosTranscurridos = 0;
             int idxMensaje = 0;
 
-            // Aseguramos orden cronológico estricto
             registros.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
-
-            DateTime tiempoInicioReal = registros[0].timestamp;
 
             while (segundosSimuladosTranscurridos < totalSegundosRango && idxMensaje < registros.Count)
             {
-                // Avanzar el tiempo simulado basándonos en el DeltaTime real del equipo y la velocidad elegida
                 float deltaReal = Time.deltaTime;
                 segundosSimuladosTranscurridos += deltaReal * Mathf.Max(0.1f, multiplicadorVelocidad);
 
-                // Calcular la hora virtual actual del reloj
                 DateTime tiempoSimuladoLocal = desde.AddSeconds(segundosSimuladosTranscurridos);
                 if (tiempoSimuladoLocal > hasta) tiempoSimuladoLocal = hasta;
 
-                // Actualizar la interfaz de usuario con la hora actual
                 alCambiarTiempo?.Invoke(tiempoSimuladoLocal);
 
-                // Inyectar de golpe todos los mensajes que correspondan a este bloque temporal acumulado
                 while (idxMensaje < registros.Count)
                 {
                     DateTime tsMensajeLocal = registros[idxMensaje].timestamp.ToLocalTime();
@@ -113,16 +137,22 @@ public class InfluxDBClient : MonoBehaviour
                     }
                     else
                     {
-                        break; // El mensaje pertenece a un futuro posterior al tiempo simulado actual
+                        break;
                     }
                 }
 
                 yield return null;
             }
 
-            // Marcar fin de reproducción en la UI
+            while (idxMensaje < registros.Count)
+            {
+                var reg = registros[idxMensaje];
+                InyectarMensaje(reg.topic, reg.payloadJson);
+                idxMensaje++;
+            }
+
             alCambiarTiempo?.Invoke(hasta);
-            Debug.Log("<color=green>✅ [InfluxDB] Reproducción histórica finalizada sin retardo.</color>");
+            Debug.Log("<color=green>✅ [InfluxDB] Reproducción histórica finalizada.</color>");
         }
     }
 
@@ -158,17 +188,29 @@ public class InfluxDBClient : MonoBehaviour
                 if (DateTime.TryParse(timeStr, out DateTime ts))
                 {
                     string topicStr = "";
-                    if (colTopic != -1 && columnas.Count > colTopic && !string.IsNullOrEmpty(columnas[colTopic]))
-                        topicStr = columnas[colTopic];
-                    else if (colMeasurement != -1 && columnas.Count > colMeasurement)
-                        topicStr = columnas[colMeasurement];
 
-                    lista.Add(new RegistroInflux
+                    if (colTopic != -1 && columnas.Count > colTopic && !string.IsNullOrEmpty(columnas[colTopic]))
                     {
-                        timestamp = ts,
-                        topic = topicStr,
-                        payloadJson = payloadRaw
-                    });
+                        topicStr = columnas[colTopic];
+                    }
+                    else if (colMeasurement != -1 && columnas.Count > colMeasurement)
+                    {
+                        string m = columnas[colMeasurement];
+                        if (m == "bme680" || m == "bm680") topicStr = "i/bme680";
+                        else if (m == "ldr") topicStr = "i/ldr";
+                        else if (m == "stock") topicStr = "f/i/stock";
+                        else topicStr = m;
+                    }
+
+                    if (!string.IsNullOrEmpty(payloadRaw))
+                    {
+                        lista.Add(new RegistroInflux
+                        {
+                            timestamp = ts,
+                            topic = topicStr,
+                            payloadJson = payloadRaw
+                        });
+                    }
                 }
             }
         }
@@ -214,13 +256,16 @@ public class InfluxDBClient : MonoBehaviour
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
-        // Tratar exactamente igual que los mensajes de red del broker MQTT
-        if (MQTTClient.Instance != null)
+        if (topic == "stock" || topic == "f_i_stock") topic = "f/i/stock";
+        else if (topic == "ldr" || topic == "i_ldr") topic = "i/ldr";
+        else if (topic == "bme680" || topic == "bm680" || topic == "i_bme680" || topic == "i/bm680") topic = "i/bme680";
+
+        if (MQTTClient.Instance != null && MQTTClient.Instance.isActiveAndEnabled)
         {
             MQTTClient.Instance.ProcesarMensajeExterno(topic, payloadJson);
         }
 
-        if (MQTT_InterfaceClient.Instance != null)
+        if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.isActiveAndEnabled)
         {
             MQTT_InterfaceClient.Instance.ProcesarMensajeExterno(topic, payloadJson);
         }

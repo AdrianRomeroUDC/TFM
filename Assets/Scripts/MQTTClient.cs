@@ -8,9 +8,6 @@ using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
-// =================================================================
-// ESTRUCTURAS DE DATOS
-// =================================================================
 [Serializable] public class HBWStockPayload { public string[] piezas; }
 [Serializable] public class VGRPositionData { public float rotation; public float vertical; public float extend; public string ts; }
 [Serializable] public class VGRGripPayload { public bool active; public string ts; }
@@ -77,7 +74,6 @@ public class MQTTClient : MonoBehaviour
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
 
-    // --- EVENTOS ---
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
 
@@ -122,15 +118,19 @@ public class MQTTClient : MonoBehaviour
     void OnEnable()
     {
         estaActivo = true;
-        if (client == null || !client.IsConnected)
-        {
-            Connect();
-        }
     }
 
     void OnDisable()
     {
         estaActivo = false;
+    }
+
+    public void DesconectarRed()
+    {
+        if (client != null && client.IsConnected)
+        {
+            try { client.Disconnect(); } catch { }
+        }
     }
 
     void Update()
@@ -159,6 +159,8 @@ public class MQTTClient : MonoBehaviour
     {
         try
         {
+            if (client != null && client.IsConnected) return;
+
             bool usarSSL = (puerto == 8883);
 
             if (usarSSL)
@@ -187,10 +189,6 @@ public class MQTTClient : MonoBehaviour
 
                 byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
                 client.Subscribe(topics, qos);
-            }
-            else
-            {
-                Debug.LogError("❌ [MQTT Directo] Conexión rechazada por el Broker.");
             }
         }
         catch (Exception ex)

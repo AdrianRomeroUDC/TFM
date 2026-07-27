@@ -39,7 +39,7 @@ public class UI_ControladorMenu : MonoBehaviour
     public ModoOrigen modoSeleccionado = ModoOrigen.MQTT_Directo;
     public EstadoSimulacion estadoActual = EstadoSimulacion.Detenido;
 
-    private ModoOrigen? modoEnEjecucion = ModoOrigen.MQTT_Directo; // MQTT activo por defecto al iniciar
+    private ModoOrigen? modoEnEjecucion = ModoOrigen.MQTT_Directo;
 
     private RectTransform rectPanel;
     private RectTransform rectSecciones;
@@ -47,7 +47,6 @@ public class UI_ControladorMenu : MonoBehaviour
     private Coroutine corrutinaReplayBBDD;
     private bool historicoCompletado = false;
 
-    // Variables estáticas para persistir la selección tras el RESET de escena por cambio de modo
     private static bool autoStartPendiente = false;
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
     private static string autoStartFechaIni = "";
@@ -64,22 +63,16 @@ public class UI_ControladorMenu : MonoBehaviour
     {
         historicoCompletado = false;
 
-        // --- 1. INICIALIZACIÓN MENÚ LATERAL ---
         if (panelLateral != null)
         {
             rectPanel = panelLateral.GetComponent<RectTransform>();
             VerticalLayoutGroup layout = panelLateral.GetComponentInChildren<VerticalLayoutGroup>();
-            if (layout != null)
-            {
-                rectSecciones = layout.GetComponent<RectTransform>();
-            }
+            if (layout != null) rectSecciones = layout.GetComponent<RectTransform>();
             panelLateral.SetActive(false);
         }
 
-        if (fondoCierre != null)
-            fondoCierre.SetActive(false);
+        if (fondoCierre != null) fondoCierre.SetActive(false);
 
-        // --- 2. VALORES POR DEFECTO EN INPUTS ---
         string hoy = DateTime.Now.ToString("dd-MM-yyyy");
         if (inputFechaInicio != null && string.IsNullOrEmpty(inputFechaInicio.text)) inputFechaInicio.text = hoy;
         if (inputFechaFin != null && string.IsNullOrEmpty(inputFechaFin.text)) inputFechaFin.text = hoy;
@@ -88,7 +81,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
         Time.timeScale = 1.0f;
 
-        // --- 3. VERIFICAR REINICIO AUTOMÁTICO ---
+        // --- 🟢 ARRANQUE AUTOMÁTICO AL INICIAR LA ESCENA ---
         if (autoStartPendiente)
         {
             autoStartPendiente = false;
@@ -113,12 +106,12 @@ public class UI_ControladorMenu : MonoBehaviour
         }
         else
         {
-            if (toggleModoBBDD != null)
-            {
-                modoSeleccionado = toggleModoBBDD.isOn ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
-            }
-            modoEnEjecucion = ModoOrigen.MQTT_Directo;
-            ActualizarEstadoBotones();
+            // Arrancar directamente leyendo por MQTT en tiempo real sin esperar
+            if (toggleModoBBDD != null) toggleModoBBDD.isOn = false;
+            modoSeleccionado = ModoOrigen.MQTT_Directo;
+
+            Debug.Log("<color=green>▶️ Conectando a MQTT en tiempo real automáticamente al iniciar...</color>");
+            ArrancarSimulacion();
         }
     }
 
@@ -208,7 +201,6 @@ public class UI_ControladorMenu : MonoBehaviour
         modoSeleccionado = modoBBDDActivo ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
         historicoCompletado = false;
 
-        // 🟢 Evalúa si el modo seleccionado difiere del que está corriendo para habilitar/deshabilitar Play
         ActualizarEstadoBotones();
 
         Debug.Log($"<color=cyan>[Simulación] Modo seleccionado en UI: {modoSeleccionado}</color>");
@@ -216,7 +208,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void ActualizarEstadoBotones()
     {
-        // El botón Play solo está habilitado si el modo seleccionado es DIFERENTE al modo en ejecución
         if (btnPlay != null)
         {
             btnPlay.interactable = (modoSeleccionado != modoEnEjecucion);
@@ -249,15 +240,24 @@ public class UI_ControladorMenu : MonoBehaviour
 
         if (modoSeleccionado == ModoOrigen.MQTT_Directo)
         {
-            if (MQTTClient.Instance != null) MQTTClient.Instance.enabled = true;
-            if (MQTT_InterfaceClient.Instance != null) MQTT_InterfaceClient.Instance.enabled = true;
+            if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.Connect(); }
+            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
 
             Debug.Log("<color=green>▶️ INICIADO: Modo Tiempo Real (MQTT Activo)</color>");
         }
         else if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
-            if (MQTTClient.Instance != null) MQTTClient.Instance.enabled = false;
-            if (MQTT_InterfaceClient.Instance != null) MQTT_InterfaceClient.Instance.enabled = false;
+            if (MQTTClient.Instance != null)
+            {
+                MQTTClient.Instance.enabled = true;
+                MQTTClient.Instance.DesconectarRed();
+            }
+
+            if (MQTT_InterfaceClient.Instance != null)
+            {
+                MQTT_InterfaceClient.Instance.enabled = true;
+                MQTT_InterfaceClient.Instance.DesconectarRed();
+            }
 
             SetFechasInteractables(false);
 
@@ -284,17 +284,13 @@ public class UI_ControladorMenu : MonoBehaviour
     private void RecargarEscenaLimpia()
     {
         Time.timeScale = 1.0f;
-
-        if (MQTTClient.Instance != null) MQTTClient.Instance.enabled = false;
-        if (MQTT_InterfaceClient.Instance != null) MQTT_InterfaceClient.Instance.enabled = false;
-
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     private void DetenerYResetearEstado()
     {
         estadoActual = EstadoSimulacion.Detenido;
-        modoEnEjecucion = null; // Permite que se pueda volver a pulsar Play
+        modoEnEjecucion = null;
         Time.timeScale = 1.0f;
 
         if (corrutinaReplayBBDD != null)
@@ -302,9 +298,6 @@ public class UI_ControladorMenu : MonoBehaviour
             StopCoroutine(corrutinaReplayBBDD);
             corrutinaReplayBBDD = null;
         }
-
-        if (MQTTClient.Instance != null) MQTTClient.Instance.enabled = false;
-        if (MQTT_InterfaceClient.Instance != null) MQTT_InterfaceClient.Instance.enabled = false;
 
         SetFechasInteractables(true);
         if (btnPlay != null) btnPlay.interactable = true;
@@ -322,18 +315,6 @@ public class UI_ControladorMenu : MonoBehaviour
                     (horaMuestra) => ActualizarTextoReloj(horaMuestra)
                 )
             );
-        }
-        else
-        {
-            Debug.LogWarning("⚠️ InfluxDBClient no encontrado en la escena. Ejecutando simulación de prueba...");
-
-            DateTime tiempoSimulado = desde;
-            for (int i = 0; i < 20; i++)
-            {
-                ActualizarTextoReloj(tiempoSimulado);
-                tiempoSimulado = tiempoSimulado.AddSeconds(1);
-                yield return new WaitForSeconds(1.0f / Mathf.Max(0.1f, multiplicadorVelocidad));
-            }
         }
 
         historicoCompletado = true;
@@ -357,9 +338,7 @@ public class UI_ControladorMenu : MonoBehaviour
         fechaFin = DateTime.Today.AddHours(18);
 
         if (inputFechaInicio == null || inputHoraInicio == null || inputFechaFin == null || inputHoraFin == null)
-        {
             return true;
-        }
 
         try
         {
@@ -371,11 +350,8 @@ public class UI_ControladorMenu : MonoBehaviour
 
             string[] formatos = new string[]
             {
-                "dd-MM-yyyy HH:mm:ss",
-                "dd-MM-yyyy HH:mm",
-                "d-M-yyyy HH:mm:ss",
-                "yyyy-MM-dd HH:mm:ss",
-                "yyyy-MM-dd HH:mm"
+                "dd-MM-yyyy HH:mm:ss", "dd-MM-yyyy HH:mm",
+                "d-M-yyyy HH:mm:ss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm"
             };
 
             DateTimeStyles estiloZona = DateTimeStyles.AssumeLocal;

@@ -7,7 +7,6 @@ using UnityEngine;
 using uPLibrary.Networking.M2Mqtt;
 using uPLibrary.Networking.M2Mqtt.Messages;
 
-// --- Estructuras de Datos ---
 [Serializable] public class Bme680Payload { public string ts; public float t; public float h; public float p; public int iaq; public int aq; public float gr; }
 [Serializable] public class LdrPayload { public string ts; public float br; public int ldr; }
 [Serializable] public class CameraPayload { public string ts; public string data; }
@@ -15,7 +14,6 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class Workpiece { public string id; public string type; public string state; }
 [Serializable] public class StockItem { public string location; public Workpiece workpiece; }
 
-// --- Estructuras para Publicar ---
 [Serializable] public class OrderPayload { public string ts; public string type; }
 [Serializable] public class PtuPayload { public string ts; public string cmd; public int degree; }
 [Serializable] public class CamConfigPayload { public string ts; public bool on; public int fps; }
@@ -30,19 +28,15 @@ public class MQTT_InterfaceClient : MonoBehaviour
     private MqttClient client;
     private readonly object lockObject = new object();
 
-    // Flag seguro entre hilos
     private volatile bool estaActivo = true;
 
-    // CACHÉ: Guarda el último stock conocido para la interfaz de pedidos
     public StockPayload UltimoStock { get; private set; }
 
-    // Colas para puente de hilos
     private Queue<Bme680Payload> bmeQueue = new Queue<Bme680Payload>();
     private Queue<LdrPayload> ldrQueue = new Queue<LdrPayload>();
     private Queue<string> camQueue = new Queue<string>();
     private Queue<StockPayload> stockQueue = new Queue<StockPayload>();
 
-    // Eventos
     public event Action<Bme680Payload> OnBmeEnvironmentEvent;
     public event Action<LdrPayload> OnLdrLightEvent;
     public event Action<string> OnCameraImageEvent;
@@ -73,6 +67,14 @@ public class MQTT_InterfaceClient : MonoBehaviour
     void OnDisable()
     {
         estaActivo = false;
+    }
+
+    public void DesconectarRed()
+    {
+        if (client != null && client.IsConnected)
+        {
+            try { client.Disconnect(); } catch { }
+        }
     }
 
     void Update()
@@ -119,20 +121,15 @@ public class MQTT_InterfaceClient : MonoBehaviour
 
                 Debug.Log($"<color=green><b>[MQTT Interfaz] ¡CONECTADO CON ÉXITO! ID: {clientId} en {brokerHost}:{puerto}</b></color>");
             }
-            else
-            {
-                Debug.LogError("[MQTT Interfaz] El broker rechazó la conexión.");
-            }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[MQTT Interfaz] Error al conectar a {brokerHost}:{puerto} -> {ex.Message}");
+            Debug.LogError($"[MQTT Interfaz] Error al conectar: {ex.Message}");
         }
     }
 
     private void OnMessageReceived(object sender, MqttMsgPublishEventArgs e)
     {
-        // Uso de variable de C# pura libre de excepciones de Unity en hilos secundarios
         if (!estaActivo) return;
 
         string topic = e.Topic;
@@ -161,7 +158,7 @@ public class MQTT_InterfaceClient : MonoBehaviour
                 {
                     string msgClean = msg.Replace("True", "true").Replace("False", "false");
 
-                    if (topic == "i/bme680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msgClean));
+                    if (topic == "i/bme680" || topic == "i/bm680") bmeQueue.Enqueue(JsonUtility.FromJson<Bme680Payload>(msgClean));
                     else if (topic == "i/ldr") ldrQueue.Enqueue(JsonUtility.FromJson<LdrPayload>(msgClean));
                     else if (topic == "f/i/stock") stockQueue.Enqueue(JsonUtility.FromJson<StockPayload>(msgClean));
                 }
@@ -170,7 +167,6 @@ public class MQTT_InterfaceClient : MonoBehaviour
         }
     }
 
-    // --- MÉTODOS DE PUBLICACIÓN ---
     private string GetISO8601Timestamp() => DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
     private void PublishJson(string topic, string json)
@@ -178,11 +174,6 @@ public class MQTT_InterfaceClient : MonoBehaviour
         if (client != null && client.IsConnected)
         {
             client.Publish(topic, Encoding.UTF8.GetBytes(json), MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE, false);
-            Debug.Log($"<color=cyan><b>[MQTT Enviado]</b> {topic}: {json}</color>");
-        }
-        else
-        {
-            Debug.LogWarning($"<color=orange>[MQTT Aviso] Intentaste enviar a '{topic}', pero el cliente aún no está conectado.</color>");
         }
     }
 
@@ -228,26 +219,6 @@ public class MQTT_InterfaceClient : MonoBehaviour
     {
         if (client != null && client.IsConnected)
         {
-            try
-            {
-                CamConfigPayload payloadApagado = new CamConfigPayload
-                {
-                    ts = GetISO8601Timestamp(),
-                    on = false,
-                    fps = 15
-                };
-
-                string jsonApagado = JsonUtility.ToJson(payloadApagado);
-
-                client.Publish("c/cam",
-                               Encoding.UTF8.GetBytes(jsonApagado),
-                               MqttMsgBase.QOS_LEVEL_AT_LEAST_ONCE,
-                               false);
-
-                System.Threading.Thread.Sleep(250);
-            }
-            catch { }
-
             try { client.Disconnect(); } catch { }
         }
     }
