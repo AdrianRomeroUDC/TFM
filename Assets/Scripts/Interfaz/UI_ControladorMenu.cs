@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 using TMPro;
 using System;
 using System.Collections;
-using System.Globalization;
+using System.Collections.Generic;
 
 public class UI_ControladorMenu : MonoBehaviour
 {
@@ -21,15 +21,32 @@ public class UI_ControladorMenu : MonoBehaviour
     public TMP_Text textoReloj;
 
     [Header("UI Control de Simulación (Cabecera)")]
-    public Toggle toggleModoBBDD;            // Toggle BBDD (OFF = MQTT, ON = BBDD)
+    public Toggle toggleModoBBDD;            // El botón ON/OFF de BBDD
     public Button btnPlay;                  // Botón PLAY
     public Button btnReset;                 // Botón RESET
 
-    [Header("Inputs de Fecha y Hora")]
-    public TMP_InputField inputFechaInicio;  // DD-MM-YYYY
-    public TMP_InputField inputHoraInicio;   // HH:MM:SS
-    public TMP_InputField inputFechaFin;     // DD-MM-YYYY
-    public TMP_InputField inputHoraFin;      // HH:MM:SS
+    [Header("Botones Multiplicador de Velocidad")]
+    public Button btnSpeedX1;
+    public Button btnSpeedX2;
+    public Button btnSpeedX5;
+
+    [Header("Colores Multiplicadores (Pulsado / Inactivo por Defecto)")]
+    public Color colorVelocidadActiva = new Color(0f, 0.65f, 1f, 1f);   // Azul destacado
+    public Color colorTextoActivo = Color.white;                         // Texto blanco
+    public Color colorVelocidadInactiva = Color.white;                   // Blanco por defecto de Unity
+    public Color colorTextoInactivo = new Color(0.2f, 0.2f, 0.2f, 1f);   // Texto gris/negro nativo
+
+    [Header("Fecha y Hora - INICIO")]
+    public UI_CalendarPicker calendarInicio; // Componente Calendario
+    public TMP_Dropdown dropdownHoraInicio;  // 00 - 23
+    public TMP_Dropdown dropdownMinInicio;   // 00 - 59
+    public TMP_Dropdown dropdownSegInicio;   // 00 - 59
+
+    [Header("Fecha y Hora - FIN")]
+    public UI_CalendarPicker calendarFin;    // Componente Calendario
+    public TMP_Dropdown dropdownHoraFin;     // 00 - 23
+    public TMP_Dropdown dropdownMinFin;      // 00 - 59
+    public TMP_Dropdown dropdownSegFin;      // 00 - 59
 
     [Header("Ajustes de Reproducción BBDD")]
     [Tooltip("Velocidad de reproducción del histórico (1 = Normal, 2 = Doble velocidad)")]
@@ -39,7 +56,7 @@ public class UI_ControladorMenu : MonoBehaviour
     public ModoOrigen modoSeleccionado = ModoOrigen.MQTT_Directo;
     public EstadoSimulacion estadoActual = EstadoSimulacion.Detenido;
 
-    private ModoOrigen? modoEnEjecucion = ModoOrigen.MQTT_Directo;
+    private ModoOrigen? modoEnEjecucion = null;
 
     private RectTransform rectPanel;
     private RectTransform rectSecciones;
@@ -47,22 +64,18 @@ public class UI_ControladorMenu : MonoBehaviour
     private Coroutine corrutinaReplayBBDD;
     private bool historicoCompletado = false;
 
+    // Persistencia tras el reset de escena
     private static bool autoStartPendiente = false;
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
-    private static string autoStartFechaIni = "";
-    private static string autoStartHoraIni = "";
-    private static string autoStartFechaFin = "";
-    private static string autoStartHoraFin = "";
-
-    private void Awake()
-    {
-        VincularEventosUI();
-    }
+    private static DateTime autoStartFechaIni = DateTime.Today.AddHours(8);
+    private static DateTime autoStartFechaFin = DateTime.Today.AddHours(18);
+    private static float autoStartVelocidad = 1.0f;
 
     private void Start()
     {
         historicoCompletado = false;
 
+        // 1. Configuración de paneles
         if (panelLateral != null)
         {
             rectPanel = panelLateral.GetComponent<RectTransform>();
@@ -73,84 +86,85 @@ public class UI_ControladorMenu : MonoBehaviour
 
         if (fondoCierre != null) fondoCierre.SetActive(false);
 
-        string hoy = DateTime.Now.ToString("dd-MM-yyyy");
-        if (inputFechaInicio != null && string.IsNullOrEmpty(inputFechaInicio.text)) inputFechaInicio.text = hoy;
-        if (inputFechaFin != null && string.IsNullOrEmpty(inputFechaFin.text)) inputFechaFin.text = hoy;
-        if (inputHoraInicio != null && string.IsNullOrEmpty(inputHoraInicio.text)) inputHoraInicio.text = "08:00:00";
-        if (inputHoraFin != null && string.IsNullOrEmpty(inputHoraFin.text)) inputHoraFin.text = "18:00:00";
+        // 2. Configuración de tiempo y multiplicadores
+        InicializarControlesTiempo();
+        VincularBotonesVelocidad();
 
-        Time.timeScale = 1.0f;
-
-        // --- 🟢 ARRANQUE AUTOMÁTICO AL INICIAR LA ESCENA ---
-        if (autoStartPendiente)
-        {
-            autoStartPendiente = false;
-
-            bool esBBDD = (autoStartModo == ModoOrigen.BaseDeDatos_Historico);
-            if (toggleModoBBDD != null)
-            {
-                toggleModoBBDD.isOn = esBBDD;
-                modoSeleccionado = autoStartModo;
-            }
-
-            if (esBBDD)
-            {
-                if (inputFechaInicio != null && !string.IsNullOrEmpty(autoStartFechaIni)) inputFechaInicio.text = autoStartFechaIni;
-                if (inputHoraInicio != null && !string.IsNullOrEmpty(autoStartHoraIni)) inputHoraInicio.text = autoStartHoraIni;
-                if (inputFechaFin != null && !string.IsNullOrEmpty(autoStartFechaFin)) inputFechaFin.text = autoStartFechaFin;
-                if (inputHoraFin != null && !string.IsNullOrEmpty(autoStartHoraFin)) inputHoraFin.text = autoStartHoraFin;
-            }
-
-            Debug.Log("<color=green>🔄 Escena reseteada. Arrancando simulación automáticamente...</color>");
-            ArrancarSimulacion();
-        }
-        else
-        {
-            // Arrancar directamente leyendo por MQTT en tiempo real sin esperar
-            if (toggleModoBBDD != null) toggleModoBBDD.isOn = false;
-            modoSeleccionado = ModoOrigen.MQTT_Directo;
-
-            Debug.Log("<color=green>▶️ Conectando a MQTT en tiempo real automáticamente al iniciar...</color>");
-            ArrancarSimulacion();
-        }
-    }
-
-    private void VincularEventosUI()
-    {
-        if (toggleModoBBDD != null)
-        {
-            toggleModoBBDD.onValueChanged.RemoveAllListeners();
-            toggleModoBBDD.onValueChanged.AddListener(OnToggleModoCambiado);
-        }
-
+        // 3. Vincular botones principales
         if (btnPlay != null)
         {
-            btnPlay.onClick.RemoveAllListeners();
+            btnPlay.onClick.RemoveListener(OnBotonPlayPulsado);
             btnPlay.onClick.AddListener(OnBotonPlayPulsado);
         }
 
         if (btnReset != null)
         {
-            btnReset.onClick.RemoveAllListeners();
+            btnReset.onClick.RemoveListener(OnBotonResetPulsado);
             btnReset.onClick.AddListener(OnBotonResetPulsado);
         }
 
-        if (inputFechaInicio != null)
+        // 4. Configuración del Toggle
+        if (toggleModoBBDD != null)
         {
-            inputFechaInicio.onEndEdit.RemoveAllListeners();
-            inputFechaInicio.onEndEdit.AddListener((texto) => {
-                if (!string.IsNullOrEmpty(texto) && texto.Contains("/"))
-                    inputFechaInicio.text = texto.Replace('/', '-');
-            });
+            toggleModoBBDD.onValueChanged.RemoveListener(OnToggleModoCambiado);
+            toggleModoBBDD.onValueChanged.AddListener(OnToggleModoCambiado);
         }
 
-        if (inputFechaFin != null)
+        Time.timeScale = 1.0f;
+
+        // 5. Autostart / Estado inicial
+        if (autoStartPendiente)
         {
-            inputFechaFin.onEndEdit.RemoveAllListeners();
-            inputFechaFin.onEndEdit.AddListener((texto) => {
-                if (!string.IsNullOrEmpty(texto) && texto.Contains("/"))
-                    inputFechaFin.text = texto.Replace('/', '-');
-            });
+            autoStartPendiente = false;
+            bool esBBDD = (autoStartModo == ModoOrigen.BaseDeDatos_Historico);
+
+            if (toggleModoBBDD != null)
+            {
+                // 🟢 Evitamos disparar la corrutina de animación cuando el objeto está inactivo
+                toggleModoBBDD.SetIsOnWithoutNotify(esBBDD);
+
+                UI_ToggleSwitch switchComp = toggleModoBBDD.GetComponent<UI_ToggleSwitch>();
+                if (switchComp != null)
+                {
+                    switchComp.ActualizarEstadoInstantaneo(esBBDD);
+                }
+            }
+
+            SeleccionarVelocidad(autoStartVelocidad);
+            OnToggleModoCambiado(esBBDD);
+
+            if (esBBDD)
+            {
+                if (calendarInicio != null) calendarInicio.SetFechaInicial(autoStartFechaIni);
+                if (calendarFin != null) calendarFin.SetFechaInicial(autoStartFechaFin);
+
+                SetDropdownValor(dropdownHoraInicio, autoStartFechaIni.Hour);
+                SetDropdownValor(dropdownMinInicio, autoStartFechaIni.Minute);
+                SetDropdownValor(dropdownSegInicio, autoStartFechaIni.Second);
+
+                SetDropdownValor(dropdownHoraFin, autoStartFechaFin.Hour);
+                SetDropdownValor(dropdownMinFin, autoStartFechaFin.Minute);
+                SetDropdownValor(dropdownSegFin, autoStartFechaFin.Second);
+            }
+
+            ArrancarSimulacion();
+        }
+        else
+        {
+            if (toggleModoBBDD != null)
+            {
+                toggleModoBBDD.SetIsOnWithoutNotify(false);
+
+                UI_ToggleSwitch switchComp = toggleModoBBDD.GetComponent<UI_ToggleSwitch>();
+                if (switchComp != null)
+                {
+                    switchComp.ActualizarEstadoInstantaneo(false);
+                }
+            }
+
+            SeleccionarVelocidad(1.0f);
+            OnToggleModoCambiado(false);
+            ArrancarSimulacion();
         }
     }
 
@@ -166,65 +180,142 @@ public class UI_ControladorMenu : MonoBehaviour
         }
     }
 
-    public void ToggleMenu()
+    // ====================================================================
+    // ⚡ LÓGICA Y ASPECTO DEL MULTIPLICADOR DE VELOCIDAD
+    // ====================================================================
+
+    private void VincularBotonesVelocidad()
     {
-        if (panelLateral != null)
+        if (btnSpeedX1 != null)
         {
-            bool nuevoEstado = !panelLateral.activeSelf;
-            CambiarEstadoMenu(nuevoEstado);
+            btnSpeedX1.onClick.RemoveAllListeners();
+            btnSpeedX1.onClick.AddListener(() => SeleccionarVelocidad(1.0f));
+        }
+
+        if (btnSpeedX2 != null)
+        {
+            btnSpeedX2.onClick.RemoveAllListeners();
+            btnSpeedX2.onClick.AddListener(() => SeleccionarVelocidad(2.0f));
+        }
+
+        if (btnSpeedX5 != null)
+        {
+            btnSpeedX5.onClick.RemoveAllListeners();
+            btnSpeedX5.onClick.AddListener(() => SeleccionarVelocidad(5.0f));
         }
     }
 
-    public void CerrarDesdeFuera()
+    public void SeleccionarVelocidad(float velocidad)
     {
-        CambiarEstadoMenu(false);
+        multiplicadorVelocidad = velocidad;
+        autoStartVelocidad = velocidad;
+
+        ActualizarVisualizacionVelocidad();
     }
 
-    private void CambiarEstadoMenu(bool activar)
+    private void ActualizarVisualizacionVelocidad()
     {
-        if (panelLateral != null) panelLateral.SetActive(activar);
-        if (fondoCierre != null) fondoCierre.SetActive(activar);
+        ActualizarColorBotonSpeed(btnSpeedX1, Mathf.Approximately(multiplicadorVelocidad, 1.0f));
+        ActualizarColorBotonSpeed(btnSpeedX2, Mathf.Approximately(multiplicadorVelocidad, 2.0f));
+        ActualizarColorBotonSpeed(btnSpeedX5, Mathf.Approximately(multiplicadorVelocidad, 5.0f));
+    }
 
-        if (activar)
+    private void ActualizarColorBotonSpeed(Button btn, bool estaSeleccionado)
+    {
+        if (btn == null) return;
+
+        Image img = btn.GetComponent<Image>();
+        if (img != null)
         {
-            if (rectSecciones != null) LayoutRebuilder.MarkLayoutForRebuild(rectSecciones);
-            if (rectPanel != null) LayoutRebuilder.MarkLayoutForRebuild(rectPanel);
+            img.color = estaSeleccionado ? colorVelocidadActiva : colorVelocidadInactiva;
         }
-        else
+
+        TMP_Text txt = btn.GetComponentInChildren<TMP_Text>();
+        if (txt != null)
         {
-            UI_SeccionAcordeon.CerrarCualquierSeccionAbierta();
+            txt.color = estaSeleccionado ? colorTextoActivo : colorTextoInactivo;
         }
     }
 
-    private void OnToggleModoCambiado(bool modoBBDDActivo)
+    // ====================================================================
+    // CONTROL DEL TOGGLE (Lógica de Negocio)
+    // ====================================================================
+
+    public void OnToggleModoCambiado(bool modoBBDDActivo)
     {
         modoSeleccionado = modoBBDDActivo ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
         historicoCompletado = false;
 
         ActualizarEstadoBotones();
+    }
 
-        Debug.Log($"<color=cyan>[Simulación] Modo seleccionado en UI: {modoSeleccionado}</color>");
+    // ====================================================================
+    // CONFIGURACIÓN DE DROPDOWNS Y TIEMPO
+    // ====================================================================
+
+    private void InicializarControlesTiempo()
+    {
+        List<string> horas = new List<string>();
+        for (int i = 0; i < 24; i++) horas.Add(i.ToString("D2"));
+
+        List<string> minSeg = new List<string>();
+        for (int i = 0; i < 60; i++) minSeg.Add(i.ToString("D2"));
+
+        PoblarDropdown(dropdownHoraInicio, horas, 8);
+        PoblarDropdown(dropdownMinInicio, minSeg, 0);
+        PoblarDropdown(dropdownSegInicio, minSeg, 0);
+
+        PoblarDropdown(dropdownHoraFin, horas, 18);
+        PoblarDropdown(dropdownMinFin, minSeg, 0);
+        PoblarDropdown(dropdownSegFin, minSeg, 0);
+
+        if (calendarInicio != null) calendarInicio.SetFechaInicial(DateTime.Today);
+        if (calendarFin != null) calendarFin.SetFechaInicial(DateTime.Today);
+    }
+
+    private void PoblarDropdown(TMP_Dropdown dropdown, List<string> opciones, int indiceDefecto)
+    {
+        if (dropdown == null) return;
+        dropdown.ClearOptions();
+        dropdown.AddOptions(opciones);
+        dropdown.value = Mathf.Clamp(indiceDefecto, 0, opciones.Count - 1);
+        dropdown.RefreshShownValue();
+
+        if (dropdown.template != null)
+        {
+            ScrollRect scrollRect = dropdown.template.GetComponent<ScrollRect>();
+            if (scrollRect != null)
+            {
+                scrollRect.scrollSensitivity = 50f;
+            }
+        }
+    }
+
+    private void SetDropdownValor(TMP_Dropdown dropdown, int valor)
+    {
+        if (dropdown != null && dropdown.options.Count > 0)
+        {
+            dropdown.value = Mathf.Clamp(valor, 0, dropdown.options.Count - 1);
+            dropdown.RefreshShownValue();
+        }
     }
 
     private void ActualizarEstadoBotones()
     {
-        if (btnPlay != null)
-        {
-            btnPlay.interactable = (modoSeleccionado != modoEnEjecucion);
-        }
+        if (btnPlay != null) btnPlay.interactable = (modoSeleccionado != modoEnEjecucion);
         if (btnReset != null) btnReset.interactable = true;
     }
 
     public void OnBotonPlayPulsado()
     {
-        Debug.Log("<color=yellow>🔄 Botón Play pulsado. Limpiando escena y reseteando...</color>");
-
         autoStartPendiente = true;
         autoStartModo = modoSeleccionado;
-        if (inputFechaInicio != null) autoStartFechaIni = inputFechaInicio.text;
-        if (inputHoraInicio != null) autoStartHoraIni = inputHoraInicio.text;
-        if (inputFechaFin != null) autoStartFechaFin = inputFechaFin.text;
-        if (inputHoraFin != null) autoStartHoraFin = inputHoraFin.text;
+
+        if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
+        {
+            autoStartFechaIni = fIni;
+            autoStartFechaFin = fFin;
+        }
 
         RecargarEscenaLimpia();
     }
@@ -243,32 +334,23 @@ public class UI_ControladorMenu : MonoBehaviour
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.Connect(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
 
-            Debug.Log("<color=green>▶️ INICIADO: Modo Tiempo Real (MQTT Activo)</color>");
+            Debug.Log("<color=green>▶️ EN DIRECTO: Escuchando MQTT en tiempo real...</color>");
         }
         else if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
-            if (MQTTClient.Instance != null)
-            {
-                MQTTClient.Instance.enabled = true;
-                MQTTClient.Instance.DesconectarRed();
-            }
+            if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
+            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
 
-            if (MQTT_InterfaceClient.Instance != null)
-            {
-                MQTT_InterfaceClient.Instance.enabled = true;
-                MQTT_InterfaceClient.Instance.DesconectarRed();
-            }
-
-            SetFechasInteractables(false);
+            SetUIInteractables(false);
 
             if (ObtenerRangoFechas(out DateTime desde, out DateTime hasta))
             {
-                Debug.Log($"<color=green>▶️ INICIADO HISTÓRICO BBDD | Desde: {desde:dd-MM-yyyy HH:mm:ss} Hasta: {hasta:dd-MM-yyyy HH:mm:ss}</color>");
+                Debug.Log($"<color=green>▶️ INICIANDO HISTÓRICO BBDD | Desde: {desde:dd-MM-yyyy HH:mm:ss} Hasta: {hasta:dd-MM-yyyy HH:mm:ss}</color>");
                 corrutinaReplayBBDD = StartCoroutine(ProcesarHistoricoBBDD(desde, hasta));
             }
             else
             {
-                Debug.LogError("❌ Formato de fecha u hora incorrecto.");
+                Debug.LogError("❌ Error al construir las fechas desde los controles UI.");
                 DetenerYResetearEstado();
             }
         }
@@ -277,7 +359,6 @@ public class UI_ControladorMenu : MonoBehaviour
     public void OnBotonResetPulsado()
     {
         autoStartPendiente = false;
-        Debug.Log("<color=red>🔄 RESET: Recargando escena limpia de Unity...</color>");
         RecargarEscenaLimpia();
     }
 
@@ -299,7 +380,7 @@ public class UI_ControladorMenu : MonoBehaviour
             corrutinaReplayBBDD = null;
         }
 
-        SetFechasInteractables(true);
+        SetUIInteractables(true);
         if (btnPlay != null) btnPlay.interactable = true;
     }
 
@@ -311,7 +392,7 @@ public class UI_ControladorMenu : MonoBehaviour
                 InfluxDBClient.Instance.DescargarYReproducirHistorico(
                     desde,
                     hasta,
-                    multiplicadorVelocidad,
+                    () => multiplicadorVelocidad,
                     (horaMuestra) => ActualizarTextoReloj(horaMuestra)
                 )
             );
@@ -320,6 +401,44 @@ public class UI_ControladorMenu : MonoBehaviour
         historicoCompletado = true;
         Debug.Log("<color=green>✅ Fin de la reproducción BBDD.</color>");
         DetenerYResetearEstado();
+    }
+
+    private bool ObtenerRangoFechas(out DateTime fechaInicio, out DateTime fechaFin)
+    {
+        fechaInicio = DateTime.Now;
+        fechaFin = DateTime.Now;
+
+        try
+        {
+            DateTime diaIni = (calendarInicio != null) ? calendarInicio.FechaSeleccionada : DateTime.Today;
+            int hIni = ObtenerValorDropdown(dropdownHoraInicio, 8);
+            int mIni = ObtenerValorDropdown(dropdownMinInicio, 0);
+            int sIni = ObtenerValorDropdown(dropdownSegInicio, 0);
+            fechaInicio = new DateTime(diaIni.Year, diaIni.Month, diaIni.Day, hIni, mIni, sIni);
+
+            DateTime diaFin = (calendarFin != null) ? calendarFin.FechaSeleccionada : DateTime.Today;
+            int hFin = ObtenerValorDropdown(dropdownHoraFin, 18);
+            int mFin = ObtenerValorDropdown(dropdownMinFin, 0);
+            int sFin = ObtenerValorDropdown(dropdownSegFin, 0);
+            fechaFin = new DateTime(diaFin.Year, diaFin.Month, diaFin.Day, hFin, mFin, sFin);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error leyendo controles de fecha/hora: {ex.Message}");
+            return false;
+        }
+    }
+
+    private int ObtenerValorDropdown(TMP_Dropdown dropdown, int valorPorDefecto)
+    {
+        if (dropdown != null && dropdown.options.Count > dropdown.value)
+        {
+            if (int.TryParse(dropdown.options[dropdown.value].text, out int res))
+                return res;
+        }
+        return valorPorDefecto;
     }
 
     private void ActualizarTextoReloj(DateTime fechaHora)
@@ -332,49 +451,47 @@ public class UI_ControladorMenu : MonoBehaviour
         }
     }
 
-    private bool ObtenerRangoFechas(out DateTime fechaInicio, out DateTime fechaFin)
+    private void SetUIInteractables(bool estado)
     {
-        fechaInicio = DateTime.Today.AddHours(8);
-        fechaFin = DateTime.Today.AddHours(18);
+        if (calendarInicio != null) calendarInicio.SetInteractable(estado);
+        if (calendarFin != null) calendarFin.SetInteractable(estado);
 
-        if (inputFechaInicio == null || inputHoraInicio == null || inputFechaFin == null || inputHoraFin == null)
-            return true;
+        if (dropdownHoraInicio != null) dropdownHoraInicio.interactable = estado;
+        if (dropdownMinInicio != null) dropdownMinInicio.interactable = estado;
+        if (dropdownSegInicio != null) dropdownSegInicio.interactable = estado;
 
-        try
-        {
-            if (inputFechaInicio.text.Contains("/")) inputFechaInicio.text = inputFechaInicio.text.Replace('/', '-');
-            if (inputFechaFin.text.Contains("/")) inputFechaFin.text = inputFechaFin.text.Replace('/', '-');
+        if (dropdownHoraFin != null) dropdownHoraFin.interactable = estado;
+        if (dropdownMinFin != null) dropdownMinFin.interactable = estado;
+        if (dropdownSegFin != null) dropdownSegFin.interactable = estado;
 
-            string stringInicio = $"{inputFechaInicio.text} {inputHoraInicio.text}";
-            string stringFin = $"{inputFechaFin.text} {inputHoraFin.text}";
-
-            string[] formatos = new string[]
-            {
-                "dd-MM-yyyy HH:mm:ss", "dd-MM-yyyy HH:mm",
-                "d-M-yyyy HH:mm:ss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm"
-            };
-
-            DateTimeStyles estiloZona = DateTimeStyles.AssumeLocal;
-
-            bool inicioOK = DateTime.TryParseExact(stringInicio, formatos, CultureInfo.InvariantCulture, estiloZona, out fechaInicio);
-            if (!inicioOK) inicioOK = DateTime.TryParse(stringInicio, CultureInfo.InvariantCulture, estiloZona, out fechaInicio);
-
-            bool finOK = DateTime.TryParseExact(stringFin, formatos, CultureInfo.InvariantCulture, estiloZona, out fechaFin);
-            if (!finOK) finOK = DateTime.TryParse(stringFin, CultureInfo.InvariantCulture, estiloZona, out fechaFin);
-
-            return inicioOK && finOK;
-        }
-        catch
-        {
-            return false;
-        }
+        if (btnSpeedX1 != null) btnSpeedX1.interactable = true;
+        if (btnSpeedX2 != null) btnSpeedX2.interactable = true;
+        if (btnSpeedX5 != null) btnSpeedX5.interactable = true;
     }
 
-    private void SetFechasInteractables(bool estado)
+    public void ToggleMenu()
     {
-        if (inputFechaInicio != null) inputFechaInicio.interactable = estado;
-        if (inputHoraInicio != null) inputHoraInicio.interactable = estado;
-        if (inputFechaFin != null) inputFechaFin.interactable = estado;
-        if (inputHoraFin != null) inputHoraFin.interactable = estado;
+        if (panelLateral != null) CambiarEstadoMenu(!panelLateral.activeSelf);
+    }
+
+    public void CerrarDesdeFuera()
+    {
+        CambiarEstadoMenu(false);
+    }
+
+    private void CambiarEstadoMenu(bool activar)
+    {
+        if (panelLateral != null) panelLateral.SetActive(activar);
+        if (fondoCierre != null) fondoCierre.SetActive(activar);
+
+        if (activar)
+        {
+            if (rectSecciones != null) LayoutRebuilder.MarkLayoutForRebuild(rectSecciones);
+            if (rectPanel != null) LayoutRebuilder.MarkLayoutForRebuild(rectPanel);
+        }
+        else
+        {
+            UI_SeccionAcordeon.CerrarCualquierSeccionAbierta();
+        }
     }
 }

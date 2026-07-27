@@ -29,7 +29,7 @@ public class InfluxDBClient : MonoBehaviour
         else { Destroy(gameObject); return; }
     }
 
-    public IEnumerator DescargarYReproducirHistorico(DateTime desde, DateTime hasta, float multiplicadorVelocidad, Action<DateTime> alCambiarTiempo)
+    public IEnumerator DescargarYReproducirHistorico(DateTime desde, DateTime hasta, Func<float> obtenerVelocidad, Action<DateTime> alCambiarTiempo)
     {
         string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
         string isoHasta = hasta.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -62,7 +62,7 @@ public class InfluxDBClient : MonoBehaviour
             if (reqPrevio.result == UnityWebRequest.Result.Success)
             {
                 List<RegistroInflux> estadosPrevios = ParsearCSVDirecto(reqPrevio.downloadHandler.text);
-                Debug.Log($"<color=cyan>[InfluxDB] 📦 Cargando {estadosPrevios.Count} estados previos para inicializar almacén y sensores al inicio ({desde:HH:mm:ss})...</color>");
+                Debug.Log($"<color=cyan>[InfluxDB] 📦 Cargando {estadosPrevios.Count} estados previos para inicializar al inicio ({desde:HH:mm:ss})...</color>");
                 foreach (var estado in estadosPrevios)
                 {
                     InyectarMensaje(estado.topic, estado.payloadJson);
@@ -102,7 +102,7 @@ public class InfluxDBClient : MonoBehaviour
 
             if (registros.Count == 0)
             {
-                Debug.LogWarning("⚠️ [InfluxDB] No se encontraron registros dentro del rango seleccionado (se aplicaron únicamente los estados previos).");
+                Debug.LogWarning("⚠️ [InfluxDB] No se encontraron registros dentro del rango seleccionado.");
             }
             else
             {
@@ -115,10 +115,13 @@ public class InfluxDBClient : MonoBehaviour
 
             registros.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
 
-            while (segundosSimuladosTranscurridos < totalSegundosRango && idxMensaje < registros.Count)
+            while (segundosSimuladosTranscurridos < totalSegundosRango)
             {
                 float deltaReal = Time.deltaTime;
-                segundosSimuladosTranscurridos += deltaReal * Mathf.Max(0.1f, multiplicadorVelocidad);
+
+                // Lee la velocidad actual en cada frame
+                float velActual = (obtenerVelocidad != null) ? obtenerVelocidad() : 1.0f;
+                segundosSimuladosTranscurridos += deltaReal * Mathf.Max(0.1f, velActual);
 
                 DateTime tiempoSimuladoLocal = desde.AddSeconds(segundosSimuladosTranscurridos);
                 if (tiempoSimuladoLocal > hasta) tiempoSimuladoLocal = hasta;

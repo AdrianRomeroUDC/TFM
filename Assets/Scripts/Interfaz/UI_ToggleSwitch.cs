@@ -42,6 +42,14 @@ public class UI_ToggleSwitch : MonoBehaviour
 
     private void OnToggleChanged(bool estaActivado)
     {
+        // 🟢 CLAVE: Si el objeto está inactivo en la jerarquía (menú cerrado), 
+        // no podemos iniciar Corrutinas en Unity. Aplicamos el cambio de forma instantánea.
+        if (!gameObject.activeInHierarchy)
+        {
+            ActualizarEstadoInstantaneo(estaActivado);
+            return;
+        }
+
         if (corrutinaAnimacion != null) StopCoroutine(corrutinaAnimacion);
         corrutinaAnimacion = StartCoroutine(AnimarSwitch(estaActivado));
     }
@@ -59,14 +67,12 @@ public class UI_ToggleSwitch : MonoBehaviour
         {
             t += Time.deltaTime * velocidadTransicion;
 
-            // CORREGIDO: Usamos posActual.y
             if (handleTransform != null)
             {
                 float nuevaX = Mathf.Lerp(posActual.x, posXDestino, t);
                 handleTransform.anchoredPosition = new Vector2(nuevaX, posActual.y);
             }
 
-            // Animamos el color del fondo
             if (backgroundImage != null)
             {
                 backgroundImage.color = Color.Lerp(colorActual, colorDestino, t);
@@ -76,7 +82,7 @@ public class UI_ToggleSwitch : MonoBehaviour
         }
     }
 
-    private void ActualizarEstadoInstantaneo(bool activado)
+    public void ActualizarEstadoInstantaneo(bool activado)
     {
         if (handleTransform != null)
         {
