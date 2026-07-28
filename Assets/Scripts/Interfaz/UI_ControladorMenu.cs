@@ -286,13 +286,27 @@ public class UI_ControladorMenu : MonoBehaviour
             esPausado = false;
         }
 
-        ActualizarVisualBotonPlay();
         EvaluarEstadoBotonPlay();
+    }
+
+    private bool HayCambioEnFechasEnEjecucion()
+    {
+        if (modoEnEjecucion != ModoOrigen.BaseDeDatos_Historico) return false;
+        if (fechaIniEnEjecucion == null || fechaFinEnEjecucion == null) return false;
+
+        if (ObtenerRangoFechas(out DateTime fIniSel, out DateTime fFinSel))
+        {
+            return (fIniSel != fechaIniEnEjecucion.Value) || (fFinSel != fechaFinEnEjecucion.Value);
+        }
+
+        return false;
     }
 
     private void EvaluarEstadoBotonPlay()
     {
         if (btnPlay == null) return;
+
+        ActualizarVisualBotonPlay();
 
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
         {
@@ -436,7 +450,6 @@ public class UI_ControladorMenu : MonoBehaviour
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
 
             Debug.Log("<color=green>▶️ EN DIRECTO: Escuchando MQTT en tiempo real...</color>");
-            ActualizarVisualBotonPlay();
             EvaluarEstadoBotonPlay();
         }
         else if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
@@ -453,7 +466,6 @@ public class UI_ControladorMenu : MonoBehaviour
                 SetVisibilidadRelojSimulacion(true);
                 ActualizarTextoRelojSimulacion(desde);
 
-                ActualizarVisualBotonPlay();
                 EvaluarEstadoBotonPlay();
 
                 Debug.Log($"<color=green>▶️ INICIANDO HISTÓRICO BBDD | Desde: {desde:dd-MM-yyyy HH:mm:ss} Hasta: {hasta:dd-MM-yyyy HH:mm:ss}</color>");
@@ -490,7 +502,6 @@ public class UI_ControladorMenu : MonoBehaviour
         }
 
         SetUIInteractables(true);
-        ActualizarVisualBotonPlay();
         EvaluarEstadoBotonPlay();
     }
 
@@ -524,8 +535,20 @@ public class UI_ControladorMenu : MonoBehaviour
 
         if (textoBotonPlay != null)
         {
-            bool estaReproduciendoBBDD = (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso && !esPausado);
-            textoBotonPlay.text = estaReproduciendoBBDD ? simboloPause : simboloPlay;
+            bool hayCambioFechas = HayCambioEnFechasEnEjecucion();
+
+            bool mostrarPausa = (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
+                             && simulacionEnCurso
+                             && !esPausado
+                             && !hayCambioFechas;
+
+            textoBotonPlay.text = mostrarPausa ? simboloPause : simboloPlay;
+
+            // 🟢 Margen inferior de 2.5f aplicado únicamente cuando el texto es el símbolo de pausa
+            Vector4 margin = textoBotonPlay.margin;
+            margin.w = (textoBotonPlay.text == simboloPause) ? 2.5f : 0f;
+            textoBotonPlay.margin = margin;
+
             textoBotonPlay.ForceMeshUpdate();
         }
     }
