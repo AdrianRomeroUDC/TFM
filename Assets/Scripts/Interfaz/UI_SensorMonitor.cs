@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Text.RegularExpressions;
+using System.Collections;
 
 public class UI_SensorsMonitor : MonoBehaviour
 {
@@ -19,7 +20,7 @@ public class UI_SensorsMonitor : MonoBehaviour
     public Toggle toggleSensores;          // El botón ON/OFF de los sensores
     public Image imagenFondoToggle;        // El 'Background' del botón ON/OFF
     public GameObject panelSensores;       // El panel con la información gráfica de los sensores
-    public TMP_Dropdown dropdownPeriodo;   // Dropdown del tiempo de muestreo
+    public TMP_Dropdown dropdownPeriodo;   // Dropdown del tiempo de muestreo (05s, 10s, etc.)
 
     // Colores de estado para el botón Toggle (Verde / Rojo)
     private readonly Color colorVerdeEncendido = new Color(0.2f, 0.75f, 0.2f, 1f);
@@ -33,19 +34,40 @@ public class UI_SensorsMonitor : MonoBehaviour
             imgCalidadAireLED.color = Color.clear;
         }
 
-        // 2. Configuración inicial del Dropdown
+        // 2. Configuración inicial del Dropdown (sin borrar otros eventos)
         if (dropdownPeriodo != null)
         {
+            dropdownPeriodo.onValueChanged.RemoveListener(CambiarPeriodoSensores);
             dropdownPeriodo.onValueChanged.AddListener(CambiarPeriodoSensores);
-            CambiarPeriodoSensores(dropdownPeriodo.value);
         }
 
-        // 3. Configuración inicial del Toggle
+        // 3. Configuración inicial del Toggle (🟢 Mantiene intacto el script de desplazamiento UI_ToggleSwitch)
         if (toggleSensores != null)
         {
+            toggleSensores.onValueChanged.RemoveListener(ToggleMostrarPanel);
             toggleSensores.onValueChanged.AddListener(ToggleMostrarPanel);
+
+            // Sincronizar estado inicial visualmente si tiene componente UI_ToggleSwitch
+            UI_ToggleSwitch switchComp = toggleSensores.GetComponent<UI_ToggleSwitch>();
+            if (switchComp != null)
+            {
+                switchComp.ActualizarEstadoInstantaneo(toggleSensores.isOn);
+            }
+
             ToggleMostrarPanel(toggleSensores.isOn); // Aplicar estado inicial
         }
+
+        // 4. Enviar el período inicial (5s por defecto) a c/ldr y c/bme680 al iniciar
+        StartCoroutine(EnviarPeriodoInicialMqtt());
+    }
+
+    private IEnumerator EnviarPeriodoInicialMqtt()
+    {
+        // Esperamos 0.2s para asegurar que la conexión con el broker MQTT se haya completado
+        yield return new WaitForSeconds(0.2f);
+
+        int indiceInicial = (dropdownPeriodo != null) ? dropdownPeriodo.value : 0;
+        CambiarPeriodoSensores(indiceInicial);
     }
 
     void OnEnable()
@@ -95,23 +117,33 @@ public class UI_SensorsMonitor : MonoBehaviour
     }
 
     /// <summary>
-    /// Envia por MQTT el periodo de muestreo seleccionado en el Dropdown
+    /// Envía por MQTT el periodo de muestreo seleccionado en el Dropdown
     /// </summary>
     public void CambiarPeriodoSensores(int index)
     {
-        if (dropdownPeriodo == null) return;
+        int segundos = 5; // Valor por defecto si no se puede parsear
 
-        string textoOpcion = dropdownPeriodo.options[index].text;
-        string soloNumeros = Regex.Replace(textoOpcion, @"[^\d]", "");
-
-        if (int.TryParse(soloNumeros, out int segundos))
+        if (dropdownPeriodo != null && dropdownPeriodo.options.Count > index)
         {
-            if (MQTT_InterfaceClient.Instance != null)
+            string textoOpcion = dropdownPeriodo.options[index].text;
+            string soloNumeros = Regex.Replace(textoOpcion, @"[^\d]", "");
+
+            if (!int.TryParse(soloNumeros, out segundos))
             {
-                MQTT_InterfaceClient.Instance.SendLdrPeriod(segundos);
-                MQTT_InterfaceClient.Instance.SendBme680Period(segundos);
-                Debug.Log($"<color=yellow>[MQTT] Periodo de sensores actualizado a {segundos}s</color>");
+                segundos = 5;
             }
+        }
+
+        EnviarPeriodosAMqtt(segundos);
+    }
+
+    private void EnviarPeriodosAMqtt(int segundos)
+    {
+        if (MQTT_InterfaceClient.Instance != null)
+        {
+            MQTT_InterfaceClient.Instance.SendLdrPeriod(segundos);
+            MQTT_InterfaceClient.Instance.SendBme680Period(segundos);
+            Debug.Log($"<color=yellow>[MQTT] Periodo enviado a 'c/ldr' y 'c/bme680': {segundos}s</color>");
         }
     }
 

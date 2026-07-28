@@ -8,6 +8,9 @@ using System.Collections.Generic;
 
 public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
 {
+    // 🟢 Evento añadido para avisar a UI_ControladorMenu cuando el usuario cambia el día
+    public event Action<DateTime> OnFechaSeleccionada;
+
     public DateTime FechaSeleccionada { get; private set; } = DateTime.Today;
 
     private GameObject rootOverlay;
@@ -18,7 +21,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
     private DateTime mesVisualizado = DateTime.Today;
     private List<GameObject> objetosDiasInstanciados = new List<GameObject>();
 
-    // 🟢 Protección contra doble disparo en el mismo frame (EventTrigger + Button)
     private int ultimoFrameEjecucion = -1;
 
     private void Awake()
@@ -41,7 +43,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
         ActualizarTextoBoton();
     }
 
-    // Soporte para EventTrigger / PointerClick sin duplicar llamadas
     public void OnPointerClick(PointerEventData eventData)
     {
         ToggleCalendario();
@@ -49,7 +50,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
 
     public void ToggleCalendario()
     {
-        // Si ya se ejecutó en este frame (por ejemplo, vía EventTrigger OnPointerUp), ignorar
         if (Time.frameCount == ultimoFrameEjecucion) return;
         ultimoFrameEjecucion = Time.frameCount;
 
@@ -92,7 +92,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
             return;
         }
 
-        // 1. Overlay oscuro de fondo
         rootOverlay = new GameObject("Calendar_Overlay_Root", typeof(RectTransform), typeof(Image), typeof(Button));
         rootOverlay.transform.SetParent(canvasPadre.transform, false);
 
@@ -116,7 +115,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
         canvasModal.sortingOrder = 999;
         rootOverlay.AddComponent<GraphicRaycaster>();
 
-        // 2. Ventana Modal Centrada
         panelCalendarioModal = new GameObject("Calendar_Modal_Panel", typeof(RectTransform), typeof(Image));
         panelCalendarioModal.transform.SetParent(rootOverlay.transform, false);
 
@@ -134,7 +132,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
         Button blockBtn = panelCalendarioModal.AddComponent<Button>();
         blockBtn.transition = Selectable.Transition.None;
 
-        // 3. Cabecera (Mes/Año)
         GameObject headerGo = new GameObject("Header", typeof(RectTransform));
         headerGo.transform.SetParent(panelCalendarioModal.transform, false);
         RectTransform rectHeader = headerGo.GetComponent<RectTransform>();
@@ -171,7 +168,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
         rTxtHeader.offsetMin = new Vector2(40, 0);
         rTxtHeader.offsetMax = new Vector2(-40, 0);
 
-        // 4. Cabecera Días Semana
         GameObject daysHeaderGo = new GameObject("DaysOfWeekHeader", typeof(RectTransform), typeof(GridLayoutGroup));
         daysHeaderGo.transform.SetParent(panelCalendarioModal.transform, false);
         RectTransform rDaysHeader = daysHeaderGo.GetComponent<RectTransform>();
@@ -199,7 +195,6 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
             t.color = new Color(0.6f, 0.7f, 0.9f);
         }
 
-        // 5. Grid de Días
         GameObject gridGo = new GameObject("Grid_Dias", typeof(RectTransform), typeof(GridLayoutGroup));
         gridGo.transform.SetParent(panelCalendarioModal.transform, false);
         contenedorDiasGrid = gridGo.transform;
@@ -301,6 +296,9 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
         {
             rootOverlay.SetActive(false);
         }
+
+        // 🟢 Avisar a UI_ControladorMenu para habilitar el botón PLAY si cambió la fecha
+        OnFechaSeleccionada?.Invoke(FechaSeleccionada);
     }
 
     private void ActualizarTextoBoton()
