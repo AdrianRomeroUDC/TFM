@@ -25,12 +25,12 @@ public class UI_ControladorMenu : MonoBehaviour
     public Button btnPlay;                  // Botón PLAY
     public Button btnReset;                 // Botón RESET
 
-    [Header("Botones Multiplicador de Velocidad")]
+    [Header("Botones Multiplicador de Velocidad (Deshabilitados)")]
     public Button btnSpeedX1;
     public Button btnSpeedX2;
     public Button btnSpeedX5;
 
-    [Header("Colores Multiplicadores (Pulsado / Inactivo por Defecto)")]
+    [Header("Colores Multiplicadores")]
     public Color colorVelocidadActiva = new Color(0f, 0.65f, 1f, 1f);   // Azul destacado
     public Color colorTextoActivo = Color.white;                         // Texto blanco
     public Color colorVelocidadInactiva = Color.white;                   // Blanco por defecto de Unity
@@ -49,7 +49,7 @@ public class UI_ControladorMenu : MonoBehaviour
     public TMP_Dropdown dropdownSegFin;      // 00 - 59
 
     [Header("Ajustes de Reproducción BBDD")]
-    [Tooltip("Velocidad de reproducción del histórico (1 = Normal, 2 = Doble velocidad)")]
+    [Tooltip("Velocidad de reproducción del histórico")]
     public float multiplicadorVelocidad = 1.0f;
 
     [Header("Estado Actual (Lectura)")]
@@ -69,7 +69,6 @@ public class UI_ControladorMenu : MonoBehaviour
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
     private static DateTime autoStartFechaIni = DateTime.Today.AddHours(8);
     private static DateTime autoStartFechaFin = DateTime.Today.AddHours(18);
-    private static float autoStartVelocidad = 1.0f;
 
     private void Start()
     {
@@ -86,9 +85,11 @@ public class UI_ControladorMenu : MonoBehaviour
 
         if (fondoCierre != null) fondoCierre.SetActive(false);
 
-        // 2. Configuración de tiempo y multiplicadores
+        // 2. Configuración de tiempo
         InicializarControlesTiempo();
-        VincularBotonesVelocidad();
+
+        // 🟢 DESHABILITAR Y OCULTAR BOTONES DE MULTIPLICADORES
+        DesactivarBotonesVelocidad();
 
         // 3. Vincular botones principales
         if (btnPlay != null)
@@ -120,7 +121,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
             if (toggleModoBBDD != null)
             {
-                // 🟢 Evitamos disparar la corrutina de animación cuando el objeto está inactivo
                 toggleModoBBDD.SetIsOnWithoutNotify(esBBDD);
 
                 UI_ToggleSwitch switchComp = toggleModoBBDD.GetComponent<UI_ToggleSwitch>();
@@ -130,7 +130,6 @@ public class UI_ControladorMenu : MonoBehaviour
                 }
             }
 
-            SeleccionarVelocidad(autoStartVelocidad);
             OnToggleModoCambiado(esBBDD);
 
             if (esBBDD)
@@ -162,7 +161,6 @@ public class UI_ControladorMenu : MonoBehaviour
                 }
             }
 
-            SeleccionarVelocidad(1.0f);
             OnToggleModoCambiado(false);
             ArrancarSimulacion();
         }
@@ -181,59 +179,29 @@ public class UI_ControladorMenu : MonoBehaviour
     }
 
     // ====================================================================
-    // ⚡ LÓGICA Y ASPECTO DEL MULTIPLICADOR DE VELOCIDAD
+    // 🚫 DESHABILITAR MULTIPLICADORES DE VELOCIDAD
     // ====================================================================
 
-    private void VincularBotonesVelocidad()
+    private void DesactivarBotonesVelocidad()
     {
+        multiplicadorVelocidad = 1.0f;
+
         if (btnSpeedX1 != null)
         {
-            btnSpeedX1.onClick.RemoveAllListeners();
-            btnSpeedX1.onClick.AddListener(() => SeleccionarVelocidad(1.0f));
+            btnSpeedX1.interactable = false;
+            btnSpeedX1.gameObject.SetActive(false);
         }
 
         if (btnSpeedX2 != null)
         {
-            btnSpeedX2.onClick.RemoveAllListeners();
-            btnSpeedX2.onClick.AddListener(() => SeleccionarVelocidad(2.0f));
+            btnSpeedX2.interactable = false;
+            btnSpeedX2.gameObject.SetActive(false);
         }
 
         if (btnSpeedX5 != null)
         {
-            btnSpeedX5.onClick.RemoveAllListeners();
-            btnSpeedX5.onClick.AddListener(() => SeleccionarVelocidad(5.0f));
-        }
-    }
-
-    public void SeleccionarVelocidad(float velocidad)
-    {
-        multiplicadorVelocidad = velocidad;
-        autoStartVelocidad = velocidad;
-
-        ActualizarVisualizacionVelocidad();
-    }
-
-    private void ActualizarVisualizacionVelocidad()
-    {
-        ActualizarColorBotonSpeed(btnSpeedX1, Mathf.Approximately(multiplicadorVelocidad, 1.0f));
-        ActualizarColorBotonSpeed(btnSpeedX2, Mathf.Approximately(multiplicadorVelocidad, 2.0f));
-        ActualizarColorBotonSpeed(btnSpeedX5, Mathf.Approximately(multiplicadorVelocidad, 5.0f));
-    }
-
-    private void ActualizarColorBotonSpeed(Button btn, bool estaSeleccionado)
-    {
-        if (btn == null) return;
-
-        Image img = btn.GetComponent<Image>();
-        if (img != null)
-        {
-            img.color = estaSeleccionado ? colorVelocidadActiva : colorVelocidadInactiva;
-        }
-
-        TMP_Text txt = btn.GetComponentInChildren<TMP_Text>();
-        if (txt != null)
-        {
-            txt.color = estaSeleccionado ? colorTextoActivo : colorTextoInactivo;
+            btnSpeedX5.interactable = false;
+            btnSpeedX5.gameObject.SetActive(false);
         }
     }
 
@@ -286,7 +254,7 @@ public class UI_ControladorMenu : MonoBehaviour
             ScrollRect scrollRect = dropdown.template.GetComponent<ScrollRect>();
             if (scrollRect != null)
             {
-                scrollRect.scrollSensitivity = 50f;
+                scrollRect.scrollSensitivity = 3f;
             }
         }
     }
@@ -392,7 +360,7 @@ public class UI_ControladorMenu : MonoBehaviour
                 InfluxDBClient.Instance.DescargarYReproducirHistorico(
                     desde,
                     hasta,
-                    () => multiplicadorVelocidad,
+                    () => 1.0f, // Velocidad fija a 1x
                     (horaMuestra) => ActualizarTextoReloj(horaMuestra)
                 )
             );
@@ -463,10 +431,6 @@ public class UI_ControladorMenu : MonoBehaviour
         if (dropdownHoraFin != null) dropdownHoraFin.interactable = estado;
         if (dropdownMinFin != null) dropdownMinFin.interactable = estado;
         if (dropdownSegFin != null) dropdownSegFin.interactable = estado;
-
-        if (btnSpeedX1 != null) btnSpeedX1.interactable = true;
-        if (btnSpeedX2 != null) btnSpeedX2.interactable = true;
-        if (btnSpeedX5 != null) btnSpeedX5.interactable = true;
     }
 
     public void ToggleMenu()
