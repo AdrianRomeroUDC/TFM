@@ -28,6 +28,10 @@ public class ControladorDPS_mqtt : MonoBehaviour
     private Queue<string> colaDeOrdenes = new Queue<string>();
     private bool gripActivo = false;
 
+    // 🎯 Propiedad pública para consultar el estado real del sensor DSO
+    private bool dsoSensorActivo = false;
+    public bool DsoSensorActivo => dsoSensorActivo;
+
     void Start()
     {
         StartCoroutine(IntentarSuscripcionSegura());
@@ -67,6 +71,7 @@ public class ControladorDPS_mqtt : MonoBehaviour
 
     private void ActualizarPiezaDSO(bool detectada)
     {
+        dsoSensorActivo = detectada;
         lock (colaDeOrdenes)
         {
             if (detectada) colaDeOrdenes.Enqueue("SPAWN_DSO");
@@ -94,6 +99,14 @@ public class ControladorDPS_mqtt : MonoBehaviour
         lock (colaDeOrdenes)
         {
             if (!activo) colaDeOrdenes.Enqueue("DROP");
+        }
+    }
+
+    public void LimpiarDSO()
+    {
+        lock (colaDeOrdenes)
+        {
+            colaDeOrdenes.Enqueue("DELETE_DSO");
         }
     }
 
@@ -305,6 +318,16 @@ public class ControladorDPS_mqtt : MonoBehaviour
     public void AlinearPiezaEnDSO(Transform pieza)
     {
         if (plataformaDSO == null || pieza == null) return;
+
+        // 🎯 COMPROBACIÓN CLAVE: Si el sensor DSO no está activo en la realidad, eliminamos la pieza fantasma
+        if (!dsoSensorActivo)
+        {
+            Debug.Log("<color=red><b>[DPS DSO]:</b> Pieza soltada en DSO pero dso_sensor = False (no hay pieza real). Eliminando pieza fantasma.</color>");
+            Destroy(pieza.gameObject);
+            if (pieza.gameObject == piezaDSO) piezaDSO = null;
+            if (pieza.gameObject == piezaDPS) piezaDPS = null;
+            return;
+        }
 
         // 1. Soltamos del robot
         pieza.SetParent(null);

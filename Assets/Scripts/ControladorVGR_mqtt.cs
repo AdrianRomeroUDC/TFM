@@ -59,10 +59,15 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private Transform padreOriginalSLD;
     private float yMundialAlAgarrarSLD = 0f;
 
-    // --- 🎯 VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN HORNO ---
+    // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN HORNO ---
     private bool verificarFalloEntregaHorno = false;
     private float yMundialAlSoltarHorno = 0f;
     private Transform piezaMonitoreadaHorno = null;
+
+    // --- 🎯 VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN DSO ---
+    private bool verificarFalloEntregaDSO = false;
+    private float yMundialAlSoltarDSO = 0f;
+    private Transform piezaMonitoreadaDSO = null;
 
     void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
     void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
@@ -228,12 +233,12 @@ public class ControladorVGR_mqtt : MonoBehaviour
             }
         }
 
-        // --- 🎯 3. SISTEMA ANTIFALLO ENTREGA EN HORNO (AL SUBIR EL VGR) ---
+        // --- 3. SISTEMA ANTIFALLO ENTREGA EN HORNO (AL SUBIR EL VGR) ---
         if (verificarFalloEntregaHorno)
         {
             float deltaYMundialHorno = Mathf.Abs(ejeVertical.position.y - yMundialAlSoltarHorno);
 
-            if (deltaYMundialHorno > 0.015f) // El VGR ha subido 1.5 cm desde que soltó la pieza
+            if (deltaYMundialHorno > 0.015f)
             {
                 ControladorHorno_mqtt horno = Object.FindFirstObjectByType<ControladorHorno_mqtt>();
                 bool sensorHornoActivo = (horno != null && horno.SensorHornoActivo);
@@ -250,7 +255,6 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                     else if (horno != null)
                     {
-                        // Limpieza preventiva directa sobre la plataforma por si perdió el puntero
                         Transform platReal = horno.BuscarPlataformaRealHijo();
                         if (platReal != null)
                         {
@@ -268,6 +272,41 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
                 verificarFalloEntregaHorno = false;
                 piezaMonitoreadaHorno = null;
+            }
+        }
+
+        // --- 🎯 4. SISTEMA ANTIFALLO ENTREGA EN PLATAFORMA DSO (AL SUBIR EL VGR) ---
+        if (verificarFalloEntregaDSO)
+        {
+            float deltaYMundialDSO = Mathf.Abs(ejeVertical.position.y - yMundialAlSoltarDSO);
+
+            if (deltaYMundialDSO > 0.015f)
+            {
+                ControladorDPS_mqtt dpsScript = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
+                bool sensorDsoActivo = (dpsScript != null && dpsScript.DsoSensorActivo);
+
+                Debug.Log($"<color=yellow><b>[VGR CHEQUEO DSO]:</b> VGR subió. Delta: {deltaYMundialDSO:F4}m. Sensor DSO real = {sensorDsoActivo}</color>");
+
+                if (!sensorDsoActivo)
+                {
+                    Debug.Log("<color=red><b>[VGR FALLO ENTREGA DSO]:</b> ¡FALLO! Sensor DSO = False (no hay pieza real). Eliminando pieza fantasma de la plataforma DSO.</color>");
+
+                    if (piezaMonitoreadaDSO != null)
+                    {
+                        Destroy(piezaMonitoreadaDSO.gameObject);
+                    }
+                    if (dpsScript != null)
+                    {
+                        dpsScript.LimpiarDSO();
+                    }
+                }
+                else
+                {
+                    Debug.Log("<color=green><b>[VGR ENTREGA ÉXITO DSO]:</b> Sensor DSO = True. Entrega confirmada en la plataforma DSO.</color>");
+                }
+
+                verificarFalloEntregaDSO = false;
+                piezaMonitoreadaDSO = null;
             }
         }
     }
@@ -397,7 +436,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 Transform piezaASoltar = piezaEnganchada;
 
-                // 🎯 C. DETECCIÓN Y MONITOREO DE ENTREGA EN EL HORNO
+                // C. DETECCIÓN Y MONITOREO DE ENTREGA EN EL HORNO
                 ControladorHorno_mqtt hornoScript = Object.FindFirstObjectByType<ControladorHorno_mqtt>();
                 if (hornoScript != null)
                 {
@@ -405,7 +444,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     if (platReal != null)
                     {
                         float distanciaAlHorno = Vector3.Distance(puntoAnclajeVentosa.position, platReal.position);
-                        if (distanciaAlHorno < 0.25f) // Si estamos soltando la pieza cerca del horno
+                        if (distanciaAlHorno < 0.25f)
                         {
                             piezaMonitoreadaHorno = piezaASoltar;
                             verificarFalloEntregaHorno = true;
@@ -413,6 +452,21 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
                             Debug.Log("<color=orange><b>[VGR MONITOREO HORNO]:</b> Pieza soltada en el Horno. Iniciando monitoreo al subir el VGR...</color>");
                         }
+                    }
+                }
+
+                // 🎯 D. DETECCIÓN Y MONITOREO DE ENTREGA EN LA PLATAFORMA DSO
+                ControladorDPS_mqtt dpsScript = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
+                if (dpsScript != null && dpsScript.plataformaDSO != null)
+                {
+                    float distanciaADSO = Vector3.Distance(puntoAnclajeVentosa.position, dpsScript.plataformaDSO.position);
+                    if (distanciaADSO < 0.25f)
+                    {
+                        piezaMonitoreadaDSO = piezaASoltar;
+                        verificarFalloEntregaDSO = true;
+                        yMundialAlSoltarDSO = ejeVertical.position.y;
+
+                        Debug.Log("<color=orange><b>[VGR MONITOREO DSO]:</b> Pieza soltada cerca de DSO. Iniciando monitoreo al subir el VGR...</color>");
                     }
                 }
 
@@ -509,6 +563,16 @@ public class ControladorVGR_mqtt : MonoBehaviour
             Gizmos.color = Color.cyan;
             Gizmos.DrawLine(baseSoltarHorno, posicionEjeActual);
             Gizmos.DrawWireSphere(baseSoltarHorno + Vector3.up * 0.015f, 0.004f);
+        }
+
+        if (verificarFalloEntregaDSO && ejeVertical != null)
+        {
+            Vector3 baseSoltarDSO = new Vector3(ejeVertical.position.x, yMundialAlSoltarDSO, ejeVertical.position.z);
+            Vector3 posicionEjeActual = ejeVertical.position;
+
+            Gizmos.color = Color.green;
+            Gizmos.DrawLine(baseSoltarDSO, posicionEjeActual);
+            Gizmos.DrawWireSphere(baseSoltarDSO + Vector3.up * 0.015f, 0.004f);
         }
     }
 }
