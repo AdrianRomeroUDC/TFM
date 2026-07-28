@@ -8,6 +8,9 @@ using System.Collections.Generic;
 
 public class UI_ControladorMenu : MonoBehaviour
 {
+    private static UI_ControladorMenu instance;
+    public static UI_ControladorMenu Instance => instance;
+
     // Evento y propiedad pública para comunicar cambios de visibilidad del reloj a la cámara
     public static event Action<bool> OnRelojSimulacionVisibilidadCambiada;
     public static bool EsRelojSimulacionVisible { get; private set; } = false;
@@ -32,8 +35,16 @@ public class UI_ControladorMenu : MonoBehaviour
 
     [Header("UI Control de Simulación (Cabecera)")]
     public Toggle toggleModoBBDD;            // El botón ON/OFF de BBDD
-    public Button btnPlay;                  // Botón PLAY
+    public Button btnPlay;                  // Botón PLAY / PAUSE
     public Button btnReset;                 // Botón RESET
+
+    [Header("Símbolos y Textos del Botón PLAY / PAUSE")]
+    [Tooltip("Componente TextMeshProUGUI que contiene el símbolo/texto dentro del botón Play")]
+    public TMP_Text textoBotonPlay;
+    [Tooltip("Símbolo que se muestra cuando la simulación está detenida o en pausa")]
+    public string simboloPlay = "▶";
+    [Tooltip("Símbolo que se muestra mientras la simulación BBDD se está ejecutando")]
+    public string simboloPause = "⏸";
 
     [Header("Botones Multiplicador (Ocultos y Colapsados)")]
     public GameObject contenedorMultiplicador;
@@ -54,7 +65,7 @@ public class UI_ControladorMenu : MonoBehaviour
     public TMP_Dropdown dropdownSegFin;      // 00 - 59
 
     [Header("Ajustes de Reproducción BBDD")]
-    [Tooltip("Velocidad de reproducción del histórico")]
+    [Tooltip("Aumenta este número para reproducir el histórico más rápido (ej: 2.0 = el doble de rápido)")]
     public float multiplicadorVelocidad = 1.0f;
 
     [Header("Estado Actual (Lectura)")]
@@ -71,17 +82,35 @@ public class UI_ControladorMenu : MonoBehaviour
     private Coroutine corrutinaReplayBBDD;
     private bool historicoCompletado = false;
 
+    // Control de reproducción y pausa
+    private bool simulacionEnCurso = false;
+    private bool esPausado = false;
+
+    // Propiedad pública de lectura para consultar si está pausado
+    public bool EsPausado => esPausado;
+
     // Persistencia estática tras el reset/play de escena
     private static bool autoStartPendiente = false;
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
     private static DateTime autoStartFechaIni = DateTime.Today.AddHours(8);
     private static DateTime autoStartFechaFin = DateTime.Today.AddHours(18);
 
+    private void Awake()
+    {
+        if (instance == null) instance = this;
+    }
+
     private void Start()
     {
         historicoCompletado = false;
+        simulacionEnCurso = false;
+        esPausado = false;
 
-        // 1. Configuración de paneles
+        if (textoBotonPlay == null && btnPlay != null)
+        {
+            textoBotonPlay = btnPlay.GetComponentInChildren<TMP_Text>();
+        }
+
         if (panelLateral != null)
         {
             rectPanel = panelLateral.GetComponent<RectTransform>();
@@ -92,17 +121,14 @@ public class UI_ControladorMenu : MonoBehaviour
 
         if (fondoCierre != null) fondoCierre.SetActive(false);
 
-        // Ocultar reloj por defecto solo en la primera carga limpia de la app si no hay autostart
         if (!autoStartPendiente)
         {
             SetVisibilidadRelojSimulacion(false);
         }
 
-        // 2. Poblar opciones de Dropdowns y Ocultar Multiplicadores
         InicializarControlesTiempo();
         OcultarYColapsarMultiplicadores();
 
-        // 3. Vincular botones principales
         if (btnPlay != null)
         {
             btnPlay.onClick.RemoveListener(OnBotonPlayPulsado);
@@ -115,7 +141,6 @@ public class UI_ControladorMenu : MonoBehaviour
             btnReset.onClick.AddListener(OnBotonResetPulsado);
         }
 
-        // 4. Configuración del Toggle
         if (toggleModoBBDD != null)
         {
             toggleModoBBDD.onValueChanged.RemoveListener(OnToggleModoCambiado);
@@ -123,11 +148,8 @@ public class UI_ControladorMenu : MonoBehaviour
         }
 
         Time.timeScale = 1.0f;
-
-        // 5. Vincular detectores de cambio de fecha/hora
         VincularListenersDeCambioEnControles();
 
-        // 6. Autostart / Carga de sesión previa
         if (autoStartPendiente)
         {
             autoStartPendiente = false;
@@ -179,17 +201,12 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void Update()
     {
-        // El reloj principal siempre muestra la hora real del sistema
         if (textoReloj != null && Time.time - ultimoSegundoActualizado >= 1f)
         {
             ultimoSegundoActualizado = Time.time;
             ActualizarTextoRelojPrincipal(DateTime.Now);
         }
     }
-
-    // ====================================================================
-    // GESTIÓN CENTRALIZADA Y NOTIFICACIÓN DEL RELOJ DE SIMULACIÓN
-    // ====================================================================
 
     private void SetVisibilidadRelojSimulacion(bool visible)
     {
@@ -202,10 +219,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
         OnRelojSimulacionVisibilidadCambiada?.Invoke(visible);
     }
-
-    // ====================================================================
-    // MÉTODOS DE ACTUALIZACIÓN DE RELOJES
-    // ====================================================================
 
     private void ActualizarTextoRelojPrincipal(DateTime fechaHora)
     {
@@ -227,14 +240,8 @@ public class UI_ControladorMenu : MonoBehaviour
         }
     }
 
-    // ====================================================================
-    // OCULTAR MULTIPLICADORES DE VELOCIDAD
-    // ====================================================================
-
     private void OcultarYColapsarMultiplicadores()
     {
-        multiplicadorVelocidad = 1.0f;
-
         if (btnSpeedX1 != null) { btnSpeedX1.interactable = false; btnSpeedX1.gameObject.SetActive(false); }
         if (btnSpeedX2 != null) { btnSpeedX2.interactable = false; btnSpeedX2.gameObject.SetActive(false); }
         if (btnSpeedX5 != null) { btnSpeedX5.interactable = false; btnSpeedX5.gameObject.SetActive(false); }
@@ -255,10 +262,6 @@ public class UI_ControladorMenu : MonoBehaviour
         if (rectSecciones != null) LayoutRebuilder.MarkLayoutForRebuild(rectSecciones);
     }
 
-    // ====================================================================
-    // DETECCIÓN DE CAMBIOS Y TOGGLE DE MODO
-    // ====================================================================
-
     private void VincularListenersDeCambioEnControles()
     {
         if (dropdownHoraInicio != null) dropdownHoraInicio.onValueChanged.AddListener((_) => EvaluarEstadoBotonPlay());
@@ -278,16 +281,24 @@ public class UI_ControladorMenu : MonoBehaviour
         modoSeleccionado = modoBBDDActivo ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
         historicoCompletado = false;
 
-        // 🟢 NOTA: No modificamos la visibilidad del reloj aquí.
-        // El panel del reloj de simulación permanece intacto al cambiar el toggle.
-        // Solo cambiará cuando se confirme el nuevo modo o rango pulsando el botón PLAY.
+        if (!modoBBDDActivo)
+        {
+            esPausado = false;
+        }
 
+        ActualizarVisualBotonPlay();
         EvaluarEstadoBotonPlay();
     }
 
     private void EvaluarEstadoBotonPlay()
     {
         if (btnPlay == null) return;
+
+        if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
+        {
+            btnPlay.interactable = true;
+            return;
+        }
 
         if (modoSeleccionado != modoEnEjecucion)
         {
@@ -310,10 +321,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
         btnPlay.interactable = false;
     }
-
-    // ====================================================================
-    // CONFIGURACIÓN DE DROPDOWNS Y TIEMPO
-    // ====================================================================
 
     private void InicializarControlesTiempo()
     {
@@ -362,19 +369,40 @@ public class UI_ControladorMenu : MonoBehaviour
         }
     }
 
-    // ====================================================================
-    // ACCIONES DE BOTONES Y SIMULACIÓN
-    // ====================================================================
-
     public void OnBotonPlayPulsado()
     {
+        if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
+        {
+            if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
+            {
+                bool hayCambioFechas = (fechaIniEnEjecucion == null || fechaFinEnEjecucion == null) ||
+                                       (fIni != fechaIniEnEjecucion.Value) ||
+                                       (fFin != fechaFinEnEjecucion.Value);
+
+                if (hayCambioFechas)
+                {
+                    autoStartPendiente = true;
+                    autoStartModo = modoSeleccionado;
+                    autoStartFechaIni = fIni;
+                    autoStartFechaFin = fFin;
+                    RecargarEscenaLimpia();
+                    return;
+                }
+            }
+
+            esPausado = !esPausado;
+            ActualizarVisualBotonPlay();
+            Debug.Log(esPausado ? "<color=yellow>⏸️ UI: Solicitando PAUSA en BBDD...</color>" : "<color=green>▶️ UI: Solicitando REANUDACIÓN en BBDD...</color>");
+            return;
+        }
+
         autoStartPendiente = true;
         autoStartModo = modoSeleccionado;
 
-        if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
+        if (ObtenerRangoFechas(out DateTime fIniSel, out DateTime fFinSel))
         {
-            autoStartFechaIni = fIni;
-            autoStartFechaFin = fFin;
+            autoStartFechaIni = fIniSel;
+            autoStartFechaFin = fFinSel;
         }
 
         RecargarEscenaLimpia();
@@ -391,22 +419,24 @@ public class UI_ControladorMenu : MonoBehaviour
         estadoActual = EstadoSimulacion.Reproduciendo;
         modoEnEjecucion = modoSeleccionado;
         historicoCompletado = false;
+        esPausado = false;
         Time.timeScale = 1.0f;
 
         SetUIInteractables(true);
 
         if (modoSeleccionado == ModoOrigen.MQTT_Directo)
         {
+            simulacionEnCurso = false;
             fechaIniEnEjecucion = null;
             fechaFinEnEjecucion = null;
 
-            // 🟢 AL ARRANCAR EN MODO DIRECTO (MQTT) TRAS PULSAR PLAY, SE OCULTA EL RELOJ DE SIMULACIÓN
             SetVisibilidadRelojSimulacion(false);
 
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.Connect(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
 
             Debug.Log("<color=green>▶️ EN DIRECTO: Escuchando MQTT en tiempo real...</color>");
+            ActualizarVisualBotonPlay();
             EvaluarEstadoBotonPlay();
         }
         else if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
@@ -418,11 +448,12 @@ public class UI_ControladorMenu : MonoBehaviour
             {
                 fechaIniEnEjecucion = desde;
                 fechaFinEnEjecucion = hasta;
+                simulacionEnCurso = true;
 
-                // 🟢 AL ARRANCAR EN MODO HISTÓRICO (BBDD) TRAS PULSAR PLAY, SE MUESTRA EL RELOJ DE SIMULACIÓN
                 SetVisibilidadRelojSimulacion(true);
                 ActualizarTextoRelojSimulacion(desde);
 
+                ActualizarVisualBotonPlay();
                 EvaluarEstadoBotonPlay();
 
                 Debug.Log($"<color=green>▶️ INICIANDO HISTÓRICO BBDD | Desde: {desde:dd-MM-yyyy HH:mm:ss} Hasta: {hasta:dd-MM-yyyy HH:mm:ss}</color>");
@@ -448,6 +479,8 @@ public class UI_ControladorMenu : MonoBehaviour
         modoEnEjecucion = null;
         fechaIniEnEjecucion = null;
         fechaFinEnEjecucion = null;
+        simulacionEnCurso = false;
+        esPausado = false;
         Time.timeScale = 1.0f;
 
         if (corrutinaReplayBBDD != null)
@@ -457,6 +490,7 @@ public class UI_ControladorMenu : MonoBehaviour
         }
 
         SetUIInteractables(true);
+        ActualizarVisualBotonPlay();
         EvaluarEstadoBotonPlay();
     }
 
@@ -468,15 +502,32 @@ public class UI_ControladorMenu : MonoBehaviour
                 InfluxDBClient.Instance.DescargarYReproducirHistorico(
                     desde,
                     hasta,
-                    () => 1.0f,
+                    () => esPausado ? 0f : multiplicadorVelocidad,
                     (horaMuestra) => ActualizarTextoRelojSimulacion(horaMuestra)
                 )
             );
         }
 
         historicoCompletado = true;
+        simulacionEnCurso = false;
+        esPausado = false;
         Debug.Log("<color=green>✅ Fin de la reproducción BBDD.</color>");
         DetenerYResetearEstado();
+    }
+
+    private void ActualizarVisualBotonPlay()
+    {
+        if (textoBotonPlay == null && btnPlay != null)
+        {
+            textoBotonPlay = btnPlay.GetComponentInChildren<TMP_Text>();
+        }
+
+        if (textoBotonPlay != null)
+        {
+            bool estaReproduciendoBBDD = (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso && !esPausado);
+            textoBotonPlay.text = estaReproduciendoBBDD ? simboloPause : simboloPlay;
+            textoBotonPlay.ForceMeshUpdate();
+        }
     }
 
     private bool ObtenerRangoFechas(out DateTime fechaInicio, out DateTime fechaFin)

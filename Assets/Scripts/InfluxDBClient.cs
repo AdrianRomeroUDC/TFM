@@ -39,7 +39,7 @@ public class InfluxDBClient : MonoBehaviour
         string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
 
         // =======================================================================
-        // 1. CARGAR ÚLTIMO ESTADO PREVIO (Almacén y Sensores antes de 'isoDesde')
+        // 1. CARGAR ÚLTIMO ESTADO PREVIO
         // =======================================================================
         string fluxQueryPrevio = $@"
             from(bucket: ""{bucket}"")
@@ -115,13 +115,33 @@ public class InfluxDBClient : MonoBehaviour
 
             registros.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
 
+            bool registradoLogPausa = false;
+
             while (segundosSimuladosTranscurridos < totalSegundosRango)
             {
-                float deltaReal = Time.deltaTime;
-
-                // Lee la velocidad actual en cada frame
                 float velActual = (obtenerVelocidad != null) ? obtenerVelocidad() : 1.0f;
-                segundosSimuladosTranscurridos += deltaReal * Mathf.Max(0.1f, velActual);
+
+                // 🛑 SI ESTÁ EN PAUSA (velActual <= 0), CONGELAMOS TOTALMENTE LA EJECUCIÓN
+                if (velActual <= 0f)
+                {
+                    if (!registradoLogPausa)
+                    {
+                        registradoLogPausa = true;
+                        DateTime horaCongelada = desde.AddSeconds(segundosSimuladosTranscurridos);
+                        Debug.Log($"<color=yellow>[InfluxDB] ⏸️ PAUSADO: Reloj congelado en {horaCongelada:HH:mm:ss}. No se inyectará ningún mensaje.</color>");
+                    }
+                    yield return null;
+                    continue;
+                }
+
+                if (registradoLogPausa)
+                {
+                    registradoLogPausa = false;
+                    Debug.Log($"<color=green>[InfluxDB] ▶️ REANUDADO: Continuando reproducción a velocidad x{velActual}.</color>");
+                }
+
+                float deltaReal = Time.deltaTime;
+                segundosSimuladosTranscurridos += deltaReal * velActual;
 
                 DateTime tiempoSimuladoLocal = desde.AddSeconds(segundosSimuladosTranscurridos);
                 if (tiempoSimuladoLocal > hasta) tiempoSimuladoLocal = hasta;
@@ -259,9 +279,17 @@ public class InfluxDBClient : MonoBehaviour
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
+        // 🛑 BLOQUEO DE SEGURIDAD: Si el menú está en estado de pausa, aborta la inyección inmediatamente.
+        if (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsPausado)
+        {
+            return;
+        }
+
         if (topic == "stock" || topic == "f_i_stock") topic = "f/i/stock";
         else if (topic == "ldr" || topic == "i_ldr") topic = "i/ldr";
         else if (topic == "bme680" || topic == "bm680" || topic == "i_bme680" || topic == "i/bm680") topic = "i/bme680";
+
+        Debug.Log($"<color=white>[InfluxDB] 📩 Evento Inyectado -> Topic: <b>{topic}</b></color>");
 
         if (MQTTClient.Instance != null && MQTTClient.Instance.isActiveAndEnabled)
         {
