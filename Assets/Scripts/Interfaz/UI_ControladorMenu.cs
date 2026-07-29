@@ -419,8 +419,9 @@ public class UI_ControladorMenu : MonoBehaviour
 
     public void OnBotonPlayPulsado()
     {
-        // 🟢 Pausa / Reanudación durante simulación offline de pedido
-        if (simulacionOfflinePedidoEnCurso)
+        bool hayCambioModo = (modoEnEjecucion.HasValue && modoSeleccionado != modoEnEjecucion.Value);
+
+        if (simulacionOfflinePedidoEnCurso && !hayCambioModo)
         {
             esPausado = !esPausado;
             ActualizarVisualBotonPlay();
@@ -428,8 +429,7 @@ public class UI_ControladorMenu : MonoBehaviour
             return;
         }
 
-        // 🟢 Pausa / Reanudación durante reproducción BBDD
-        if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
+        if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso && !hayCambioModo)
         {
             if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
             {
@@ -587,10 +587,12 @@ public class UI_ControladorMenu : MonoBehaviour
         if (textoBotonPlay != null)
         {
             bool hayCambioFechas = HayCambioEnFechasEnEjecucion();
+            bool hayCambioModo = (modoEnEjecucion.HasValue && modoSeleccionado != modoEnEjecucion.Value);
 
             bool mostrarPausa = (simulacionOfflinePedidoEnCurso || (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso))
                              && !esPausado
-                             && !hayCambioFechas;
+                             && !hayCambioFechas
+                             && !hayCambioModo;
 
             textoBotonPlay.text = mostrarPausa ? simboloPause : simboloPlay;
 
