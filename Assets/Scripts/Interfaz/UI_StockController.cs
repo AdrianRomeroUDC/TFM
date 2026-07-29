@@ -41,6 +41,24 @@ public class UI_StockController : MonoBehaviour
 
     private SlotUI slotBajoElCursor = null;
 
+    // 🟢 Control de stock actual retenido para reevaluar interactividad al bloquear/desbloquear
+    private int stockActualAzul = 0;
+    private int stockActualRojo = 0;
+    private int stockActualBlanco = 0;
+    private bool simulacionEnCurso = false;
+
+    private void OnEnable()
+    {
+        // 🟢 Suscripción al evento que avisa si la simulación arrancó o finalizó
+        SimuladorOffline.OnEstadoSimulacionOfflineCambiado += OnEstadoSimulacionOfflineCambiado;
+    }
+
+    private void OnDisable()
+    {
+        // 🟢 Desuscripción para evitar fugas de memoria
+        SimuladorOffline.OnEstadoSimulacionOfflineCambiado -= OnEstadoSimulacionOfflineCambiado;
+    }
+
     void Start()
     {
         // 1. Suscripción al evento de telemetría del stock MQTT
@@ -88,6 +106,28 @@ public class UI_StockController : MonoBehaviour
     }
 
     // ====================================================================
+    // BLOQUEO / DESBLOQUEO DE BOTONES POR ESTADO DE SIMULACIÓN
+    // ====================================================================
+    private void OnEstadoSimulacionOfflineCambiado(bool enEjecucion)
+    {
+        simulacionEnCurso = enEjecucion;
+
+        // Reevaluamos la interactividad de los tres botones combinando Stock + EstadoSimulacion
+        ActualizarEstadoBoton(btnPedirAzul, stockActualAzul);
+        ActualizarEstadoBoton(btnPedirRojo, stockActualRojo);
+        ActualizarEstadoBoton(btnPedirBlanco, stockActualBlanco);
+    }
+
+    private void ActualizarEstadoBoton(Button boton, int stockDisponible)
+    {
+        if (boton != null)
+        {
+            // Solo estará activo si NO hay simulación en curso Y además hay unidades en stock
+            boton.interactable = !simulacionEnCurso && (stockDisponible > 0);
+        }
+    }
+
+    // ====================================================================
     // GESTIÓN DEL TOOLTIP (HOVER)
     // ====================================================================
     private void ConfigurarDetectoresHover()
@@ -96,7 +136,6 @@ public class UI_StockController : MonoBehaviour
         {
             if (slot.imagenComponente != null)
             {
-                // Obtenemos el componente si ya existe, o lo añadimos si no está presente
                 UI_SlotMouseDetector detector = slot.imagenComponente.GetComponent<UI_SlotMouseDetector>();
                 if (detector == null)
                 {
@@ -150,9 +189,9 @@ public class UI_StockController : MonoBehaviour
     {
         if (datosStock == null || datosStock.stockItems == null) return;
 
-        int contadorAzul = 0;
-        int contadorRojo = 0;
-        int contadorBlanco = 0;
+        stockActualAzul = 0;
+        stockActualRojo = 0;
+        stockActualBlanco = 0;
 
         foreach (StockItem item in datosStock.stockItems)
         {
@@ -173,15 +212,15 @@ public class UI_StockController : MonoBehaviour
                     {
                         case "BLUE":
                             slotVisual.imagenComponente.sprite = spriteAzul;
-                            contadorAzul++;
+                            stockActualAzul++;
                             break;
                         case "RED":
                             slotVisual.imagenComponente.sprite = spriteRojo;
-                            contadorRojo++;
+                            stockActualRojo++;
                             break;
                         case "WHITE":
                             slotVisual.imagenComponente.sprite = spriteBlanco;
-                            contadorBlanco++;
+                            stockActualBlanco++;
                             break;
                         default:
                             slotVisual.imagenComponente.sprite = spriteVacio;
@@ -196,9 +235,9 @@ public class UI_StockController : MonoBehaviour
             MostrarDatosTooltip();
         }
 
-        ActualizarUIElementoPedido(txtStockAzul, btnPedirAzul, contadorAzul);
-        ActualizarUIElementoPedido(txtStockRojo, btnPedirRojo, contadorRojo);
-        ActualizarUIElementoPedido(txtStockBlanco, btnPedirBlanco, contadorBlanco);
+        ActualizarUIElementoPedido(txtStockAzul, btnPedirAzul, stockActualAzul);
+        ActualizarUIElementoPedido(txtStockRojo, btnPedirRojo, stockActualRojo);
+        ActualizarUIElementoPedido(txtStockBlanco, btnPedirBlanco, stockActualBlanco);
     }
 
     // ====================================================================
@@ -206,7 +245,6 @@ public class UI_StockController : MonoBehaviour
     // ====================================================================
     private void EnviarPedidoA_MQTT(string colorPieza)
     {
-        // Delegamos a SimuladorOffline para que evalúe si reproducir JSON (Offline) o publicar por red (Online)
         if (SimuladorOffline.Instance != null)
         {
             SimuladorOffline.Instance.PedirPieza(colorPieza);
@@ -224,6 +262,6 @@ public class UI_StockController : MonoBehaviour
     private void ActualizarUIElementoPedido(TextMeshProUGUI textoStock, Button botonPedir, int cantidad)
     {
         if (textoStock != null) textoStock.text = $"Stock: {cantidad}";
-        if (botonPedir != null) botonPedir.interactable = (cantidad > 0);
+        ActualizarEstadoBoton(botonPedir, cantidad);
     }
 }

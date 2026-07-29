@@ -1,6 +1,5 @@
 using UnityEngine;
 using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -21,24 +20,23 @@ public class SecuenciaPiezaData
 
 public class SimuladorOffline : MonoBehaviour
 {
-    private static SimuladorOffline instance;
-    public static SimuladorOffline Instance => instance;
+    public static SimuladorOffline Instance { get; private set; }
 
-    [Header("--- Archivos JSON descargados de InfluxDB ---")]
-    public TextAsset jsonPiezaBlanca;
-    public TextAsset jsonPiezaRoja;
-    public TextAsset jsonPiezaAzul;
+    // 🟢 Evento para notificar a la UI que la simulación empezó (true) o terminó (false)
+    public static event Action<bool> OnEstadoSimulacionOfflineCambiado;
 
-    private SecuenciaPiezaData datosBlanca;
-    private SecuenciaPiezaData datosRoja;
-    private SecuenciaPiezaData datosAzul;
+    [Header("--- Archivos JSON de InfluxDB ---")]
+    [SerializeField] private TextAsset jsonPiezaBlanca;
+    [SerializeField] private TextAsset jsonPiezaRoja;
+    [SerializeField] private TextAsset jsonPiezaAzul;
 
-    private Coroutine corrutinaSimulacionPieza;
-    private bool estaEjecutandoSimulacion = false;
+    private readonly Dictionary<string, SecuenciaPiezaData> mapaSecuencias = new Dictionary<string, SecuenciaPiezaData>();
+    private Coroutine corrutinaSimulacion;
+    public bool EnEjecucion { get; private set; } = false;
 
     private void Awake()
     {
-        if (instance == null) instance = this;
+        if (Instance == null) Instance = this;
         else { Destroy(gameObject); return; }
     }
 
@@ -50,61 +48,38 @@ public class SimuladorOffline : MonoBehaviour
 
     public void CargarDatosHistoricos()
     {
-        datosBlanca = CargarSecuencia(jsonPiezaBlanca, "datosPiezaBlanca.json", "WHITE");
-        datosRoja = CargarSecuencia(jsonPiezaRoja, "datosPiezaRoja.json", "RED");
-        datosAzul = CargarSecuencia(jsonPiezaAzul, "datosPiezaAzul.json", "BLUE");
+        mapaSecuencias.Clear();
+        CargarSecuencia("WHITE", jsonPiezaBlanca);
+        CargarSecuencia("RED", jsonPiezaRoja);
+        CargarSecuencia("BLUE", jsonPiezaAzul);
     }
 
-    private SecuenciaPiezaData CargarSecuencia(TextAsset assetAsignado, string nombreArchivoDisco, string etiqueta)
+    private void CargarSecuencia(string clave, TextAsset asset)
     {
-        // 1. Cargar desde Inspector
-        if (assetAsignado != null && !string.IsNullOrEmpty(assetAsignado.text))
+        if (asset == null || string.IsNullOrEmpty(asset.text)) return;
+
+        try
         {
-            try
+            SecuenciaPiezaData data = JsonUtility.FromJson<SecuenciaPiezaData>(asset.text);
+            if (data != null && data.eventos != null && data.eventos.Count > 0)
             {
-                SecuenciaPiezaData data = JsonUtility.FromJson<SecuenciaPiezaData>(assetAsignado.text);
-                if (data != null && data.eventos != null && data.eventos.Count > 0)
-                {
-                    Debug.Log($"<color=cyan>[SimuladorOffline] 📦 Cargada secuencia {etiqueta} ({data.eventos.Count} eventos)</color>");
-                    return data;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"❌ Error parseando JSON {etiqueta}: {ex.Message}");
+                data.eventos.Sort((a, b) => a.tiempoRelativoSegundos.CompareTo(b.tiempoRelativoSegundos));
+                mapaSecuencias[clave] = data;
             }
         }
-
-        // 2. Respaldo directo desde disco
-        string rutaDisco = Path.Combine(Application.dataPath, "DatosSimulacion", nombreArchivoDisco);
-        if (File.Exists(rutaDisco))
+        catch (Exception ex)
         {
-            try
-            {
-                string texto = File.ReadAllText(rutaDisco);
-                SecuenciaPiezaData data = JsonUtility.FromJson<SecuenciaPiezaData>(texto);
-                if (data != null && data.eventos != null && data.eventos.Count > 0)
-                {
-                    Debug.Log($"<color=cyan>[SimuladorOffline] 📁 Cargado desde disco {nombreArchivoDisco} ({data.eventos.Count} eventos)</color>");
-                    return data;
-                }
-            }
-            catch { }
+            Debug.LogError($"❌ Error al parsear JSON de {clave}: {ex.Message}");
         }
-
-        return null;
     }
 
     public void ComprobarYConfigurarModoOffline()
     {
-        bool mqtt1Conectado = (MQTTClient.Instance != null && MQTTClient.Instance.IsConnected);
-        bool mqtt2Conectado = (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected);
+        bool mqtt1Conectado = MQTTClient.Instance != null && MQTTClient.Instance.IsConnected;
+        bool mqtt2Conectado = MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected;
 
-        bool ambosDesconectados = !mqtt1Conectado && !mqtt2Conectado;
-
-        if (ambosDesconectados)
+        if (!mqtt1Conectado && !mqtt2Conectado)
         {
-            Debug.Log("<color=yellow>⚠️ [Modo Offline] Clientes MQTT desconectados. Inicializando almacén inicial...</color>");
             InicializarStockPorDefecto();
         }
     }
@@ -115,14 +90,12 @@ public class SimuladorOffline : MonoBehaviour
         List<JSON_StockItem> listaItems = new List<JSON_StockItem>();
 
         string[] filas = { "A", "B", "C" };
-        string[] coloresPorColumna = { "WHITE", "RED", "BLUE" };
-
+        string[] colores = { "WHITE", "RED", "BLUE" };
         int idCounter = 0;
 
         for (int col = 1; col <= 3; col++)
         {
-            string colorColumna = coloresPorColumna[col - 1];
-
+            string colorColumna = colores[col - 1];
             foreach (string fila in filas)
             {
                 listaItems.Add(new JSON_StockItem
@@ -146,57 +119,43 @@ public class SimuladorOffline : MonoBehaviour
 
     public void PedirPieza(string tipoPieza)
     {
-        bool mqtt1Conectado = (MQTTClient.Instance != null && MQTTClient.Instance.IsConnected);
-        bool mqtt2Conectado = (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected);
+        bool mqtt1Conectado = MQTTClient.Instance != null && MQTTClient.Instance.IsConnected;
+        bool mqtt2Conectado = MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected;
 
-        bool ambosDesconectados = !mqtt1Conectado && !mqtt2Conectado;
-
-        if (!ambosDesconectados)
+        if (mqtt1Conectado || mqtt2Conectado)
         {
-            Debug.Log($"<color=green>🌐 [Modo Online] Enviando orden MQTT para {tipoPieza}...</color>");
             if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
             {
                 MQTT_InterfaceClient.Instance.SendOrder(tipoPieza);
             }
+            return;
         }
-        else
+
+        // Si ya hay una simulación en curso, se ignora la petición para proteger el estado
+        if (EnEjecucion) return;
+
+        string claveUpper = tipoPieza.ToUpper();
+        string claveMap = claveUpper.Contains("WHITE") || claveUpper.Contains("BLANC") ? "WHITE" :
+                         claveUpper.Contains("RED") || claveUpper.Contains("ROJ") ? "RED" :
+                         claveUpper.Contains("BLUE") || claveUpper.Contains("AZUL") ? "BLUE" : claveUpper;
+
+        if (mapaSecuencias.TryGetValue(claveMap, out SecuenciaPiezaData secuencia))
         {
-            if (datosBlanca == null && datosRoja == null && datosAzul == null)
-            {
-                CargarDatosHistoricos();
-            }
-
-            SecuenciaPiezaData datosAProcesar = null;
-            string tipoUpper = tipoPieza.ToUpper();
-
-            if (tipoUpper.Contains("WHITE") || tipoUpper.Contains("BLANC")) datosAProcesar = datosBlanca;
-            else if (tipoUpper.Contains("RED") || tipoUpper.Contains("ROJ")) datosAProcesar = datosRoja;
-            else if (tipoUpper.Contains("BLUE") || tipoUpper.Contains("AZUL")) datosAProcesar = datosAzul;
-
-            if (datosAProcesar != null && datosAProcesar.eventos != null && datosAProcesar.eventos.Count > 0)
-            {
-                if (estaEjecutandoSimulacion && corrutinaSimulacionPieza != null)
-                {
-                    StopCoroutine(corrutinaSimulacionPieza);
-                }
-
-                corrutinaSimulacionPieza = StartCoroutine(ReproducirSecuencia(datosAProcesar));
-            }
-            else
-            {
-                Debug.LogError($"❌ [Modo Offline] No hay eventos guardados para '{tipoPieza}'. Vuelve a generar el JSON especificando una franja con actividad en InfluxDB.");
-            }
+            if (corrutinaSimulacion != null) StopCoroutine(corrutinaSimulacion);
+            corrutinaSimulacion = StartCoroutine(ReproducirSecuencia(secuencia));
         }
     }
 
     private IEnumerator ReproducirSecuencia(SecuenciaPiezaData secuencia)
     {
-        estaEjecutandoSimulacion = true;
+        EnEjecucion = true;
+        OnEstadoSimulacionOfflineCambiado?.Invoke(true); // 🔒 Notificar inicio -> Deshabilitar botones UI
+
+        // 🟢 1. Eliminar o limpiar la pieza de plataformaDSO al comenzar una nueva simulación
+        LimpiarPlataformaDSO();
+
         float tiempoAcumulado = 0f;
-
-        secuencia.eventos.Sort((a, b) => a.tiempoRelativoSegundos.CompareTo(b.tiempoRelativoSegundos));
-
-        Debug.Log($"<color=green>▶️ [Modo Offline] Iniciando reproducción para {secuencia.tipoPieza} ({secuencia.eventos.Count} eventos)...</color>");
+        Debug.Log($"<color=green>▶️ [Modo Offline] Reproduciendo {secuencia.tipoPieza} ({secuencia.eventos.Count} eventos)...</color>");
 
         foreach (var ev in secuencia.eventos)
         {
@@ -204,19 +163,39 @@ public class SimuladorOffline : MonoBehaviour
 
             float tiempoEspera = ev.tiempoRelativoSegundos - tiempoAcumulado;
 
-            if (tiempoEspera > 0f)
+            // 🟢 2. Soporte para PAUSA (exactamente igual que en reproducción BBDD)
+            while (tiempoEspera > 0f)
             {
-                yield return new WaitForSeconds(tiempoEspera);
+                float multiplicador = (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsPausado) ? 0f :
+                                     (UI_ControladorMenu.Instance != null ? UI_ControladorMenu.Instance.multiplicadorVelocidad : 1.0f);
+
+                if (multiplicador > 0f)
+                {
+                    float delta = Time.deltaTime * multiplicador;
+                    tiempoEspera -= delta;
+                    tiempoAcumulado += delta;
+                }
+
+                yield return null; // Esperar al siguiente frame si está pausado
             }
 
-            tiempoAcumulado = ev.tiempoRelativoSegundos;
-
-            // Inyección exacta al igual que en reproducción BBDD
-            InyectarMensajeOffline(ev.topic.Trim(), ev.payloadJson);
+            InyectarMensajeOffline(ev.topic, ev.payloadJson);
         }
 
-        estaEjecutandoSimulacion = false;
-        Debug.Log($"<color=green>✅ [Modo Offline] Finalizada reproducción de la pieza {secuencia.tipoPieza}.</color>");
+        EnEjecucion = false;
+        OnEstadoSimulacionOfflineCambiado?.Invoke(false); // 🔓 Notificar fin -> Reagrupar e interactuar botones UI
+        Debug.Log($"<color=green>✅ [Modo Offline] Finalizada reproducción de {secuencia.tipoPieza}.</color>");
+    }
+
+    /// <summary>
+    /// Limpia la plataforma DSO o estación de salida enviando un estado nulo o retirando el workpiece.
+    /// </summary>
+    private void LimpiarPlataformaDSO()
+    {
+        // Notificar eliminación enviando un payload con workpiece en null o estado retirado
+        string payloadLimpieza = "{\"workpiece\":null,\"ts\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") + "\"}";
+        InyectarMensajeOffline("dt/dso/state", payloadLimpieza);
+        InyectarMensajeOffline("f/i/dso", payloadLimpieza);
     }
 
     private void InyectarMensajeOffline(string topic, string payloadJson)
