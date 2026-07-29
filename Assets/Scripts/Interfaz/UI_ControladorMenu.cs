@@ -80,7 +80,6 @@ public class UI_ControladorMenu : MonoBehaviour
     private RectTransform rectSecciones;
     private float ultimoSegundoActualizado = -1f;
     private Coroutine corrutinaReplayBBDD;
-    private bool historicoCompletado = false;
 
     // Control de reproducción y pausa
     private bool simulacionEnCurso = false;
@@ -102,7 +101,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void Start()
     {
-        historicoCompletado = false;
         simulacionEnCurso = false;
         esPausado = false;
 
@@ -279,7 +277,6 @@ public class UI_ControladorMenu : MonoBehaviour
     public void OnToggleModoCambiado(bool modoBBDDActivo)
     {
         modoSeleccionado = modoBBDDActivo ? ModoOrigen.BaseDeDatos_Historico : ModoOrigen.MQTT_Directo;
-        historicoCompletado = false;
 
         if (!modoBBDDActivo)
         {
@@ -432,7 +429,6 @@ public class UI_ControladorMenu : MonoBehaviour
     {
         estadoActual = EstadoSimulacion.Reproduciendo;
         modoEnEjecucion = modoSeleccionado;
-        historicoCompletado = false;
         esPausado = false;
         Time.timeScale = 1.0f;
 
@@ -519,7 +515,6 @@ public class UI_ControladorMenu : MonoBehaviour
             );
         }
 
-        historicoCompletado = true;
         simulacionEnCurso = false;
         esPausado = false;
         Debug.Log("<color=green>✅ Fin de la reproducción BBDD.</color>");

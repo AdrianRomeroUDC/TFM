@@ -34,52 +34,40 @@ public class UI_SensorsMonitor : MonoBehaviour
             imgCalidadAireLED.color = Color.clear;
         }
 
-        // 2. Configuración inicial del Dropdown (sin borrar otros eventos)
+        // 2. Configuración inicial del Dropdown
         if (dropdownPeriodo != null)
         {
             dropdownPeriodo.onValueChanged.RemoveListener(CambiarPeriodoSensores);
             dropdownPeriodo.onValueChanged.AddListener(CambiarPeriodoSensores);
         }
 
-        // 3. Configuración inicial del Toggle (🟢 Mantiene intacto el script de desplazamiento UI_ToggleSwitch)
+        // 3. Configuración inicial del Toggle
         if (toggleSensores != null)
         {
             toggleSensores.onValueChanged.RemoveListener(ToggleMostrarPanel);
             toggleSensores.onValueChanged.AddListener(ToggleMostrarPanel);
 
-            // Sincronizar estado inicial visualmente si tiene componente UI_ToggleSwitch
             UI_ToggleSwitch switchComp = toggleSensores.GetComponent<UI_ToggleSwitch>();
             if (switchComp != null)
             {
                 switchComp.ActualizarEstadoInstantaneo(toggleSensores.isOn);
             }
 
-            ToggleMostrarPanel(toggleSensores.isOn); // Aplicar estado inicial
+            ToggleMostrarPanel(toggleSensores.isOn);
         }
 
-        // 4. Enviar el período inicial (5s por defecto) a c/ldr y c/bme680 al iniciar
-        StartCoroutine(EnviarPeriodoInicialMqtt());
-    }
-
-    private IEnumerator EnviarPeriodoInicialMqtt()
-    {
-        // Esperamos 0.2s para asegurar que la conexión con el broker MQTT se haya completado
-        yield return new WaitForSeconds(0.2f);
-
-        int indiceInicial = (dropdownPeriodo != null) ? dropdownPeriodo.value : 0;
-        CambiarPeriodoSensores(indiceInicial);
-    }
-
-    void OnEnable()
-    {
+        // 🟢 4. SUSCRIPCIÓN CONTINUA A EVENTOS MQTT (En Start para que no se desconecte al cerrar UI)
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnLdrLightEvent += ActualizarLDR;
             MQTT_InterfaceClient.Instance.OnBmeEnvironmentEvent += ActualizarBME680;
         }
+
+        // 5. Enviar el período inicial a MQTT
+        StartCoroutine(EnviarPeriodoInicialMqtt());
     }
 
-    void OnDisable()
+    private void OnDestroy()
     {
         if (MQTT_InterfaceClient.Instance != null)
         {
@@ -88,40 +76,38 @@ public class UI_SensorsMonitor : MonoBehaviour
         }
     }
 
+    private IEnumerator EnviarPeriodoInicialMqtt()
+    {
+        yield return new WaitForSeconds(0.2f);
+        int indiceInicial = (dropdownPeriodo != null) ? dropdownPeriodo.value : 0;
+        CambiarPeriodoSensores(indiceInicial);
+    }
+
     // ====================================================================
-    // CONTROL DEL PANEL Y INTERACTIVIDAD
+    // CONTROL DEL PANEL E INTERACTIVIDAD
     // ====================================================================
 
-    /// <summary>
-    /// Activa/desactiva el panel flotante y actualiza los indicadores visuales
-    /// </summary>
     public void ToggleMostrarPanel(bool estaActivo)
     {
-        // 1. Mostrar u ocultar el panel entero de la interfaz
         if (panelSensores != null)
         {
             panelSensores.SetActive(estaActivo);
         }
 
-        // 2. Cambiar el color del botón Toggle (Verde si está activo, Rojo si está apagado)
         if (imagenFondoToggle != null)
         {
             imagenFondoToggle.color = estaActivo ? colorVerdeEncendido : colorRojoApagado;
         }
 
-        // 3. Bloquear el dropdown si los sensores están desactivados
         if (dropdownPeriodo != null)
         {
             dropdownPeriodo.interactable = estaActivo;
         }
     }
 
-    /// <summary>
-    /// Envía por MQTT el periodo de muestreo seleccionado en el Dropdown
-    /// </summary>
     public void CambiarPeriodoSensores(int index)
     {
-        int segundos = 5; // Valor por defecto si no se puede parsear
+        int segundos = 5;
 
         if (dropdownPeriodo != null && dropdownPeriodo.options.Count > index)
         {
@@ -153,44 +139,30 @@ public class UI_SensorsMonitor : MonoBehaviour
 
     private void ActualizarLDR(LdrPayload datos)
     {
+        // Se procesa siempre que el toggle de sensores esté activo
+        if (toggleSensores != null && !toggleSensores.isOn) return;
         if (txtLuminosidad != null) txtLuminosidad.text = $"{datos.br:F1} %";
     }
 
     private void ActualizarBME680(Bme680Payload datos)
     {
+        // 🟢 Se procesa siempre que el toggle de sensores esté activo
+        if (toggleSensores != null && !toggleSensores.isOn) return;
+
         if (txtTemperatura != null) txtTemperatura.text = $"{datos.t:F1} °C";
         if (txtHumedad != null) txtHumedad.text = $"{datos.h:F1} %";
         if (txtPresion != null) txtPresion.text = $"{datos.p:F1} hPa";
 
-        // Lógica de rangos para el color del cuadrado LED de IAQ
         if (txtCalidadAire != null)
         {
             Color colorLED = Color.white;
 
-            if (datos.iaq <= 50)
-            {
-                colorLED = new Color(0f, 0.75f, 0.1f); // Verde brillante
-            }
-            else if (datos.iaq <= 100)
-            {
-                colorLED = new Color(0.5f, 0.85f, 0f); // Verde claro / Lima
-            }
-            else if (datos.iaq <= 150)
-            {
-                colorLED = new Color(1f, 0.75f, 0f); // Amarillo / Ámbar
-            }
-            else if (datos.iaq <= 200)
-            {
-                colorLED = new Color(1f, 0.4f, 0f); // Naranja
-            }
-            else if (datos.iaq <= 300)
-            {
-                colorLED = Color.red; // Rojo
-            }
-            else // Más de 300
-            {
-                colorLED = new Color(0.5f, 0f, 0.5f); // Morado / Púrpura
-            }
+            if (datos.iaq <= 50) colorLED = new Color(0f, 0.75f, 0.1f);
+            else if (datos.iaq <= 100) colorLED = new Color(0.5f, 0.85f, 0f);
+            else if (datos.iaq <= 150) colorLED = new Color(1f, 0.75f, 0f);
+            else if (datos.iaq <= 200) colorLED = new Color(1f, 0.4f, 0f);
+            else if (datos.iaq <= 300) colorLED = Color.red;
+            else colorLED = new Color(0.5f, 0f, 0.5f);
 
             txtCalidadAire.text = $"{datos.iaq}";
 

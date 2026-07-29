@@ -6,18 +6,16 @@ using System.Collections;
 
 public class UI_CameraController : MonoBehaviour
 {
-    // Propiedad global para saber en toda la app si la cámara está encendida
     public static bool IsCameraOn { get; private set; } = false;
 
     [Header("Componentes de Renderizado Video")]
     public RawImage rawImageVideo;
 
     [Header("Ajustes Visuales y Paneles")]
-    public Image imagenFondoToggle;       // Background del botón ON-OFF (LED)
-    public GameObject panelVideoIzquierda; // Panel contenedor de la cámara
+    public Image imagenFondoToggle;       // Background del botón ON-OFF
+    public GameObject panelVideoIzquierda; // Panel contenedor del HUD de la cámara
 
     [Header("Ajustes de Posición Dinámica (Desplazamiento)")]
-    [Tooltip("Distancia en píxeles hacia abajo que se moverá el panel de cámara cuando coincida con el reloj de simulación")]
     public float desplazamientoY = 120f;
 
     [Header("Componentes de Control")]
@@ -33,22 +31,17 @@ public class UI_CameraController : MonoBehaviour
     private bool hayNuevaImagen = false;
     private readonly object bloqueoHilo = new object();
 
-    // Gestión de posición original del panel
     private RectTransform rectTransformPanelCamara;
     private Vector2 posicionInicialPanel;
 
-    // Colores industriales para el LED
     private readonly Color colorVerdeEncendido = new Color(0.2f, 0.75f, 0.2f, 1f);
     private readonly Color colorRojoApagado = new Color(0.85f, 0.2f, 0.2f, 1f);
 
     void Start()
     {
         texturaVideo = new Texture2D(2, 2);
-
-        // 🟢 Estado inicial: APAGADO y 2 FPS por defecto
         IsCameraOn = false;
 
-        // Guardar la posición inicial del panel de la cámara
         if (panelVideoIzquierda != null)
         {
             rectTransformPanelCamara = panelVideoIzquierda.GetComponent<RectTransform>();
@@ -58,7 +51,6 @@ public class UI_CameraController : MonoBehaviour
             }
         }
 
-        // AUTOMATIZACIÓN: Escuchamos los cambios del Toggle y Slider por código
         if (toggleCamara != null)
         {
             toggleCamara.isOn = false;
@@ -68,11 +60,10 @@ public class UI_CameraController : MonoBehaviour
         if (sliderFPS != null)
         {
             sliderFPS.onValueChanged.RemoveAllListeners();
-            sliderFPS.value = 2f; // 🟢 Ajustamos a 2 FPS por defecto
+            sliderFPS.value = 2f;
             sliderFPS.onValueChanged.AddListener(OnSliderFpsCambiado);
         }
 
-        // Aplicamos el estado inicial apagado a la UI
         ActualizarInteractividadUI();
         ActualizarVisualesCamara();
 
@@ -82,7 +73,6 @@ public class UI_CameraController : MonoBehaviour
             rawImageVideo.color = Color.black;
         }
 
-        // Suscripción a eventos MQTT y cambio de reloj de simulación
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnCameraImageEvent += AlRecibirImagenBase64;
@@ -90,7 +80,6 @@ public class UI_CameraController : MonoBehaviour
 
         UI_ControladorMenu.OnRelojSimulacionVisibilidadCambiada += OnRelojSimulacionVisibilidadCambiada;
 
-        // 🟢 ENVIAR ESTADO DE APAGADO INICIAL (on: false, fps: 2) AL INICIAR / RESETEAR ESCENA
         StartCoroutine(EnviarEstadoInicialMqtt());
     }
 
@@ -104,20 +93,11 @@ public class UI_CameraController : MonoBehaviour
         UI_ControladorMenu.OnRelojSimulacionVisibilidadCambiada -= OnRelojSimulacionVisibilidadCambiada;
     }
 
-    // =======================================================================
-    // 🟢 ENVIAR MENSAJE MQTT AL INICIO / RESET
-    // =======================================================================
-
     private IEnumerator EnviarEstadoInicialMqtt()
     {
-        // Esperamos 0.2s para asegurar que la conexión MQTT se haya completado
         yield return new WaitForSeconds(0.2f);
         EnviarConfiguracionMqtt();
     }
-
-    // =======================================================================
-    // DESPLAZAMIENTO DINÁMICO DEL PANEL DE CÁMARA
-    // =======================================================================
 
     private void OnRelojSimulacionVisibilidadCambiada(bool relojSimulacionVisible)
     {
@@ -138,10 +118,6 @@ public class UI_CameraController : MonoBehaviour
         }
     }
 
-    // =======================================================================
-    // GESTIÓN DE EVENTOS DE LA UI
-    // =======================================================================
-
     private void OnToggleCamaraCambiado(bool estadoEncendido)
     {
         IsCameraOn = estadoEncendido;
@@ -154,7 +130,6 @@ public class UI_CameraController : MonoBehaviour
             AjustarPosicionPanelCamara(UI_ControladorMenu.EsRelojSimulacionVisible);
         }
 
-        // Limpiar pantalla si se apaga
         if (rawImageVideo != null)
         {
             if (!IsCameraOn)
@@ -190,10 +165,6 @@ public class UI_CameraController : MonoBehaviour
         }
     }
 
-    // =======================================================================
-    // PROCESAMIENTO DE IMAGEN BASE64
-    // =======================================================================
-
     private void AlRecibirImagenBase64(string base64Data)
     {
         lock (bloqueoHilo)
@@ -218,6 +189,7 @@ public class UI_CameraController : MonoBehaviour
             }
         }
 
+        // 🟢 Procesa la textura continuamente si IsCameraOn es true
         if (procesar && !string.IsNullOrEmpty(base64ParaProcesar) && IsCameraOn)
         {
             PintarTexturaEnUI(base64ParaProcesar);
@@ -247,10 +219,6 @@ public class UI_CameraController : MonoBehaviour
         }
     }
 
-    // =======================================================================
-    // ACTUALIZACIÓN DE ELEMENTOS VISUALES
-    // =======================================================================
-
     private void ActualizarInteractividadUI()
     {
         if (sliderFPS != null) sliderFPS.interactable = IsCameraOn;
@@ -273,6 +241,11 @@ public class UI_CameraController : MonoBehaviour
         if (panelVideoIzquierda != null)
         {
             panelVideoIzquierda.SetActive(IsCameraOn);
+        }
+
+        if (imagenFondoToggle != null)
+        {
+            imagenFondoToggle.color = IsCameraOn ? colorVerdeEncendido : colorRojoApagado;
         }
     }
 }

@@ -29,6 +29,51 @@ public class InfluxDBClient : MonoBehaviour
         else { Destroy(gameObject); return; }
     }
 
+    /// <summary>
+    /// Descarga los datos de InfluxDB y los devuelve directamente en una lista sin reproducirlos en la escena.
+    /// Ideal para la generación de archivos JSON offline.
+    /// </summary>
+    public IEnumerator DescargarHistoricoSinReproducir(DateTime desde, DateTime hasta, Action<List<RegistroInflux>> alFinalizar)
+    {
+        string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+        string isoHasta = hasta.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+        string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
+
+        string fluxQueryRango = $@"
+            from(bucket: ""{bucket}"")
+              |> range(start: {isoDesde}, stop: {isoHasta})
+              |> filter(fn: (r) => r[""_field""] == ""payload"")
+              |> sort(columns: [""_time""])";
+
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(fluxQueryRango);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+
+            request.SetRequestHeader("Authorization", "Token " + token);
+            request.SetRequestHeader("Content-Type", "application/vnd.flux");
+            request.SetRequestHeader("Accept", "text/csv");
+
+            yield return request.SendWebRequest();
+
+            List<RegistroInflux> registros = new List<RegistroInflux>();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                registros = ParsearCSVDirecto(request.downloadHandler.text);
+                registros.Sort((a, b) => a.timestamp.CompareTo(b.timestamp));
+            }
+            else
+            {
+                Debug.LogError($"❌ [InfluxDB] Error HTTP {request.responseCode}: {request.error}\n{request.downloadHandler.text}");
+            }
+
+            alFinalizar?.Invoke(registros);
+        }
+    }
+
     public IEnumerator DescargarYReproducirHistorico(DateTime desde, DateTime hasta, Func<float> obtenerVelocidad, Action<DateTime> alCambiarTiempo)
     {
         string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -38,9 +83,7 @@ public class InfluxDBClient : MonoBehaviour
 
         string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
 
-        // =======================================================================
         // 1. CARGAR ÚLTIMO ESTADO PREVIO
-        // =======================================================================
         string fluxQueryPrevio = $@"
             from(bucket: ""{bucket}"")
               |> range(start: 1970-01-01T00:00:00Z, stop: {isoDesde})
@@ -70,9 +113,7 @@ public class InfluxDBClient : MonoBehaviour
             }
         }
 
-        // =======================================================================
         // 2. DESCARGAR Y REPRODUCIR EL RANGO SELECCIONADO
-        // =======================================================================
         string fluxQueryRango = $@"
             from(bucket: ""{bucket}"")
               |> range(start: {isoDesde}, stop: {isoHasta})
@@ -121,7 +162,6 @@ public class InfluxDBClient : MonoBehaviour
             {
                 float velActual = (obtenerVelocidad != null) ? obtenerVelocidad() : 1.0f;
 
-                // 🛑 SI ESTÁ EN PAUSA (velActual <= 0), CONGELAMOS TOTALMENTE LA EJECUCIÓN
                 if (velActual <= 0f)
                 {
                     if (!registradoLogPausa)
@@ -279,7 +319,6 @@ public class InfluxDBClient : MonoBehaviour
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
-        // 🛑 BLOQUEO DE SEGURIDAD: Si el menú está en estado de pausa, aborta la inyección inmediatamente.
         if (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsPausado)
         {
             return;

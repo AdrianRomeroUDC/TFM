@@ -1,0 +1,3875 @@
+{
+    "tipoPieza": "WHITE",
+    "eventos": [
+        {
+            "tiempoRelativoSegundos": 0.0,
+            "topic": "dt/ssc/leds",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:25.457Z\", \"leds_semaphore\": 2, \"led_online\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.20600000023841859,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:25.663Z\", \"vertical\": 17, \"extend\": 0, \"horizontal\": 19}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.3190000057220459,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:25.776Z\", \"vertical\": 12, \"extend\": 0, \"horizontal\": 17}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.4449999928474426,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:25.902Z\", \"vertical\": 40, \"extend\": 0, \"horizontal\": 38}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.5989999771118164,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.056Z\", \"vertical\": 66, \"extend\": 0, \"horizontal\": 66}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.7360000014305115,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.193Z\", \"vertical\": 69, \"extend\": 0, \"horizontal\": 91}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.8510000109672546,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.308Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 105}"
+        },
+        {
+            "tiempoRelativoSegundos": 0.9570000171661377,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.414Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 121}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.062000036239624,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.519Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 143}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.1859999895095826,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.643Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 156}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.3040000200271607,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.761Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 178}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.4470000267028809,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.904Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 31}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.4550000429153443,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:26.912Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 210}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.562999963760376,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.020Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 14}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.5980000495910645,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.055Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 230}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.7089999914169312,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.166Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 37}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.7170000076293946,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.174Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 252}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.8350000381469727,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.292Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 52}"
+        },
+        {
+            "tiempoRelativoSegundos": 1.8609999418258668,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.318Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 273}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.046999931335449,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.504Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 86}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.1050000190734865,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.562Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 319}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.305999994277954,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.763Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 136}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.309999942779541,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.767Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 351}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.502000093460083,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.959Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 164}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.503999948501587,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:27.961Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 383}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.632999897003174,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.090Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 185}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.63700008392334,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.094Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 404}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.75,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.207Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 207}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.752000093460083,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.209Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 423}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.859999895095825,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.317Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 225}"
+        },
+        {
+            "tiempoRelativoSegundos": 2.869999885559082,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.327Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 440}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.0160000324249269,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.473Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 253}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.0179998874664308,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.475Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 472}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.1510000228881838,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.608Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 271}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.1619999408721926,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.619Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 489}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.3010001182556154,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.758Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 297}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.302999973297119,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.760Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 521}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.4230000972747804,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.880Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 315}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.4260001182556154,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:28.883Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 536}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.5429999828338625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.000Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 339}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.5450000762939455,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.002Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 561}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.6610000133514406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.118Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 354}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.6700000762939455,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.127Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 576}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.812999963760376,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.270Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 382}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.825000047683716,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.282Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 605}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.940999984741211,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.398Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 405}"
+        },
+        {
+            "tiempoRelativoSegundos": 3.9649999141693117,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.422Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 625}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.109000205993652,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.566Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 433}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.120999813079834,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.578Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 659}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.263000011444092,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.720Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 457}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.296999931335449,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.754Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 688}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.4730000495910648,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.930Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 488}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.47599983215332,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:29.933Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 710}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.624000072479248,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.081Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 518}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.625999927520752,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.083Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 744}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.751999855041504,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.209Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 538}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.767000198364258,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.224Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 755}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.894999980926514,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.352Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 563}"
+        },
+        {
+            "tiempoRelativoSegundos": 4.9079999923706059,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.365Z\", \"vertical\": 70, \"extend\": -512, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.040999889373779,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.498Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 584}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.15500020980835,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.612Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 605}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.260000228881836,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.717Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 618}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.381999969482422,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.839Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 642}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.495999813079834,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:30.953Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 662}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.617000102996826,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.074Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 678}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.74399995803833,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.201Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 697}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.863999843597412,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.321Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 718}"
+        },
+        {
+            "tiempoRelativoSegundos": 5.998000144958496,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.455Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 740}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.230000019073486,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.687Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 780}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.357999801635742,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.815Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 799}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.478000164031982,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:31.935Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 819}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.6020002365112309,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.059Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 840}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.708000183105469,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.165Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 859}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.818999767303467,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.276Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 877}"
+        },
+        {
+            "tiempoRelativoSegundos": 6.928999900817871,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.386Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 893}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.127999782562256,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.585Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 927}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.300000190734863,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.757Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 952}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.416999816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.874Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 969}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.533999919891357,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:32.991Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 990}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.645999908447266,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.103Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1007}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.789999961853027,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.247Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1029}"
+        },
+        {
+            "tiempoRelativoSegundos": 7.918000221252441,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.375Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1050}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.041000366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.498Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1069}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.154999732971192,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.612Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1088}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.267999649047852,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.725Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1106}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.38599967956543,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.843Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1116}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.49899959564209,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:33.956Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1141}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.612000465393067,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.069Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1161}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.722000122070313,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.179Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1178}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.824999809265137,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.282Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1191}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.826000213623047,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.283Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.939000129699707,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.396Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1213}"
+        },
+        {
+            "tiempoRelativoSegundos": 8.967000007629395,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.424Z\", \"vertical\": 55, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.079000473022461,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.536Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1227}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.086000442504883,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.543Z\", \"vertical\": 34, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.213000297546387,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.670Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1258}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.21500015258789,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.672Z\", \"vertical\": 31, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.324999809265137,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.782Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1275}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.32699966430664,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.784Z\", \"vertical\": 30, \"extend\": 512, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.435999870300293,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:34.893Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1294}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.545999526977539,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.003Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1312}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.664999961853028,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.122Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1332}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.777000427246094,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.234Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1348}"
+        },
+        {
+            "tiempoRelativoSegundos": 9.918000221252442,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.375Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1374}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.045000076293946,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.502Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1389}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.194999694824219,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.652Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.40999984741211,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.867Z\", \"vertical\": 0, \"extend\": 4, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.53499984741211,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:35.992Z\", \"vertical\": 0, \"extend\": 27, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.657999992370606,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.115Z\", \"vertical\": 0, \"extend\": 50, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.781000137329102,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.238Z\", \"vertical\": 0, \"extend\": 75, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.894000053405762,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.351Z\", \"vertical\": 0, \"extend\": 92, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 10.940999984741211,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.398Z\", \"stockItems\": [{\"workpiece\": {\"id\": \"\", \"type\": \"NONE\", \"state\": \"RAW\"}, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 11.045000076293946,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.502Z\", \"vertical\": 0, \"extend\": 118, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 11.156000137329102,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.613Z\", \"vertical\": 0, \"extend\": 141, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 11.284000396728516,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.741Z\", \"vertical\": 0, \"extend\": 156, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 11.416000366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:36.873Z\", \"vertical\": 0, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 13.597000122070313,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.054Z\", \"vertical\": 30, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 13.758999824523926,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.216Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 742}"
+        },
+        {
+            "tiempoRelativoSegundos": 13.909000396728516,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.366Z\", \"vertical\": 55, \"extend\": 0, \"horizontal\": 710}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.090999603271485,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.548Z\", \"vertical\": 89, \"extend\": 0, \"horizontal\": 675}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.204999923706055,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.662Z\", \"vertical\": 108, \"extend\": 0, \"horizontal\": 656}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.371000289916993,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.828Z\", \"vertical\": 141, \"extend\": 0, \"horizontal\": 620}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.486000061035157,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:39.943Z\", \"vertical\": 154, \"extend\": 0, \"horizontal\": 604}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.642999649047852,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.100Z\", \"vertical\": 192, \"extend\": 0, \"horizontal\": 571}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.760000228881836,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.217Z\", \"vertical\": 215, \"extend\": 0, \"horizontal\": 552}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.878000259399414,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.335Z\", \"vertical\": 240, \"extend\": 0, \"horizontal\": 523}"
+        },
+        {
+            "tiempoRelativoSegundos": 14.982000350952149,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.439Z\", \"vertical\": 261, \"extend\": 0, \"horizontal\": 502}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.093000411987305,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.550Z\", \"vertical\": 280, \"extend\": 0, \"horizontal\": 482}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.256999969482422,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.714Z\", \"vertical\": 313, \"extend\": 0, \"horizontal\": 451}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.402999877929688,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:40.860Z\", \"vertical\": 338, \"extend\": 0, \"horizontal\": 424}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.565999984741211,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:41.023Z\", \"vertical\": 369, \"extend\": 0, \"horizontal\": 395}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.682999610900879,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:41.140Z\", \"vertical\": 394, \"extend\": 0, \"horizontal\": 370}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.843000411987305,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:41.300Z\", \"vertical\": 425, \"extend\": 0, \"horizontal\": 339}"
+        },
+        {
+            "tiempoRelativoSegundos": 15.965999603271485,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:41.423Z\", \"vertical\": 444, \"extend\": 0, \"horizontal\": 322}"
+        },
+        {
+            "tiempoRelativoSegundos": 16.073999404907228,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:41.531Z\", \"vertical\": 469, \"extend\": 0, \"horizontal\": 299}"
+        },
+        {
+            "tiempoRelativoSegundos": 16.472999572753908,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:41.930Z\", \"vertical\": 542, \"extend\": 0, \"horizontal\": 222}"
+        },
+        {
+            "tiempoRelativoSegundos": 16.649999618530275,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.107Z\", \"vertical\": 581, \"extend\": 0, \"horizontal\": 187}"
+        },
+        {
+            "tiempoRelativoSegundos": 16.812999725341798,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.270Z\", \"vertical\": 612, \"extend\": 0, \"horizontal\": 151}"
+        },
+        {
+            "tiempoRelativoSegundos": 16.930999755859376,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.388Z\", \"vertical\": 635, \"extend\": 0, \"horizontal\": 132}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.062000274658204,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.519Z\", \"vertical\": 652, \"extend\": 0, \"horizontal\": 105}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.16900062561035,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.626Z\", \"vertical\": 679, \"extend\": 0, \"horizontal\": 86}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.304000854492189,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.761Z\", \"vertical\": 693, \"extend\": 0, \"horizontal\": 55}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.45400047302246,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:42.911Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 40}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.558000564575197,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.015Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 9}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.68899917602539,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.146Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 1}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.822999954223634,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.280Z\", \"belt_speed\": 400, \"isTriggeredIn\": false, \"isTriggeredOut\": false, \"rot_direction\": \"CW\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 17.950000762939454,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.407Z\", \"vertical\": 702, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 18.124000549316408,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.581Z\", \"vertical\": 673, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 18.260000228881837,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.717Z\", \"vertical\": 671, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 18.393999099731447,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:43.851Z\", \"vertical\": 670, \"extend\": -512, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 20.54199981689453,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:45.999Z\", \"belt_speed\": 400, \"isTriggeredIn\": true, \"isTriggeredOut\": false, \"rot_direction\": \"CW\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 22.344999313354493,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:47.802Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 22.483999252319337,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:47.941Z\", \"vertical\": 695, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 22.6560001373291,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:48.113Z\", \"vertical\": 708, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 22.665000915527345,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:48.122Z\", \"belt_speed\": 400, \"isTriggeredIn\": false, \"isTriggeredOut\": false, \"rot_direction\": \"CW\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 22.76300048828125,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:48.220Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 22.785999298095704,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:48.243Z\", \"stockItems\": [{\"workpiece\": {\"id\": \"\", \"type\": \"NONE\", \"state\": \"RAW\"}, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 24.035999298095704,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:49.493Z\", \"vertical\": 710, \"extend\": 512, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 24.049999237060548,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:49.507Z\", \"belt_speed\": 400, \"isTriggeredIn\": false, \"isTriggeredOut\": true, \"rot_direction\": \"CW\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 24.559999465942384,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:50.017Z\", \"belt_speed\": 0, \"isTriggeredIn\": false, \"isTriggeredOut\": true, \"rot_direction\": \"STOP\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 24.969999313354493,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:50.427Z\", \"vertical\": 30, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.073999404907228,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:50.531Z\", \"vertical\": 19, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.180999755859376,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:50.638Z\", \"vertical\": 37, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.290000915527345,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:50.747Z\", \"vertical\": 61, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.409000396728517,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:50.866Z\", \"vertical\": 87, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.566999435424806,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:51.024Z\", \"vertical\": 115, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.690000534057618,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:51.147Z\", \"vertical\": 142, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.83099937438965,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:51.288Z\", \"vertical\": 149, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 25.93899917602539,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:51.396Z\", \"vertical\": 150, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 27.761999130249025,
+            "topic": "i/ldr",
+            "payloadJson": "{\"ts\":\"2026-07-27T10:45:53.219Z\", \"br\":90.9, \"ldr\":5927}"
+        },
+        {
+            "tiempoRelativoSegundos": 27.988000869750978,
+            "topic": "dt/vgr/grip",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:53.445Z\", \"active\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 28.27400016784668,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:53.731Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 28.55299949645996,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.010Z\", \"vertical\": 692, \"extend\": 0, \"horizontal\": -6}"
+        },
+        {
+            "tiempoRelativoSegundos": 28.683000564575197,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.140Z\", \"vertical\": 672, \"extend\": 0, \"horizontal\": -12}"
+        },
+        {
+            "tiempoRelativoSegundos": 28.87299919128418,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.330Z\", \"vertical\": 640, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.06399917602539,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.521Z\", \"vertical\": 611, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.232999801635743,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.690Z\", \"vertical\": 134, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.243999481201173,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.701Z\", \"vertical\": 581, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.277000427246095,
+            "topic": "i/bme680",
+            "payloadJson": "{\"ts\":\"2026-07-27T10:45:54.734Z\",\"t\":29.2,\"rt\":0.0,\"h\":43.4,\"rh\":0.0,\"p\":1017.5,\"iaq\":-1,\"aq\":2,\"gr\":0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.400999069213868,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.858Z\", \"vertical\": 105, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.402999877929689,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:54.860Z\", \"vertical\": 554, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.600000381469728,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.057Z\", \"vertical\": 75, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.601999282836915,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.059Z\", \"vertical\": 523, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.707000732421876,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.164Z\", \"vertical\": 56, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.708999633789064,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.166Z\", \"vertical\": 505, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.81599998474121,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.273Z\", \"vertical\": 39, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.816999435424806,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.274Z\", \"vertical\": 486, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.9950008392334,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.452Z\", \"vertical\": 7, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 29.996000289916993,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.453Z\", \"vertical\": 459, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.10700035095215,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.564Z\", \"vertical\": 1, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.108999252319337,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.566Z\", \"vertical\": 441, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.259000778198243,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.716Z\", \"vertical\": 0, \"extend\": 158, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.26099967956543,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.718Z\", \"vertical\": 415, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.367000579833986,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.824Z\", \"vertical\": 399, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.503999710083009,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:55.961Z\", \"vertical\": 375, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.66900062561035,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.126Z\", \"vertical\": 0, \"extend\": 142, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.670000076293947,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.127Z\", \"vertical\": 349, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.804000854492189,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.261Z\", \"vertical\": 0, \"extend\": 118, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.80500030517578,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.262Z\", \"vertical\": 328, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.940000534057618,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.397Z\", \"vertical\": 0, \"extend\": 98, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 30.94300079345703,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.400Z\", \"vertical\": 307, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.0939998626709,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.551Z\", \"vertical\": 0, \"extend\": 78, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.11400032043457,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.571Z\", \"vertical\": 282, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.219999313354493,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.677Z\", \"vertical\": 0, \"extend\": 49, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.229000091552736,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.686Z\", \"vertical\": 261, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.315000534057618,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.772Z\", \"stockItems\": [{\"workpiece\": {\"id\": \"\", \"type\": \"NONE\", \"state\": \"RAW\"}, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.336000442504884,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.793Z\", \"vertical\": 0, \"extend\": 36, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.33799934387207,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.795Z\", \"vertical\": 242, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.489999771118165,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.947Z\", \"vertical\": 0, \"extend\": 7, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.490999221801759,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:56.948Z\", \"vertical\": 218, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.731000900268556,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.188Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1392}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.733999252319337,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.191Z\", \"vertical\": 181, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.843000411987306,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.300Z\", \"vertical\": 164, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.95800018310547,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.415Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 1391}"
+        },
+        {
+            "tiempoRelativoSegundos": 31.959999084472658,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.417Z\", \"vertical\": 143, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.09299850463867,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.550Z\", \"vertical\": 0, \"extend\": 10, \"rotation\": 1369}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.09400177001953,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.551Z\", \"vertical\": 124, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.257999420166019,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.715Z\", \"vertical\": 0, \"extend\": 42, \"rotation\": 1340}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.2599983215332,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.717Z\", \"vertical\": 97, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.39500045776367,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.852Z\", \"vertical\": 0, \"extend\": 66, \"rotation\": 1317}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.39699935913086,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.854Z\", \"vertical\": 73, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.52000045776367,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.977Z\", \"vertical\": 0, \"extend\": 92, \"rotation\": 1299}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.52199935913086,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:57.979Z\", \"vertical\": 54, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.641998291015628,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.099Z\", \"vertical\": 0, \"extend\": 111, \"rotation\": 1271}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.64400100708008,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.101Z\", \"vertical\": 37, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.779998779296878,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.237Z\", \"vertical\": 0, \"extend\": 141, \"rotation\": 1251}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.784000396728519,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.241Z\", \"vertical\": 14, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.89699935913086,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.354Z\", \"vertical\": 0, \"extend\": 163, \"rotation\": 1226}"
+        },
+        {
+            "tiempoRelativoSegundos": 32.89799880981445,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.355Z\", \"vertical\": -5, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.04100036621094,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.498Z\", \"vertical\": 0, \"extend\": 180, \"rotation\": 1201}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.194000244140628,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.651Z\", \"vertical\": 0, \"extend\": 217, \"rotation\": 1178}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.220001220703128,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.677Z\", \"vertical\": -14, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.32699966430664,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.784Z\", \"vertical\": 0, \"extend\": 240, \"rotation\": 1153}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.35200119018555,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.809Z\", \"vertical\": -21, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.48500061035156,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.942Z\", \"vertical\": 0, \"extend\": 271, \"rotation\": 1121}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.48699951171875,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:58.944Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.64400100708008,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.101Z\", \"vertical\": 0, \"extend\": 303, \"rotation\": 1090}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.645999908447269,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.103Z\", \"vertical\": 11, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.755001068115237,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.212Z\", \"vertical\": 0, \"extend\": 325, \"rotation\": 1069}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.762001037597659,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.219Z\", \"vertical\": 29, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.332Z\", \"vertical\": 0, \"extend\": 346, \"rotation\": 1049}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.875999450683597,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.333Z\", \"vertical\": 53, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.99399948120117,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.451Z\", \"vertical\": 0, \"extend\": 368, \"rotation\": 1028}"
+        },
+        {
+            "tiempoRelativoSegundos": 33.994998931884769,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.452Z\", \"vertical\": 76, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.1150016784668,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.572Z\", \"vertical\": 0, \"extend\": 392, \"rotation\": 1005}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.117000579833987,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.574Z\", \"vertical\": 99, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.290000915527347,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.747Z\", \"vertical\": 0, \"extend\": 415, \"rotation\": 991}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.29199981689453,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.749Z\", \"vertical\": 130, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.465999603271487,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.923Z\", \"vertical\": 0, \"extend\": 440, \"rotation\": 945}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.46799850463867,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:45:59.925Z\", \"vertical\": 169, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.56999969482422,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.027Z\", \"vertical\": 0, \"extend\": 472, \"rotation\": 926}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.608001708984378,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.065Z\", \"vertical\": 196, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.71099853515625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.168Z\", \"vertical\": 0, \"extend\": 498, \"rotation\": 914}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.7140007019043,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.171Z\", \"vertical\": 214, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.88100051879883,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.338Z\", \"vertical\": 0, \"extend\": 519, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.882999420166019,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.340Z\", \"vertical\": 243, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.98899841308594,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.446Z\", \"vertical\": 0, \"extend\": 553, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 34.99100112915039,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.448Z\", \"vertical\": 266, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.244998931884769,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.702Z\", \"vertical\": 0, \"extend\": 594, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.24700164794922,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.704Z\", \"vertical\": 314, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.4010009765625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.858Z\", \"vertical\": 0, \"extend\": 631, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.402000427246097,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.859Z\", \"vertical\": 346, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.5359992980957,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:00.993Z\", \"vertical\": 0, \"extend\": 650, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.57600021362305,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.033Z\", \"vertical\": 385, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.80500030517578,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.262Z\", \"vertical\": 0, \"extend\": 700, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.80799865722656,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.265Z\", \"vertical\": 422, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.95000076293945,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.407Z\", \"vertical\": 0, \"extend\": 730, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 35.98099899291992,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.438Z\", \"vertical\": 457, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.11399841308594,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.571Z\", \"vertical\": 0, \"extend\": 756, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.1609992980957,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.618Z\", \"vertical\": 494, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.356998443603519,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.814Z\", \"vertical\": 0, \"extend\": 807, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.369998931884769,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.827Z\", \"vertical\": 539, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.51499938964844,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.972Z\", \"vertical\": 0, \"extend\": 824, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.516998291015628,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:01.974Z\", \"vertical\": 554, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.643001556396487,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.100Z\", \"vertical\": 0, \"extend\": 851, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.68600082397461,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.143Z\", \"vertical\": 602, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.79100036621094,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.248Z\", \"vertical\": 0, \"extend\": 878, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.81700134277344,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.274Z\", \"vertical\": 621, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.926998138427737,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.384Z\", \"vertical\": 0, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 36.98099899291992,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.438Z\", \"vertical\": 660, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.09199905395508,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.549Z\", \"vertical\": 4, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.104000091552737,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.561Z\", \"vertical\": 683, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.244998931884769,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.702Z\", \"vertical\": 35, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.24599838256836,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.703Z\", \"vertical\": 707, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.37099838256836,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.828Z\", \"vertical\": 64, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.42399978637695,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.881Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.53799819946289,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:02.995Z\", \"vertical\": 79, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.762001037597659,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.219Z\", \"vertical\": 138, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.78099822998047,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.238Z\", \"vertical\": 672, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.89099884033203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.348Z\", \"vertical\": 163, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 37.90599822998047,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.363Z\", \"vertical\": 670, \"extend\": -512, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.0099983215332,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.467Z\", \"vertical\": 186, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.12300109863281,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.580Z\", \"vertical\": 202, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.303001403808597,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.760Z\", \"vertical\": 242, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.4119987487793,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.869Z\", \"vertical\": 260, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.518001556396487,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:03.975Z\", \"vertical\": 281, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.659000396728519,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.116Z\", \"vertical\": 303, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.779998779296878,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.237Z\", \"vertical\": 330, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 38.91699981689453,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.374Z\", \"vertical\": 355, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.08399963378906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.541Z\", \"vertical\": 388, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.2239990234375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.681Z\", \"vertical\": 423, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.34199905395508,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:04.799Z\", \"close_door\": true, \"oven_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.4370002746582,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.894Z\", \"vertical\": 464, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.53900146484375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:04.996Z\", \"vertical\": 481, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.64899826049805,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:05.106Z\", \"vertical\": 489, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.7760009765625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:05.233Z\", \"vertical\": 490, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 39.888999938964847,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:05.346Z\", \"close_door\": false, \"oven_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 40.374000549316409,
+            "topic": "dt/vgr/grip",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:05.831Z\", \"active\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 41.82600021362305,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.283Z\", \"vertical\": 670, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 41.95399856567383,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.411Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.10599899291992,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.563Z\", \"vertical\": 469, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.119998931884769,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.577Z\", \"vertical\": 703, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.23400115966797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.691Z\", \"vertical\": 447, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.27000045776367,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.727Z\", \"vertical\": 709, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.435001373291019,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.892Z\", \"vertical\": 415, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.448001861572269,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:07.905Z\", \"vertical\": 710, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.5620002746582,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.019Z\", \"belt_speed\": 400, \"isTriggeredIn\": false, \"isTriggeredOut\": true, \"rot_direction\": \"CCW\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.650001525878909,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.107Z\", \"vertical\": 380, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.86199951171875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.319Z\", \"vertical\": 348, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 42.900001525878909,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.357Z\", \"belt_speed\": 400, \"isTriggeredIn\": false, \"isTriggeredOut\": false, \"rot_direction\": \"CCW\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.034000396728519,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.491Z\", \"vertical\": 328, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.15599822998047,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.613Z\", \"vertical\": 301, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.27000045776367,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.727Z\", \"vertical\": 281, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.35499954223633,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": false, \"move2Ref5\": true, \"ts\": \"2026-07-27T10:46:08.812Z\", \"close_door\": false, \"oven_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.38800048828125,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.845Z\", \"vertical\": 267, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.50400161743164,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:08.961Z\", \"vertical\": 248, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.65700149536133,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.114Z\", \"vertical\": 229, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.768001556396487,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.225Z\", \"vertical\": 203, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.874000549316409,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.331Z\", \"vertical\": 187, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 43.99300003051758,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.450Z\", \"vertical\": 168, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.11600112915039,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.573Z\", \"vertical\": 146, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.132999420166019,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": false, \"move2Ref5\": true, \"ts\": \"2026-07-27T10:46:09.590Z\", \"close_door\": false, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.24700164794922,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.704Z\", \"vertical\": 136, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.25,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.707Z\", \"belt_speed\": 0, \"isTriggeredIn\": true, \"isTriggeredOut\": false, \"rot_direction\": \"STOP\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.382999420166019,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.840Z\", \"vertical\": 106, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.400001525878909,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.857Z\", \"vertical\": 693, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.505001068115237,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.962Z\", \"vertical\": 90, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.50699996948242,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:09.964Z\", \"vertical\": 673, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.62799835205078,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.085Z\", \"vertical\": 65, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.715999603271487,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.173Z\", \"vertical\": 670, \"extend\": 512, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.858001708984378,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.315Z\", \"vertical\": 31, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 44.981998443603519,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.439Z\", \"vertical\": 12, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 45.09600067138672,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.553Z\", \"vertical\": 2, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 45.21500015258789,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.672Z\", \"vertical\": 0, \"extend\": 880, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 45.5,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:10.957Z\", \"vertical\": 0, \"extend\": 859, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 45.61000061035156,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.067Z\", \"vertical\": 0, \"extend\": 840, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 45.73500061035156,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.192Z\", \"vertical\": 0, \"extend\": 819, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 45.893001556396487,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.350Z\", \"vertical\": 0, \"extend\": 793, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.00199890136719,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.459Z\", \"vertical\": 0, \"extend\": 776, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.11000061035156,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.567Z\", \"vertical\": 0, \"extend\": 756, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.15800094604492,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:11.615Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.23099899291992,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.688Z\", \"vertical\": 0, \"extend\": 735, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.391998291015628,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.849Z\", \"vertical\": 0, \"extend\": 708, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.529998779296878,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:11.987Z\", \"vertical\": 0, \"extend\": 684, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.63399887084961,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.091Z\", \"vertical\": 0, \"extend\": 669, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.792999267578128,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.250Z\", \"vertical\": 0, \"extend\": 642, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 46.90599822998047,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.363Z\", \"vertical\": 0, \"extend\": 622, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.018001556396487,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.475Z\", \"vertical\": 0, \"extend\": 602, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.137001037597659,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.594Z\", \"vertical\": 0, \"extend\": 581, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.15399932861328,
+            "topic": "dt/hbw/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.611Z\", \"belt_speed\": 0, \"isTriggeredIn\": false, \"isTriggeredOut\": false, \"rot_direction\": \"STOP\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.25,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.707Z\", \"vertical\": 0, \"extend\": 565, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.31100082397461,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:12.768Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.323001861572269,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.780Z\", \"move2Ref3\": false, \"vacuum\": false, \"move2Ref4\": true, \"lowering\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.41999816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.877Z\", \"vertical\": 0, \"extend\": 534, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.5359992980957,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:12.993Z\", \"vertical\": 0, \"extend\": 514, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.55500030517578,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:13.012Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.6609992980957,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.118Z\", \"vertical\": 0, \"extend\": 495, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.797000885009769,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:13.254Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.80799865722656,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.265Z\", \"vertical\": 0, \"extend\": 468, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 47.93000030517578,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.387Z\", \"vertical\": 0, \"extend\": 448, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.02899932861328,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:13.486Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.07500076293945,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.532Z\", \"vertical\": 0, \"extend\": 422, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.18299865722656,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.640Z\", \"vertical\": 0, \"extend\": 405, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.27899932861328,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:13.736Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.323001861572269,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.780Z\", \"vertical\": 0, \"extend\": 381, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.43000030517578,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:13.887Z\", \"vertical\": 0, \"extend\": 364, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.48899841308594,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:13.946Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.56399917602539,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.021Z\", \"vertical\": 0, \"extend\": 342, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.61899948120117,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:14.076Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.70199966430664,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.159Z\", \"vertical\": 0, \"extend\": 317, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.82400131225586,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.281Z\", \"vertical\": 0, \"extend\": 296, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.90999984741211,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:14.367Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.93600082397461,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.393Z\", \"vertical\": 0, \"extend\": 277, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 48.97800064086914,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.435Z\", \"vertical\": 670, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.12900161743164,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.586Z\", \"vertical\": 0, \"extend\": 245, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.138999938964847,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:14.596Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.1510009765625,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.608Z\", \"vertical\": 630, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.3129997253418,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:14.770Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.33399963378906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.791Z\", \"vertical\": 0, \"extend\": 209, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.33700180053711,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.794Z\", \"vertical\": 649, \"extend\": 0, \"horizontal\": 28}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.44200134277344,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.899Z\", \"vertical\": 0, \"extend\": 190, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.46699905395508,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:14.924Z\", \"vertical\": 633, \"extend\": 0, \"horizontal\": 46}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.57400131225586,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.031Z\", \"vertical\": 0, \"extend\": 166, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.60300064086914,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.060Z\", \"vertical\": 607, \"extend\": 0, \"horizontal\": 69}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.617000579833987,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:15.074Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.77899932861328,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.236Z\", \"vertical\": 0, \"extend\": 131, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.78499984741211,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:15.242Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.814998626708987,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.272Z\", \"vertical\": 574, \"extend\": 0, \"horizontal\": 109}"
+        },
+        {
+            "tiempoRelativoSegundos": 49.99399948120117,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.451Z\", \"vertical\": 0, \"extend\": 95, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.01900100708008,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:15.476Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.034000396728519,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.491Z\", \"vertical\": 540, \"extend\": 0, \"horizontal\": 127}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.24599838256836,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.703Z\", \"vertical\": 0, \"extend\": 53, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.28300094604492,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.740Z\", \"vertical\": 497, \"extend\": 0, \"horizontal\": 188}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.297000885009769,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:15.754Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.400001525878909,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:15.857Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.404998779296878,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.862Z\", \"vertical\": 0, \"extend\": 25, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.435001373291019,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:15.892Z\", \"vertical\": 475, \"extend\": 0, \"horizontal\": 209}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.56399917602539,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.021Z\", \"vertical\": 0, \"extend\": -2, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.56800079345703,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.025Z\", \"vertical\": 458, \"extend\": 0, \"horizontal\": 228}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.76100158691406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.218Z\", \"vertical\": 0, \"extend\": -35, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.779998779296878,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:16.237Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.79399871826172,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.251Z\", \"vertical\": 420, \"extend\": 0, \"horizontal\": 271}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.902000427246097,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.359Z\", \"vertical\": 405, \"extend\": 0, \"horizontal\": 289}"
+        },
+        {
+            "tiempoRelativoSegundos": 50.94499969482422,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:16.402Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.064998626708987,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.522Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 913}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.066001892089847,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.523Z\", \"vertical\": 373, \"extend\": 0, \"horizontal\": 314}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.1879997253418,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.645Z\", \"vertical\": 353, \"extend\": 0, \"horizontal\": 332}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.207000732421878,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:16.664Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.33399963378906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.791Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 886}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.33599853515625,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.793Z\", \"vertical\": 333, \"extend\": 0, \"horizontal\": 357}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.435001373291019,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:16.892Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.486000061035159,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.943Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 860}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.51100158691406,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:16.968Z\", \"vertical\": 307, \"extend\": 0, \"horizontal\": 388}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.59000015258789,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:17.047Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.638999938964847,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.096Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 831}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.63999938964844,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.097Z\", \"vertical\": 286, \"extend\": 0, \"horizontal\": 410}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.69599914550781,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.153Z\", \"stockItems\": [{\"workpiece\": null, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.75600051879883,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.213Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 809}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.757999420166019,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.215Z\", \"vertical\": 269, \"extend\": 0, \"horizontal\": 418}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.816001892089847,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:17.273Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.89899826049805,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.356Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 785}"
+        },
+        {
+            "tiempoRelativoSegundos": 51.98400115966797,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.441Z\", \"vertical\": 229, \"extend\": 0, \"horizontal\": 463}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.1609992980957,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.618Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 737}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.16400146484375,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.621Z\", \"vertical\": 203, \"extend\": 0, \"horizontal\": 498}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.345001220703128,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:17.802Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.35300064086914,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.810Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 704}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.47200012207031,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:17.929Z\", \"vertical\": 152, \"extend\": 0, \"horizontal\": 549}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.540000915527347,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:17.997Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.60499954223633,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.062Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 655}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.60900115966797,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.066Z\", \"vertical\": 138, \"extend\": 0, \"horizontal\": 573}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.65299987792969,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:18.110Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.73400115966797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.191Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 633}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.73500061035156,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.192Z\", \"vertical\": 111, \"extend\": 0, \"horizontal\": 593}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.880001068115237,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.337Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 608}"
+        },
+        {
+            "tiempoRelativoSegundos": 52.887001037597659,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.344Z\", \"vertical\": 86, \"extend\": 0, \"horizontal\": 619}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.01599884033203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.473Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 581}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.04800033569336,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.505Z\", \"vertical\": 72, \"extend\": 0, \"horizontal\": 646}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.130001068115237,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:18.587Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.1609992980957,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.618Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 556}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.279998779296878,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.737Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 655}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.35900115966797,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:18.816Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.39400100708008,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.851Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 514}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.43199920654297,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:18.889Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 710}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.55500030517578,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.012Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 482}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.57500076293945,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.032Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 732}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.60100173950195,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": true, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:19.058Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.676998138427737,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.134Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 460}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.70199966430664,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.159Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 752}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.792999267578128,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": false, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:19.250Z\", \"close_door\": true, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.816001892089847,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.273Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 435}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.81800079345703,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.275Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.944000244140628,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.401Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 413}"
+        },
+        {
+            "tiempoRelativoSegundos": 53.94599914550781,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.403Z\", \"vertical\": 63, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.04600143432617,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:19.503Z\", \"close_door\": false, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.16400146484375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.621Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 375}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.16600036621094,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.623Z\", \"vertical\": 32, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.27199935913086,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.729Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 353}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.27299880981445,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.730Z\", \"vertical\": 31, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.37900161743164,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.836Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 333}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.380001068115237,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.837Z\", \"vertical\": 30, \"extend\": -512, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.48699951171875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:19.944Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 315}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.59199905395508,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.049Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 295}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.696998596191409,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.154Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 276}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.85900115966797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.316Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 54.96699905395508,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.424Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 225}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.016998291015628,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": true, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:20.474Z\", \"close_door\": false, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.10499954223633,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.562Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 202}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.2140007019043,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.671Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 182}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.33599853515625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.793Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 158}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.45399856567383,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:20.911Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 138}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.564998626708987,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:21.022Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 116}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.689998626708987,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:21.147Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 97}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.85599899291992,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:21.313Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 64}"
+        },
+        {
+            "tiempoRelativoSegundos": 55.974998474121097,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:21.432Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 43}"
+        },
+        {
+            "tiempoRelativoSegundos": 56.13600158691406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:21.593Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 16}"
+        },
+        {
+            "tiempoRelativoSegundos": 56.5890007019043,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:22.046Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 56.93000030517578,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:22.387Z\", \"move2Ref3\": false, \"vacuum\": false, \"move2Ref4\": false, \"lowering\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 57.0620002746582,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": true, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:22.519Z\", \"close_door\": false, \"oven_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 57.65299987792969,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:23.110Z\", \"close_door\": false, \"oven_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 57.6619987487793,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:23.119Z\", \"move2Ref3\": false, \"vacuum\": false, \"move2Ref4\": false, \"lowering\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 58.23699951171875,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:23.694Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 58.404998779296878,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:23.862Z\", \"vertical\": 51, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 58.518001556396487,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:23.975Z\", \"vertical\": 66, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 58.643001556396487,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:24.100Z\", \"vertical\": 70, \"extend\": 512, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 58.67300033569336,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:24.130Z\", \"move2Ref3\": false, \"vacuum\": true, \"move2Ref4\": false, \"lowering\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 59.70500183105469,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:25.162Z\", \"move2Ref3\": true, \"vacuum\": true, \"move2Ref4\": false, \"lowering\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 59.83599853515625,
+            "topic": "dt/mpo/oven",
+            "payloadJson": "{\"lights\": false, \"open_door\": true, \"move2Ref6\": false, \"move2Ref5\": false, \"ts\": \"2026-07-27T10:46:25.293Z\", \"close_door\": false, \"oven_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 62.83100128173828,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:28.288Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 756}"
+        },
+        {
+            "tiempoRelativoSegundos": 62.8390007019043,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:28.296Z\", \"stockItems\": [{\"workpiece\": null, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 63.215999603271487,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:28.673Z\", \"vertical\": 70, \"extend\": 0, \"horizontal\": 733}"
+        },
+        {
+            "tiempoRelativoSegundos": 63.33399963378906,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:28.791Z\", \"vertical\": 51, \"extend\": 0, \"horizontal\": 710}"
+        },
+        {
+            "tiempoRelativoSegundos": 63.46099853515625,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:28.918Z\", \"vertical\": 32, \"extend\": 0, \"horizontal\": 687}"
+        },
+        {
+            "tiempoRelativoSegundos": 63.57099914550781,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.028Z\", \"vertical\": 14, \"extend\": 0, \"horizontal\": 664}"
+        },
+        {
+            "tiempoRelativoSegundos": 63.69200134277344,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.149Z\", \"vertical\": 14, \"extend\": 0, \"horizontal\": 641}"
+        },
+        {
+            "tiempoRelativoSegundos": 63.82600021362305,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.283Z\", \"vertical\": 6, \"extend\": 0, \"horizontal\": 616}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.03700256347656,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.494Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 575}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.15899658203125,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.616Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 552}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.29100036621094,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.748Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 526}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.40499877929688,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.862Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 503}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.51499938964844,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:29.972Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 479}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.63300323486328,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.090Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 460}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.74800109863281,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.205Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 436}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.86299896240235,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.320Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 415}"
+        },
+        {
+            "tiempoRelativoSegundos": 64.98899841308594,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.446Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 390}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.10600280761719,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.563Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 366}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.22200012207031,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.679Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 343}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.33000183105469,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.787Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 323}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.4489974975586,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:30.906Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 300}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.552001953125,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.009Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 278}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.68699645996094,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.144Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 253}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.81199645996094,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.269Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 230}"
+        },
+        {
+            "tiempoRelativoSegundos": 65.9219970703125,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.379Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 206}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.04000091552735,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.497Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 183}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.19200134277344,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.649Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 156}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.29499816894531,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.752Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 134}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.43000030517578,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.887Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 109}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.53800201416016,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:31.995Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 86}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.67900085449219,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:32.136Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 61}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.78500366210938,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:32.242Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 39}"
+        },
+        {
+            "tiempoRelativoSegundos": 66.90399932861328,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:32.361Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 16}"
+        },
+        {
+            "tiempoRelativoSegundos": 67.03800201416016,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:32.495Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": -9}"
+        },
+        {
+            "tiempoRelativoSegundos": 67.29900360107422,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:32.756Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": -17}"
+        },
+        {
+            "tiempoRelativoSegundos": 67.43599700927735,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:32.893Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": -24}"
+        },
+        {
+            "tiempoRelativoSegundos": 67.5530014038086,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:33.010Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": -29}"
+        },
+        {
+            "tiempoRelativoSegundos": 67.72000122070313,
+            "topic": "dt/hbw/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:33.177Z\", \"vertical\": 0, \"extend\": 0, \"horizontal\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 69.12699890136719,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:34.584Z\", \"move2Ref3\": false, \"vacuum\": true, \"move2Ref4\": false, \"lowering\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 69.24199676513672,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:34.699Z\", \"move2Ref3\": false, \"vacuum\": true, \"move2Ref4\": false, \"lowering\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 69.66100311279297,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:35.118Z\", \"move2Ref3\": false, \"vacuum\": false, \"move2Ref4\": false, \"lowering\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 69.95999908447266,
+            "topic": "dt/mpo/arm",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:35.417Z\", \"move2Ref3\": false, \"vacuum\": false, \"move2Ref4\": false, \"lowering\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 70.44100189208985,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": true, \"ts\": \"2026-07-27T10:46:35.898Z\", \"saw\": 0, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 1}"
+        },
+        {
+            "tiempoRelativoSegundos": 72.15599822998047,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:37.613Z\", \"stockItems\": [{\"workpiece\": null, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 72.16699981689453,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:37.624Z\", \"saw\": 0, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 73.0999984741211,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:38.557Z\", \"saw\": -512, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 75.62100219726563,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:41.078Z\", \"saw\": 512, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 78.31300354003906,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:43.770Z\", \"saw\": 0, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 79.24800109863281,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:44.705Z\", \"saw\": 0, \"move2Ref9\": true, \"move2Ref8\": false, \"eject\": false, \"rotation\": 1}"
+        },
+        {
+            "tiempoRelativoSegundos": 79.85399627685547,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:45.311Z\", \"saw\": 0, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 80.36299896240235,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:45.820Z\", \"saw\": 0, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": true, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 80.49700164794922,
+            "topic": "dt/mpo/turntable",
+            "payloadJson": "{\"move2Ref7\": false, \"move2Ref10\": false, \"ts\": \"2026-07-27T10:46:45.954Z\", \"saw\": 0, \"move2Ref9\": false, \"move2Ref8\": false, \"eject\": false, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 80.51399993896485,
+            "topic": "dt/mpo/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:45.971Z\", \"active\": true, \"exit_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 80.51699829101563,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:45.974Z\", \"cylinder_sensor\": false, \"entry_sensor\": false, \"speed\": 300}"
+        },
+        {
+            "tiempoRelativoSegundos": 81.56600189208985,
+            "topic": "dt/mpo/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:47.023Z\", \"active\": true, \"exit_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 82.01100158691406,
+            "topic": "dt/mpo/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:47.468Z\", \"active\": true, \"exit_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 82.24700164794922,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:47.704Z\", \"cylinder_sensor\": false, \"entry_sensor\": true, \"speed\": 300}"
+        },
+        {
+            "tiempoRelativoSegundos": 82.52400207519531,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:47.981Z\", \"cylinder_sensor\": false, \"entry_sensor\": true, \"speed\": 512}"
+        },
+        {
+            "tiempoRelativoSegundos": 82.9530029296875,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:48.410Z\", \"cylinder_sensor\": false, \"entry_sensor\": false, \"speed\": 512}"
+        },
+        {
+            "tiempoRelativoSegundos": 86.61399841308594,
+            "topic": "dt/mpo/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:52.071Z\", \"active\": false, \"exit_sensor\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 86.88800048828125,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:52.345Z\", \"cylinder_sensor\": true, \"entry_sensor\": false, \"speed\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 87.02100372314453,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:52.478Z\", \"cylinder_sensor\": true, \"entry_sensor\": false, \"speed\": 350}"
+        },
+        {
+            "tiempoRelativoSegundos": 87.0270004272461,
+            "topic": "dt/sld/cylinder",
+            "payloadJson": "{\"cyl_color\": \"WHITE\", \"is_white\": false, \"is_blue\": false, \"ts\": \"2026-07-27T10:46:52.484Z\", \"active\": false, \"is_red\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 87.67900085449219,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:53.136Z\", \"cylinder_sensor\": false, \"entry_sensor\": false, \"speed\": 350}"
+        },
+        {
+            "tiempoRelativoSegundos": 87.84600067138672,
+            "topic": "i/ldr",
+            "payloadJson": "{\"ts\":\"2026-07-27T10:46:53.303Z\", \"br\":91.0, \"ldr\":5851}"
+        },
+        {
+            "tiempoRelativoSegundos": 87.9729995727539,
+            "topic": "dt/sld/belt",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:53.430Z\", \"cylinder_sensor\": false, \"entry_sensor\": false, \"speed\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 88.01200103759766,
+            "topic": "dt/sld/cylinder",
+            "payloadJson": "{\"cyl_color\": \"WHITE\", \"is_white\": false, \"is_blue\": false, \"ts\": \"2026-07-27T10:46:53.469Z\", \"active\": true, \"is_red\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 88.25399780273438,
+            "topic": "dt/sld/cylinder",
+            "payloadJson": "{\"cyl_color\": \"WHITE\", \"is_white\": true, \"is_blue\": false, \"ts\": \"2026-07-27T10:46:53.711Z\", \"active\": true, \"is_red\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 88.625,
+            "topic": "dt/sld/cylinder",
+            "payloadJson": "{\"cyl_color\": null, \"is_white\": true, \"is_blue\": false, \"ts\": \"2026-07-27T10:46:54.082Z\", \"active\": false, \"is_red\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 88.79900360107422,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:54.256Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 33}"
+        },
+        {
+            "tiempoRelativoSegundos": 88.90899658203125,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:54.366Z\", \"vertical\": 9, \"extend\": 0, \"rotation\": 33}"
+        },
+        {
+            "tiempoRelativoSegundos": 89.1240005493164,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:54.581Z\", \"vertical\": 50, \"extend\": 23, \"rotation\": 43}"
+        },
+        {
+            "tiempoRelativoSegundos": 89.2300033569336,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:54.687Z\", \"vertical\": 69, \"extend\": 46, \"rotation\": 57}"
+        },
+        {
+            "tiempoRelativoSegundos": 89.41999816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:54.877Z\", \"vertical\": 108, \"extend\": 63, \"rotation\": 89}"
+        },
+        {
+            "tiempoRelativoSegundos": 89.59100341796875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.048Z\", \"vertical\": 138, \"extend\": 110, \"rotation\": 116}"
+        },
+        {
+            "tiempoRelativoSegundos": 89.7750015258789,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.232Z\", \"vertical\": 173, \"extend\": 143, \"rotation\": 142}"
+        },
+        {
+            "tiempoRelativoSegundos": 89.90399932861328,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.361Z\", \"vertical\": 202, \"extend\": 166, \"rotation\": 167}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.01699829101563,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.474Z\", \"vertical\": 219, \"extend\": 188, \"rotation\": 182}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.11499786376953,
+            "topic": "i/bme680",
+            "payloadJson": "{\"ts\":\"2026-07-27T10:46:55.572Z\",\"t\":28.9,\"rt\":0.0,\"h\":43.7,\"rh\":0.0,\"p\":1017.5,\"iaq\":-1,\"aq\":2,\"gr\":0}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.1259994506836,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.583Z\", \"vertical\": 242, \"extend\": 211, \"rotation\": 201}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.23300170898438,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.690Z\", \"vertical\": 260, \"extend\": 226, \"rotation\": 215}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.34500122070313,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.802Z\", \"vertical\": 287, \"extend\": 241, \"rotation\": 238}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.45700073242188,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:55.914Z\", \"vertical\": 306, \"extend\": 273, \"rotation\": 254}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.56300354003906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.020Z\", \"vertical\": 329, \"extend\": 280, \"rotation\": 273}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.77999877929688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.237Z\", \"vertical\": 367, \"extend\": 312, \"rotation\": 307}"
+        },
+        {
+            "tiempoRelativoSegundos": 90.89299774169922,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.350Z\", \"vertical\": 385, \"extend\": 356, \"rotation\": 319}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.01399993896485,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.471Z\", \"vertical\": 416, \"extend\": 359, \"rotation\": 344}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.14600372314453,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.603Z\", \"vertical\": 441, \"extend\": 360, \"rotation\": 366}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.30899810791016,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.766Z\", \"vertical\": 470, \"extend\": 360, \"rotation\": 392}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.49299621582031,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:56.950Z\", \"vertical\": 509, \"extend\": 360, \"rotation\": 423}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.63300323486328,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.090Z\", \"vertical\": 534, \"extend\": 360, \"rotation\": 441}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.74299621582031,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.200Z\", \"vertical\": 558, \"extend\": 360, \"rotation\": 452}"
+        },
+        {
+            "tiempoRelativoSegundos": 91.91999816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.377Z\", \"vertical\": 587, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.06999969482422,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.527Z\", \"vertical\": 623, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.19999694824219,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.657Z\", \"vertical\": 643, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.37999725341797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.837Z\", \"vertical\": 682, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.52899932861328,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:57.986Z\", \"vertical\": 713, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.59400177001953,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.051Z\", \"stockItems\": [{\"workpiece\": null, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.68000030517578,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.137Z\", \"vertical\": 738, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.78800201416016,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.245Z\", \"vertical\": 762, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 92.91999816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.377Z\", \"vertical\": 783, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 93.02400207519531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.481Z\", \"vertical\": 808, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 93.12999725341797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.587Z\", \"vertical\": 827, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 93.24099731445313,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.698Z\", \"vertical\": 834, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 93.35900115966797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:46:58.816Z\", \"vertical\": 835, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 95.39900207519531,
+            "topic": "dt/vgr/grip",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:00.856Z\", \"active\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 95.61599731445313,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.073Z\", \"vertical\": 815, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 95.72799682617188,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.185Z\", \"vertical\": 800, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 95.87899780273438,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.336Z\", \"vertical\": 777, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 95.88800048828125,
+            "topic": "dt/sld/cylinder",
+            "payloadJson": "{\"cyl_color\": null, \"is_white\": false, \"is_blue\": false, \"ts\": \"2026-07-27T10:47:01.345Z\", \"active\": false, \"is_red\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.0250015258789,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.482Z\", \"vertical\": 754, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.16300201416016,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.620Z\", \"vertical\": 732, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.2979965209961,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.755Z\", \"vertical\": 712, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.43099975585938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:01.888Z\", \"vertical\": 691, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.5780029296875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.035Z\", \"vertical\": 669, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.70500183105469,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.162Z\", \"vertical\": 650, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.8949966430664,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.352Z\", \"vertical\": 619, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 96.99800109863281,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.455Z\", \"vertical\": 603, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 97.18099975585938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.638Z\", \"vertical\": 574, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 97.33399963378906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.791Z\", \"vertical\": 552, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 97.51599884033203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:02.973Z\", \"vertical\": 521, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 97.63999938964844,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.097Z\", \"vertical\": 502, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 97.79399871826172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.251Z\", \"vertical\": 481, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 97.95899963378906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.416Z\", \"vertical\": 453, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 98.10099792480469,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.558Z\", \"vertical\": 432, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 98.25499725341797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.712Z\", \"vertical\": 407, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 98.43499755859375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.892Z\", \"vertical\": 380, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 98.54199981689453,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:03.999Z\", \"vertical\": 362, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 98.65699768066406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.114Z\", \"vertical\": 344, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 98.79299926757813,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.250Z\", \"vertical\": 323, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.05999755859375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.517Z\", \"vertical\": 283, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.18299865722656,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.640Z\", \"vertical\": 264, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.28700256347656,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.744Z\", \"vertical\": 245, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.39900207519531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.856Z\", \"vertical\": 228, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.52999877929688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:04.987Z\", \"vertical\": 208, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.63300323486328,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.090Z\", \"vertical\": 194, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.74800109863281,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.205Z\", \"vertical\": 175, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.87799835205078,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.335Z\", \"vertical\": 155, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 99.98999786376953,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.447Z\", \"vertical\": 136, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.11499786376953,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.572Z\", \"vertical\": 118, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.23799896240235,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.695Z\", \"vertical\": 97, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.34600067138672,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.803Z\", \"vertical\": 80, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.4520034790039,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:05.909Z\", \"vertical\": 66, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.59100341796875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.048Z\", \"vertical\": 44, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.72100067138672,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.178Z\", \"vertical\": 22, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.85299682617188,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.310Z\", \"vertical\": 2, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 100.96099853515625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.418Z\", \"vertical\": -14, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.1719970703125,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.629Z\", \"vertical\": -35, \"extend\": 360, \"rotation\": 453}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.3949966430664,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.852Z\", \"vertical\": 18, \"extend\": 348, \"rotation\": 436}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.52200317382813,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:06.979Z\", \"vertical\": 31, \"extend\": 326, \"rotation\": 413}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.63899993896485,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.096Z\", \"vertical\": 58, \"extend\": 312, \"rotation\": 399}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.74600219726563,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.203Z\", \"vertical\": 83, \"extend\": 292, \"rotation\": 376}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.85800170898438,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.315Z\", \"vertical\": 104, \"extend\": 274, \"rotation\": 357}"
+        },
+        {
+            "tiempoRelativoSegundos": 101.97899627685547,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.436Z\", \"vertical\": 119, \"extend\": 256, \"rotation\": 338}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.08599853515625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.543Z\", \"vertical\": 145, \"extend\": 238, \"rotation\": 315}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.20700073242188,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.664Z\", \"vertical\": 172, \"extend\": 231, \"rotation\": 294}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.33399963378906,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.791Z\", \"vertical\": 195, \"extend\": 230, \"rotation\": 273}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.50499725341797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:07.962Z\", \"vertical\": 222, \"extend\": 230, \"rotation\": 255}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.63999938964844,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.097Z\", \"vertical\": 252, \"extend\": 230, \"rotation\": 218}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.76100158691406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.218Z\", \"vertical\": 275, \"extend\": 230, \"rotation\": 198}"
+        },
+        {
+            "tiempoRelativoSegundos": 102.91699981689453,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.374Z\", \"vertical\": 308, \"extend\": 230, \"rotation\": 181}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.05699920654297,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.514Z\", \"vertical\": 337, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.16699981689453,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.624Z\", \"vertical\": 357, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.28099822998047,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.738Z\", \"vertical\": 380, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.39600372314453,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.853Z\", \"vertical\": 396, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.53800201416016,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:08.995Z\", \"vertical\": 423, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.65699768066406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.114Z\", \"vertical\": 454, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.76100158691406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.218Z\", \"vertical\": 471, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.88700103759766,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.344Z\", \"vertical\": 498, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 103.98999786376953,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.447Z\", \"vertical\": 516, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.1259994506836,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.583Z\", \"vertical\": 543, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.25900268554688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.716Z\", \"vertical\": 570, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.4010009765625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.858Z\", \"vertical\": 593, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.51000213623047,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:09.967Z\", \"vertical\": 605, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.64099884033203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:10.098Z\", \"vertical\": 640, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.78800201416016,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:10.245Z\", \"vertical\": 642, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 104.8949966430664,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:10.352Z\", \"vertical\": 643, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 106.12300109863281,
+            "topic": "dt/dps/nfc",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:11.580Z\", \"id\": \"0468a0ca341291\", \"nfc\": \"Raw\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 111.20999908447266,
+            "topic": "dt/dps/nfc",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:16.667Z\", \"id\": \"0468a0ca341291\", \"nfc\": \"None\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 112.24500274658203,
+            "topic": "dt/dps/nfc",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:17.702Z\", \"id\": \"0468a0ca341291\", \"nfc\": \"Raw\"}"
+        },
+        {
+            "tiempoRelativoSegundos": 112.48799896240235,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:17.945Z\", \"vertical\": 623, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 112.63400268554688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.091Z\", \"vertical\": 601, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 112.74600219726563,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.203Z\", \"vertical\": 584, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 112.8499984741211,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.307Z\", \"vertical\": 568, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.02999877929688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.487Z\", \"vertical\": 539, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.0989990234375,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.556Z\", \"stockItems\": [{\"workpiece\": null, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.21800231933594,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.675Z\", \"vertical\": 511, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.4540023803711,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:18.911Z\", \"vertical\": 474, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.5999984741211,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.057Z\", \"vertical\": 450, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.70600128173828,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.163Z\", \"vertical\": 435, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.81400299072266,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.271Z\", \"vertical\": 418, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 113.91999816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.377Z\", \"vertical\": 402, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.07499694824219,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.532Z\", \"vertical\": 378, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.19300079345703,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.650Z\", \"vertical\": 359, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.33000183105469,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.787Z\", \"vertical\": 339, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.43699645996094,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:19.894Z\", \"vertical\": 320, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.5719985961914,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.029Z\", \"vertical\": 300, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.68399810791016,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.141Z\", \"vertical\": 283, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.84500122070313,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.302Z\", \"vertical\": 258, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 114.99600219726563,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.453Z\", \"vertical\": 236, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.14800262451172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.605Z\", \"vertical\": 211, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.26399993896485,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.721Z\", \"vertical\": 192, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.41899871826172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.876Z\", \"vertical\": 167, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.52899932861328,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:20.986Z\", \"vertical\": 152, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.6780014038086,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.135Z\", \"vertical\": 127, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.78500366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.242Z\", \"vertical\": 113, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 115.88800048828125,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.345Z\", \"vertical\": 96, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.00299835205078,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.460Z\", \"vertical\": 77, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.11000061035156,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.567Z\", \"vertical\": 61, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.22000122070313,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.677Z\", \"vertical\": 44, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.3290023803711,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.786Z\", \"vertical\": 25, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.4530029296875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:21.910Z\", \"vertical\": 7, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.5770034790039,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:22.034Z\", \"vertical\": -14, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 116.91899871826172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:22.376Z\", \"vertical\": 0, \"extend\": 230, \"rotation\": 180}"
+        },
+        {
+            "tiempoRelativoSegundos": 117.13400268554688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:22.591Z\", \"vertical\": 20, \"extend\": 239, \"rotation\": 202}"
+        },
+        {
+            "tiempoRelativoSegundos": 117.25,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:22.707Z\", \"vertical\": 43, \"extend\": 264, \"rotation\": 221}"
+        },
+        {
+            "tiempoRelativoSegundos": 117.44499969482422,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:22.902Z\", \"vertical\": 82, \"extend\": 301, \"rotation\": 246}"
+        },
+        {
+            "tiempoRelativoSegundos": 117.60700225830078,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.064Z\", \"vertical\": 114, \"extend\": 331, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 117.76599884033203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.223Z\", \"vertical\": 141, \"extend\": 357, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 117.91000366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.367Z\", \"vertical\": 168, \"extend\": 381, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.08499908447266,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.542Z\", \"vertical\": 203, \"extend\": 417, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.19300079345703,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.650Z\", \"vertical\": 226, \"extend\": 441, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.30400085449219,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.761Z\", \"vertical\": 247, \"extend\": 461, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.44599914550781,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:23.903Z\", \"vertical\": 264, \"extend\": 480, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.572998046875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:24.030Z\", \"vertical\": 288, \"extend\": 495, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.69200134277344,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:24.149Z\", \"vertical\": 290, \"extend\": 528, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 118.83599853515625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:24.293Z\", \"vertical\": 290, \"extend\": 530, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 119.04499816894531,
+            "topic": "dt/dps/dso",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:24.502Z\", \"dso_sensor\": true}"
+        },
+        {
+            "tiempoRelativoSegundos": 119.48200225830078,
+            "topic": "dt/vgr/grip",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:24.939Z\", \"active\": false}"
+        },
+        {
+            "tiempoRelativoSegundos": 122.64299774169922,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.100Z\", \"vertical\": 290, \"extend\": 508, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 122.76499938964844,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.222Z\", \"vertical\": 290, \"extend\": 487, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 122.88800048828125,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.345Z\", \"vertical\": 290, \"extend\": 467, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 122.99500274658203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.452Z\", \"vertical\": 290, \"extend\": 449, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 123.16000366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.617Z\", \"vertical\": 290, \"extend\": 419, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 123.2750015258789,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.732Z\", \"vertical\": 290, \"extend\": 402, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 123.41000366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:28.867Z\", \"vertical\": 290, \"extend\": 376, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 123.5510025024414,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.008Z\", \"vertical\": 290, \"extend\": 354, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 123.75399780273438,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.211Z\", \"vertical\": 290, \"extend\": 318, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 123.86199951171875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.319Z\", \"vertical\": 290, \"extend\": 299, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.02999877929688,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.487Z\", \"vertical\": 290, \"extend\": 270, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.18499755859375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.642Z\", \"vertical\": 290, \"extend\": 246, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.29499816894531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.752Z\", \"vertical\": 290, \"extend\": 228, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.39900207519531,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.856Z\", \"vertical\": 290, \"extend\": 207, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.50499725341797,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:29.962Z\", \"vertical\": 290, \"extend\": 191, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.61199951171875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.069Z\", \"vertical\": 290, \"extend\": 171, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.7239990234375,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.181Z\", \"vertical\": 290, \"extend\": 152, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.8479995727539,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.305Z\", \"vertical\": 290, \"extend\": 130, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 124.95500183105469,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.412Z\", \"vertical\": 290, \"extend\": 114, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.08499908447266,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.542Z\", \"vertical\": 290, \"extend\": 92, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.18900299072266,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.646Z\", \"vertical\": 290, \"extend\": 71, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.3010025024414,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.758Z\", \"vertical\": 290, \"extend\": 52, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.41000366210938,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.867Z\", \"vertical\": 290, \"extend\": 35, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.53600311279297,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:30.993Z\", \"vertical\": 290, \"extend\": 15, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.64800262451172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.105Z\", \"vertical\": 290, \"extend\": -6, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.75599670410156,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.213Z\", \"vertical\": 290, \"extend\": -26, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 125.88800048828125,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.345Z\", \"vertical\": 290, \"extend\": -49, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.10600280761719,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.563Z\", \"vertical\": 290, \"extend\": -66, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.23200225830078,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.689Z\", \"vertical\": 290, \"extend\": -91, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.36199951171875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.819Z\", \"vertical\": 290, \"extend\": 0, \"rotation\": 247}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.47799682617188,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:31.935Z\", \"vertical\": 290, \"extend\": 0, \"rotation\": 227}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.61799621582031,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.075Z\", \"vertical\": 267, \"extend\": 0, \"rotation\": 201}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.77300262451172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.230Z\", \"vertical\": 245, \"extend\": 0, \"rotation\": 176}"
+        },
+        {
+            "tiempoRelativoSegundos": 126.94400024414063,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.401Z\", \"vertical\": 217, \"extend\": 0, \"rotation\": 144}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.06700134277344,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.524Z\", \"vertical\": 196, \"extend\": 0, \"rotation\": 121}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.18000030517578,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.637Z\", \"vertical\": 181, \"extend\": 0, \"rotation\": 103}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.29399871826172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.751Z\", \"vertical\": 162, \"extend\": 0, \"rotation\": 81}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.40699768066406,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:32.864Z\", \"vertical\": 145, \"extend\": 0, \"rotation\": 62}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.58799743652344,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.045Z\", \"vertical\": 117, \"extend\": 0, \"rotation\": 30}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.73699951171875,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.194Z\", \"vertical\": 92, \"extend\": 0, \"rotation\": 2}"
+        },
+        {
+            "tiempoRelativoSegundos": 127.89099884033203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.348Z\", \"vertical\": 68, \"extend\": 0, \"rotation\": -24}"
+        },
+        {
+            "tiempoRelativoSegundos": 128.0260009765625,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.483Z\", \"vertical\": 46, \"extend\": 0, \"rotation\": -24}"
+        },
+        {
+            "tiempoRelativoSegundos": 128.13999938964845,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.597Z\", \"vertical\": 29, \"extend\": 0, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 128.24400329589845,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.701Z\", \"vertical\": 14, \"extend\": 0, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 128.3679962158203,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:33.825Z\", \"vertical\": -6, \"extend\": 0, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 128.6060028076172,
+            "topic": "dt/vgr/pos",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:34.063Z\", \"vertical\": 0, \"extend\": 0, \"rotation\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 128.66000366210938,
+            "topic": "dt/ssc/leds",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:34.117Z\", \"leds_semaphore\": 1, \"led_online\": 0}"
+        },
+        {
+            "tiempoRelativoSegundos": 133.36700439453126,
+            "topic": "f/i/stock",
+            "payloadJson": "{\"ts\": \"2026-07-27T10:47:38.824Z\", \"stockItems\": [{\"workpiece\": null, \"location\": \"A1\"}, {\"workpiece\": {\"id\": \"048aa0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"B1\"}, {\"workpiece\": {\"id\": \"045ea0ca341291\", \"type\": \"WHITE\", \"state\": \"RAW\"}, \"location\": \"C1\"}, {\"workpiece\": {\"id\": \"0469a0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"A2\"}, {\"workpiece\": {\"id\": \"048ba0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"B2\"}, {\"workpiece\": {\"id\": \"041da0ca341291\", \"type\": \"RED\", \"state\": \"RAW\"}, \"location\": \"C2\"}, {\"workpiece\": {\"id\": \"04566bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"A3\"}, {\"workpiece\": {\"id\": \"04296bca341290\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"B3\"}, {\"workpiece\": {\"id\": \"047993ca341291\", \"type\": \"BLUE\", \"state\": \"RAW\"}, \"location\": \"C3\"}]}"
+        }
+    ]
+}

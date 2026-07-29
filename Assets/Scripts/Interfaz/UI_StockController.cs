@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 public class UI_StockController : MonoBehaviour
@@ -47,7 +48,7 @@ public class UI_StockController : MonoBehaviour
         {
             MQTT_InterfaceClient.Instance.OnStockUpdateEvent += ActualizarPanelAlmacen;
 
-            // 🚀 SOLUCIÓN: Si ya se había recibido el stock retenido antes de que la UI arrancara, lo pintamos ya
+            // Si ya se había recibido el stock retenido antes de que la UI arrancara, lo pintamos ya
             if (MQTT_InterfaceClient.Instance.UltimoStock != null)
             {
                 ActualizarPanelAlmacen(MQTT_InterfaceClient.Instance.UltimoStock);
@@ -95,7 +96,13 @@ public class UI_StockController : MonoBehaviour
         {
             if (slot.imagenComponente != null)
             {
-                UI_SlotMouseDetector detector = slot.imagenComponente.gameObject.AddComponent<UI_SlotMouseDetector>();
+                // Obtenemos el componente si ya existe, o lo añadimos si no está presente
+                UI_SlotMouseDetector detector = slot.imagenComponente.GetComponent<UI_SlotMouseDetector>();
+                if (detector == null)
+                {
+                    detector = slot.imagenComponente.gameObject.AddComponent<UI_SlotMouseDetector>();
+                }
+
                 detector.OnMouseOverSlot = () => AlEntrarCursorEnSlot(slot);
                 detector.OnMouseExitSlot = () => AlSalirCursorDeSlot(slot);
             }
@@ -194,12 +201,23 @@ public class UI_StockController : MonoBehaviour
         ActualizarUIElementoPedido(txtStockBlanco, btnPedirBlanco, contadorBlanco);
     }
 
+    // ====================================================================
+    // PREDICCIÓN DE PEDIDO: Conmuta entre Online y Offline según corresponda
+    // ====================================================================
     private void EnviarPedidoA_MQTT(string colorPieza)
     {
-        if (MQTT_InterfaceClient.Instance != null)
+        // Delegamos a SimuladorOffline para que evalúe si reproducir JSON (Offline) o publicar por red (Online)
+        if (SimuladorOffline.Instance != null)
         {
-            MQTT_InterfaceClient.Instance.SendOrder(colorPieza);
-            Debug.Log($"<color=cyan>[MQTT] Orden de pieza enviada: {colorPieza}</color>");
+            SimuladorOffline.Instance.PedirPieza(colorPieza);
+        }
+        else
+        {
+            if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
+            {
+                MQTT_InterfaceClient.Instance.SendOrder(colorPieza);
+                Debug.Log($"<color=cyan>[MQTT] Orden de pieza enviada directamente: {colorPieza}</color>");
+            }
         }
     }
 

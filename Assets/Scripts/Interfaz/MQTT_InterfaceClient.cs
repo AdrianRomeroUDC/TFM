@@ -30,6 +30,9 @@ public class MQTT_InterfaceClient : MonoBehaviour
 
     private volatile bool estaActivo = true;
 
+    // Propiedad pública para consultar el estado de la conexión
+    public bool IsConnected => client != null && client.IsConnected;
+
     public StockPayload UltimoStock { get; private set; }
 
     private Queue<Bme680Payload> bmeQueue = new Queue<Bme680Payload>();
@@ -42,20 +45,16 @@ public class MQTT_InterfaceClient : MonoBehaviour
     public event Action<string> OnCameraImageEvent;
     public event Action<StockPayload> OnStockUpdateEvent;
 
-    [Header("Configuración del Broker Mosquitto Local")]
-    public string brokerHost = "10.113.36.36";
-    public int puerto = 1884;
-
-    [Header("Credenciales")]
-    public string usuario = "LearningFactory";
-    public string contrasena = "Fischertechnik1";
-
     void Awake()
     {
         if (instance == null) instance = this;
         else { Destroy(gameObject); return; }
+    }
 
-        string clientIdShort = "Unity_" + UnityEngine.Random.Range(10000, 99999);
+    void Start()
+    {
+        // Se conecta en Start para asegurar que MQTTClient.Instance ya existe
+        string clientIdShort = "Unity_Interfaz_" + UnityEngine.Random.Range(10000, 99999);
         Task.Run(() => ConnectAsync(clientIdShort));
     }
 
@@ -109,6 +108,21 @@ public class MQTT_InterfaceClient : MonoBehaviour
     {
         try
         {
+            // Valores de respaldo por defecto
+            string brokerHost = "10.113.36.36";
+            int puerto = 1884;
+            string usuario = "LearningFactory";
+            string contrasena = "Fischertechnik1";
+
+            // Lee automáticamente la configuración desde MQTTClient
+            if (MQTTClient.Instance != null)
+            {
+                brokerHost = MQTTClient.Instance.brokerHost;
+                puerto = MQTTClient.Instance.puerto;
+                usuario = MQTTClient.Instance.usuario;
+                contrasena = MQTTClient.Instance.contrasena;
+            }
+
             client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
 
@@ -219,7 +233,17 @@ public class MQTT_InterfaceClient : MonoBehaviour
     {
         if (client != null && client.IsConnected)
         {
-            try { client.Disconnect(); } catch { }
+            try
+            {
+                SendCameraConfig(false, 2);
+                Debug.Log("<color=yellow>[MQTT Interfaz] Enviando orden de apagado de cámara (c/cam) antes de salir...</color>");
+                System.Threading.Thread.Sleep(100);
+                client.Disconnect();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[MQTT Interfaz] Error al enviar apagar cámara en OnApplicationQuit: {ex.Message}");
+            }
         }
     }
 }

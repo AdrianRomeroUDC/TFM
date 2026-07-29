@@ -60,6 +60,9 @@ public class MQTTClient : MonoBehaviour
 
     private volatile bool estaActivo = true;
 
+    // 🟢 Propiedad pública para consultar el estado de la conexión desde fuera
+    public bool IsConnected => client != null && client.IsConnected;
+
     private struct MensajeMQTT
     {
         public string topic;

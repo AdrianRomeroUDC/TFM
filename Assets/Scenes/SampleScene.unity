@@ -1737,6 +1737,86 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 69551153}
   m_CullTransparentMesh: 1
+--- !u!1 &70235449
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 70235451}
+  - component: {fileID: 70235450}
+  - component: {fileID: 70235452}
+  m_Layer: 5
+  m_Name: Simulacion
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &70235450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 70235449}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1affa765f8d398d4b880f1b14095cf0d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GenerarJSONSimulacion
+  carpetaGuardado: Assets/DatosSimulacion
+  piezaBlanca:
+    tipoPieza: WHITE
+    fechaHoraInicio: 27/07/2026 12:45:25
+    fechaHoraFin: 27/07/2026 12:47:45
+    nombreArchivoJson: datosPiezaBlanca.json
+  piezaRoja:
+    tipoPieza: RED
+    fechaHoraInicio: 29/07/2026 10:35:05
+    fechaHoraFin: 29/07/2026 10:37:20
+    nombreArchivoJson: datosPiezaRoja.json
+  piezaAzul:
+    tipoPieza: BLUE
+    fechaHoraInicio: 29/07/2026 12:26:40
+    fechaHoraFin: 29/07/2026 12:29:05
+    nombreArchivoJson: datosPiezaAzul.json
+--- !u!224 &70235451
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 70235449}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 960, y: 540}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &70235452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 70235449}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5095d5625825d6d40bde2b8d6c3a1c95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimuladorOffline
+  jsonPiezaBlanca: {fileID: 4900000, guid: f99d5cbbb47f32240b0e5c5d3c424133, type: 3}
+  jsonPiezaRoja: {fileID: 4900000, guid: 6e037101d43bc564f90266cebb4cf4f8, type: 3}
+  jsonPiezaAzul: {fileID: 4900000, guid: ab78ff2eac422c34195d9ceb55568dc3, type: 3}
 --- !u!1 &70862687
 GameObject:
   m_ObjectHideFlags: 0
@@ -3712,10 +3792,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e47b3df23441524fae22b1ed26f6ec5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MQTT_InterfazClient
-  brokerHost: 10.113.36.36
-  puerto: 1884
-  usuario: LearningFactory
-  contrasena: Fischertechnik1
 --- !u!4 &139025397
 Transform:
   m_ObjectHideFlags: 0
@@ -18540,7 +18616,6 @@ GameObject:
   m_Component:
   - component: {fileID: 744735543}
   - component: {fileID: 744735544}
-  - component: {fileID: 744735545}
   m_Layer: 5
   m_Name: ContenidoSensores
   m_TagString: Untagged
@@ -18595,28 +18670,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &744735545
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 744735542}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5e031006ae6158544a8f9927e1b2a556, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI_SensorsMonitor
-  txtTemperatura: {fileID: 2134828024}
-  txtHumedad: {fileID: 1955074149}
-  txtPresion: {fileID: 1065737756}
-  txtLuminosidad: {fileID: 589990182}
-  txtCalidadAire: {fileID: 96729177}
-  imgCalidadAireLED: {fileID: 1587530920}
-  toggleSensores: {fileID: 1611805938}
-  imagenFondoToggle: {fileID: 0}
-  panelSensores: {fileID: 1588723558}
-  dropdownPeriodo: {fileID: 1682434076}
 --- !u!1 &746782114
 GameObject:
   m_ObjectHideFlags: 0
@@ -22089,7 +22142,6 @@ GameObject:
   - component: {fileID: 931542532}
   - component: {fileID: 931542533}
   - component: {fileID: 931542536}
-  - component: {fileID: 931542534}
   - component: {fileID: 931542535}
   m_Layer: 5
   m_Name: ContenidoCamara
@@ -22165,26 +22217,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &931542534
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 931542530}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a9443801688c61242b2f27133b5ca333, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UI_CameraController
-  rawImageVideo: {fileID: 636311281}
-  imagenFondoToggle: {fileID: 0}
-  panelVideoIzquierda: {fileID: 208864117}
-  desplazamientoY: 100
-  toggleCamara: {fileID: 1854321590}
-  sliderFPS: {fileID: 5083169}
-  dropdownGrados: {fileID: 872273887}
-  botonesPTU: []
 --- !u!114 &931542535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26914,7 +26946,7 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 931542534}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: UI_CameraController, Assembly-CSharp
         m_MethodName: EnviarConfiguracionActual
         m_Mode: 1
@@ -31782,6 +31814,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1346186701}
   - component: {fileID: 1346186702}
+  - component: {fileID: 1346186704}
+  - component: {fileID: 1346186703}
   m_Layer: 5
   m_Name: Controlador_MenuInterfaz
   m_TagString: Untagged
@@ -31846,6 +31880,48 @@ MonoBehaviour:
   multiplicadorVelocidad: 1
   modoSeleccionado: 0
   estadoActual: 0
+--- !u!114 &1346186703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1346186700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e031006ae6158544a8f9927e1b2a556, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_SensorsMonitor
+  txtTemperatura: {fileID: 2134828024}
+  txtHumedad: {fileID: 1955074149}
+  txtPresion: {fileID: 1065737756}
+  txtLuminosidad: {fileID: 589990182}
+  txtCalidadAire: {fileID: 96729177}
+  imgCalidadAireLED: {fileID: 1587530920}
+  toggleSensores: {fileID: 1611805938}
+  imagenFondoToggle: {fileID: 0}
+  panelSensores: {fileID: 1588723558}
+  dropdownPeriodo: {fileID: 1682434076}
+--- !u!114 &1346186704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1346186700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9443801688c61242b2f27133b5ca333, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_CameraController
+  rawImageVideo: {fileID: 636311281}
+  imagenFondoToggle: {fileID: 0}
+  panelVideoIzquierda: {fileID: 208864117}
+  desplazamientoY: 100
+  toggleCamara: {fileID: 1854321590}
+  sliderFPS: {fileID: 5083169}
+  dropdownGrados: {fileID: 872273887}
+  botonesPTU: []
 --- !u!1 &1350922105
 GameObject:
   m_ObjectHideFlags: 0
@@ -43477,7 +43553,7 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 931542534}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: UI_CameraController, Assembly-CSharp
         m_MethodName: EnviarConfiguracionActual
         m_Mode: 1
@@ -49354,7 +49430,7 @@ MonoBehaviour:
   brokerHost: 10.113.36.36
   puerto: 1884
   usuario: LearningFactory
-  contrasena: Fischertechnik1
+  contrasena: 
 --- !u!4 &2076051687
 Transform:
   m_ObjectHideFlags: 0
@@ -332820,5 +332896,6 @@ SceneRoots:
   - {fileID: 1874690347}
   - {fileID: 1041220054}
   - {fileID: 1288341103}
+  - {fileID: 70235451}
   - {fileID: 405170315}
   - {fileID: 1020615021}
