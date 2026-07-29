@@ -81,10 +81,11 @@ public class SimuladorOffline : MonoBehaviour
         if (!mqtt1Conectado && !mqtt2Conectado)
         {
             InicializarStockPorDefecto();
+            LimpiarPlataformaDSO();
         }
     }
 
-    private void InicializarStockPorDefecto()
+    public void InicializarStockPorDefecto()
     {
         JSON_FullStock stockFake = new JSON_FullStock();
         List<JSON_StockItem> listaItems = new List<JSON_StockItem>();
@@ -119,6 +120,17 @@ public class SimuladorOffline : MonoBehaviour
 
     public void PedirPieza(string tipoPieza)
     {
+        // 🟢 BLOQUEO ABSOLUTO: No se procesa la petición si BBDD está seleccionada o ejecutándose
+        if (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsModoBBDDActivo)
+        {
+            Debug.LogWarning("⚠️ [SimuladorOffline] No se puede pedir piezas mientras el Modo BBDD esté activo. Apaga el Toggle BBDD y pulsa Play para volver a Directo.");
+            return;
+        }
+
+        // Si ya hay una simulación en curso, se ignora la petición
+        if (EnEjecucion) return;
+
+        // Comprobar conexión MQTT real
         bool mqtt1Conectado = MQTTClient.Instance != null && MQTTClient.Instance.IsConnected;
         bool mqtt2Conectado = MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected;
 
@@ -126,14 +138,13 @@ public class SimuladorOffline : MonoBehaviour
         {
             if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
             {
+                Debug.Log($"📡 [MQTT Directo] Enviando orden real para pieza {tipoPieza}...");
                 MQTT_InterfaceClient.Instance.SendOrder(tipoPieza);
             }
             return;
         }
 
-        // Si ya hay una simulación en curso, se ignora la petición para proteger el estado
-        if (EnEjecucion) return;
-
+        // Si no hay broker, reproducir secuencia offline desde el JSON
         string claveUpper = tipoPieza.ToUpper();
         string claveMap = claveUpper.Contains("WHITE") || claveUpper.Contains("BLANC") ? "WHITE" :
                          claveUpper.Contains("RED") || claveUpper.Contains("ROJ") ? "RED" :
@@ -142,6 +153,10 @@ public class SimuladorOffline : MonoBehaviour
         if (mapaSecuencias.TryGetValue(claveMap, out SecuenciaPiezaData secuencia))
         {
             if (corrutinaSimulacion != null) StopCoroutine(corrutinaSimulacion);
+
+            InicializarStockPorDefecto();
+            LimpiarPlataformaDSO();
+
             corrutinaSimulacion = StartCoroutine(ReproducirSecuencia(secuencia));
         }
     }
@@ -150,9 +165,6 @@ public class SimuladorOffline : MonoBehaviour
     {
         EnEjecucion = true;
         OnEstadoSimulacionOfflineCambiado?.Invoke(true); // 🔒 Notificar inicio -> Deshabilitar botones UI
-
-        // 🟢 1. Eliminar o limpiar la pieza de plataformaDSO al comenzar una nueva simulación
-        LimpiarPlataformaDSO();
 
         float tiempoAcumulado = 0f;
         Debug.Log($"<color=green>▶️ [Modo Offline] Reproduciendo {secuencia.tipoPieza} ({secuencia.eventos.Count} eventos)...</color>");
@@ -163,7 +175,7 @@ public class SimuladorOffline : MonoBehaviour
 
             float tiempoEspera = ev.tiempoRelativoSegundos - tiempoAcumulado;
 
-            // 🟢 2. Soporte para PAUSA (exactamente igual que en reproducción BBDD)
+            // Soporte para PAUSA en tiempo real
             while (tiempoEspera > 0f)
             {
                 float multiplicador = (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsPausado) ? 0f :
@@ -176,7 +188,7 @@ public class SimuladorOffline : MonoBehaviour
                     tiempoAcumulado += delta;
                 }
 
-                yield return null; // Esperar al siguiente frame si está pausado
+                yield return null;
             }
 
             InyectarMensajeOffline(ev.topic, ev.payloadJson);
@@ -187,15 +199,23 @@ public class SimuladorOffline : MonoBehaviour
         Debug.Log($"<color=green>✅ [Modo Offline] Finalizada reproducción de {secuencia.tipoPieza}.</color>");
     }
 
-    /// <summary>
-    /// Limpia la plataforma DSO o estación de salida enviando un estado nulo o retirando el workpiece.
-    /// </summary>
-    private void LimpiarPlataformaDSO()
+    public void LimpiarPlataformaDSO()
     {
-        // Notificar eliminación enviando un payload con workpiece en null o estado retirado
         string payloadLimpieza = "{\"workpiece\":null,\"ts\":\"" + DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ") + "\"}";
         InyectarMensajeOffline("dt/dso/state", payloadLimpieza);
         InyectarMensajeOffline("f/i/dso", payloadLimpieza);
+    }
+
+    public void DetenerSimulacionForzada()
+    {
+        if (corrutinaSimulacion != null)
+        {
+            StopCoroutine(corrutinaSimulacion);
+            corrutinaSimulacion = null;
+        }
+
+        EnEjecucion = false;
+        OnEstadoSimulacionOfflineCambiado?.Invoke(false);
     }
 
     private void InyectarMensajeOffline(string topic, string payloadJson)

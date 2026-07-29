@@ -41,7 +41,7 @@ public class UI_StockController : MonoBehaviour
 
     private SlotUI slotBajoElCursor = null;
 
-    // 🟢 Control de stock actual retenido para reevaluar interactividad al bloquear/desbloquear
+    // Control de stock actual retenido
     private int stockActualAzul = 0;
     private int stockActualRojo = 0;
     private int stockActualBlanco = 0;
@@ -49,14 +49,19 @@ public class UI_StockController : MonoBehaviour
 
     private void OnEnable()
     {
-        // 🟢 Suscripción al evento que avisa si la simulación arrancó o finalizó
+        // Suscripción al evento que avisa si la simulación offline arrancó o finalizó
         SimuladorOffline.OnEstadoSimulacionOfflineCambiado += OnEstadoSimulacionOfflineCambiado;
+
+        // 🟢 Suscripción al evento del Menú que avisa si el Modo BBDD está activo o se permite pedir piezas
+        UI_ControladorMenu.OnEstadoPermisoPedidoCambiado += OnEstadoPermisoPedidoCambiado;
     }
 
     private void OnDisable()
     {
-        // 🟢 Desuscripción para evitar fugas de memoria
         SimuladorOffline.OnEstadoSimulacionOfflineCambiado -= OnEstadoSimulacionOfflineCambiado;
+
+        // 🟢 Desuscripción para evitar fugas de memoria
+        UI_ControladorMenu.OnEstadoPermisoPedidoCambiado -= OnEstadoPermisoPedidoCambiado;
     }
 
     void Start()
@@ -66,7 +71,6 @@ public class UI_StockController : MonoBehaviour
         {
             MQTT_InterfaceClient.Instance.OnStockUpdateEvent += ActualizarPanelAlmacen;
 
-            // Si ya se había recibido el stock retenido antes de que la UI arrancara, lo pintamos ya
             if (MQTT_InterfaceClient.Instance.UltimoStock != null)
             {
                 ActualizarPanelAlmacen(MQTT_InterfaceClient.Instance.UltimoStock);
@@ -83,6 +87,9 @@ public class UI_StockController : MonoBehaviour
 
         // Aseguramos que el tooltip empiece oculto
         if (panelTooltip != null) panelTooltip.SetActive(false);
+
+        // 🟢 Evaluar el estado inicial de interactividad de los botones al arrancar
+        ReevaluarTodosLosBotones();
     }
 
     void OnDestroy()
@@ -106,13 +113,21 @@ public class UI_StockController : MonoBehaviour
     }
 
     // ====================================================================
-    // BLOQUEO / DESBLOQUEO DE BOTONES POR ESTADO DE SIMULACIÓN
+    // BLOQUEO / DESBLOQUEO DE BOTONES POR MODO BBDD Y SIMULACIÓN
     // ====================================================================
     private void OnEstadoSimulacionOfflineCambiado(bool enEjecucion)
     {
         simulacionEnCurso = enEjecucion;
+        ReevaluarTodosLosBotones();
+    }
 
-        // Reevaluamos la interactividad de los tres botones combinando Stock + EstadoSimulacion
+    private void OnEstadoPermisoPedidoCambiado(bool permitido)
+    {
+        ReevaluarTodosLosBotones();
+    }
+
+    private void ReevaluarTodosLosBotones()
+    {
         ActualizarEstadoBoton(btnPedirAzul, stockActualAzul);
         ActualizarEstadoBoton(btnPedirRojo, stockActualRojo);
         ActualizarEstadoBoton(btnPedirBlanco, stockActualBlanco);
@@ -122,8 +137,10 @@ public class UI_StockController : MonoBehaviour
     {
         if (boton != null)
         {
-            // Solo estará activo si NO hay simulación en curso Y además hay unidades en stock
-            boton.interactable = !simulacionEnCurso && (stockDisponible > 0);
+            // 🟢 El menú debe permitir el pedido (no estar en Modo BBDD ni con cambio pendiente),
+            // no debe haber simulación offline en curso Y debe haber stock disponible.
+            bool permitidoPorMenu = (UI_ControladorMenu.Instance == null) || UI_ControladorMenu.Instance.PuedePedirPieza;
+            boton.interactable = permitidoPorMenu && !simulacionEnCurso && (stockDisponible > 0);
         }
     }
 

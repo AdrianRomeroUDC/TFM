@@ -15,6 +15,9 @@ public class UI_ControladorMenu : MonoBehaviour
     public static event Action<bool> OnRelojSimulacionVisibilidadCambiada;
     public static bool EsRelojSimulacionVisible { get; private set; } = false;
 
+    // 🟢 Evento para notificar a los botones de pedido si pueden estar activos o no
+    public static event Action<bool> OnEstadoPermisoPedidoCambiado;
+
     public enum ModoOrigen { MQTT_Directo, BaseDeDatos_Historico }
     public enum EstadoSimulacion { Detenido, Reproduciendo }
 
@@ -72,7 +75,7 @@ public class UI_ControladorMenu : MonoBehaviour
     public ModoOrigen modoSeleccionado = ModoOrigen.MQTT_Directo;
     public EstadoSimulacion estadoActual = EstadoSimulacion.Detenido;
 
-    private ModoOrigen? modoEnEjecucion = null;
+    public ModoOrigen? modoEnEjecucion = null;
     private DateTime? fechaIniEnEjecucion = null;
     private DateTime? fechaFinEnEjecucion = null;
 
@@ -83,10 +86,17 @@ public class UI_ControladorMenu : MonoBehaviour
 
     // Control de reproducción y pausa
     private bool simulacionEnCurso = false;
+    private bool simulacionOfflinePedidoEnCurso = false; // Estado del pedido offline
     private bool esPausado = false;
 
-    // Propiedad pública de lectura para consultar si está pausado
+    // Propiedades públicas de lectura
     public bool EsPausado => esPausado;
+    public bool EsModoBBDDActivo => modoSeleccionado == ModoOrigen.BaseDeDatos_Historico || modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico;
+
+    // 🟢 Solo se permite pedir pieza si estamos en MQTT_Directo (tanto seleccionado como ejecutándose) y no hay pedido offline en curso
+    public bool PuedePedirPieza => modoSeleccionado == ModoOrigen.MQTT_Directo &&
+                                   modoEnEjecucion == ModoOrigen.MQTT_Directo &&
+                                   !simulacionOfflinePedidoEnCurso;
 
     // Persistencia estática tras el reset/play de escena
     private static bool autoStartPendiente = false;
@@ -97,6 +107,27 @@ public class UI_ControladorMenu : MonoBehaviour
     private void Awake()
     {
         if (instance == null) instance = this;
+    }
+
+    private void OnEnable()
+    {
+        SimuladorOffline.OnEstadoSimulacionOfflineCambiado += OnEstadoSimulacionOfflineCambiado;
+    }
+
+    private void OnDisable()
+    {
+        SimuladorOffline.OnEstadoSimulacionOfflineCambiado -= OnEstadoSimulacionOfflineCambiado;
+    }
+
+    private void OnEstadoSimulacionOfflineCambiado(bool enEjecucion)
+    {
+        simulacionOfflinePedidoEnCurso = enEjecucion;
+        if (!enEjecucion)
+        {
+            esPausado = false;
+        }
+        EvaluarEstadoBotonPlay();
+        NotificarEstadoPermisoPedido();
     }
 
     private void Start()
@@ -284,6 +315,12 @@ public class UI_ControladorMenu : MonoBehaviour
         }
 
         EvaluarEstadoBotonPlay();
+        NotificarEstadoPermisoPedido();
+    }
+
+    public void NotificarEstadoPermisoPedido()
+    {
+        OnEstadoPermisoPedidoCambiado?.Invoke(PuedePedirPieza);
     }
 
     private bool HayCambioEnFechasEnEjecucion()
@@ -305,7 +342,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
         ActualizarVisualBotonPlay();
 
-        if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
+        if (simulacionOfflinePedidoEnCurso || (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso))
         {
             btnPlay.interactable = true;
             return;
@@ -382,6 +419,16 @@ public class UI_ControladorMenu : MonoBehaviour
 
     public void OnBotonPlayPulsado()
     {
+        // 🟢 Pausa / Reanudación durante simulación offline de pedido
+        if (simulacionOfflinePedidoEnCurso)
+        {
+            esPausado = !esPausado;
+            ActualizarVisualBotonPlay();
+            Debug.Log(esPausado ? "<color=yellow>⏸️ UI: Solicitando PAUSA en simulación offline...</color>" : "<color=green>▶️ UI: Solicitando REANUDACIÓN en simulación offline...</color>");
+            return;
+        }
+
+        // 🟢 Pausa / Reanudación durante reproducción BBDD
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
         {
             if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
@@ -450,6 +497,11 @@ public class UI_ControladorMenu : MonoBehaviour
         }
         else if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
+            if (SimuladorOffline.Instance != null)
+            {
+                SimuladorOffline.Instance.DetenerSimulacionForzada();
+            }
+
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
 
@@ -473,6 +525,8 @@ public class UI_ControladorMenu : MonoBehaviour
                 DetenerYResetearEstado();
             }
         }
+
+        NotificarEstadoPermisoPedido();
     }
 
     private void RecargarEscenaLimpia()
@@ -488,6 +542,7 @@ public class UI_ControladorMenu : MonoBehaviour
         fechaIniEnEjecucion = null;
         fechaFinEnEjecucion = null;
         simulacionEnCurso = false;
+        simulacionOfflinePedidoEnCurso = false;
         esPausado = false;
         Time.timeScale = 1.0f;
 
@@ -499,6 +554,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
         SetUIInteractables(true);
         EvaluarEstadoBotonPlay();
+        NotificarEstadoPermisoPedido();
     }
 
     private IEnumerator ProcesarHistoricoBBDD(DateTime desde, DateTime hasta)
@@ -532,14 +588,12 @@ public class UI_ControladorMenu : MonoBehaviour
         {
             bool hayCambioFechas = HayCambioEnFechasEnEjecucion();
 
-            bool mostrarPausa = (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
-                             && simulacionEnCurso
+            bool mostrarPausa = (simulacionOfflinePedidoEnCurso || (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso))
                              && !esPausado
                              && !hayCambioFechas;
 
             textoBotonPlay.text = mostrarPausa ? simboloPause : simboloPlay;
 
-            // 🟢 Margen inferior de 2.5f aplicado únicamente cuando el texto es el símbolo de pausa
             Vector4 margin = textoBotonPlay.margin;
             margin.w = (textoBotonPlay.text == simboloPause) ? 2.5f : 0f;
             textoBotonPlay.margin = margin;

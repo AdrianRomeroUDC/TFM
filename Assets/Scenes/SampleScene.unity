@@ -29027,7 +29027,7 @@ MonoBehaviour:
   unityRot_Max: -5.6261
   unityVert_Min: 0.002085
   unityVert_Max: 0.000652
-  unityExt_Min: -0.00089
+  unityExt_Min: -0.00101
   unityExt_Max: 0.00043
   lerpSpeed: 5
 --- !u!4 &1243185283
