@@ -22,7 +22,6 @@ public class SimuladorOffline : MonoBehaviour
 {
     public static SimuladorOffline Instance { get; private set; }
 
-    // Evento para notificar a la UI que la simulación empezó (true) o terminó (false)
     public static event Action<bool> OnEstadoSimulacionOfflineCambiado;
 
     [Header("--- Archivos JSON de InfluxDB ---")]
@@ -34,7 +33,6 @@ public class SimuladorOffline : MonoBehaviour
     private Coroutine corrutinaSimulacion;
     public bool EnEjecucion { get; private set; } = false;
 
-    // Guardamos la última foto del stock conocido
     private JSON_FullStock ultimoStockConocido = null;
 
     private void Awake()
@@ -46,7 +44,6 @@ public class SimuladorOffline : MonoBehaviour
     private void Start()
     {
         CargarDatosHistoricos();
-        Invoke(nameof(ComprobarYConfigurarModoOffline), 0.5f);
     }
 
     public void CargarDatosHistoricos()
@@ -78,16 +75,10 @@ public class SimuladorOffline : MonoBehaviour
 
     public void ComprobarYConfigurarModoOffline()
     {
-        bool mqtt1Conectado = MQTTClient.Instance != null && MQTTClient.Instance.IsConnected;
-        bool mqtt2Conectado = MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected;
-
-        if (!mqtt1Conectado && !mqtt2Conectado)
-        {
-            Debug.Log("🔌 [SimuladorOffline] Sin conexión MQTT. Configurando modo offline inicial.");
-            ResetearTurntable();
-            LimpiarPlataformaDSO();
-            InicializarStockPorDefecto();
-        }
+        Debug.Log("🔌 [SimuladorOffline] Inicializando entorno y stock offline para simulación.");
+        ResetearTurntable();
+        LimpiarPlataformaDSO();
+        InicializarStockPorDefecto();
     }
 
     public void InicializarStockPorDefecto()
@@ -121,23 +112,18 @@ public class SimuladorOffline : MonoBehaviour
         stockFake.ts = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
 
         ultimoStockConocido = stockFake;
-        Debug.Log("📦 [SimuladorOffline] Inicializando stock completo por defecto (9 piezas en almacén).");
+        Debug.Log("📦 [SimuladorOffline] Inicializando stock completo por defecto (9 piezas).");
         InyectarMensajeOffline("f/i/stock", JsonUtility.ToJson(stockFake));
     }
 
-    /// <summary>
-    /// Resetea el almacén de forma asíncrona para forzar el spawning 3D completo al iniciar pedido.
-    /// </summary>
     public IEnumerator ResetearYRefrescarAlmacen3DCorrutina()
     {
         string tsNow = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
         string payloadLimpieza = "{\"workpiece\":null,\"ts\":\"" + tsNow + "\"}";
 
-        // 1. Limpiar estado de la grúa HBW
         InyectarMensajeOffline("dt/hbw/state", payloadLimpieza);
         InyectarMensajeOffline("f/i/hbw", payloadLimpieza);
 
-        // 2. Enviar stock vacío para limpiar visualmente la escena 3D
         JSON_FullStock stockVacio = new JSON_FullStock
         {
             stockItems = new JSON_StockItem[0],
@@ -145,10 +131,8 @@ public class SimuladorOffline : MonoBehaviour
         };
         InyectarMensajeOffline("f/i/stock", JsonUtility.ToJson(stockVacio));
 
-        // 3. Esperar un frame exacto para que Unity procese el borrado
         yield return null;
 
-        // 4. Volver a poblar el stock completo con las 9 piezas
         InicializarStockPorDefecto();
     }
 
@@ -193,19 +177,7 @@ public class SimuladorOffline : MonoBehaviour
             return;
         }
 
-        bool mqtt1Conectado = MQTTClient.Instance != null && MQTTClient.Instance.IsConnected;
-        bool mqtt2Conectado = MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected;
-
-        if (mqtt1Conectado || mqtt2Conectado)
-        {
-            if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
-            {
-                Debug.Log($"📡 [MQTT Directo] Enviando orden real para pieza {tipoPieza}...");
-                MQTT_InterfaceClient.Instance.SendOrder(tipoPieza);
-            }
-            return;
-        }
-
+        // 🟢 Ejecutamos SIEMPRE la reproducción local cuando se pide desde la sección Simulación
         string claveUpper = tipoPieza.ToUpper();
         string claveMap = claveUpper.Contains("WHITE") || claveUpper.Contains("BLANC") ? "WHITE" :
                          claveUpper.Contains("RED") || claveUpper.Contains("ROJ") ? "RED" :
@@ -236,7 +208,6 @@ public class SimuladorOffline : MonoBehaviour
         ResetearTurntable();
         LimpiarPlataformaDSO();
 
-        // Rellenar y refrescar el almacén completo antes de empezar
         yield return StartCoroutine(ResetearYRefrescarAlmacen3DCorrutina());
 
         EnviarEstadosInicialesPrepedido();
@@ -270,17 +241,13 @@ public class SimuladorOffline : MonoBehaviour
                 yield return null;
             }
 
-            // 🟢 TRATAMIENTO ESPECIAL PARA EL STOCK DURANTE LA REPRODUCCIÓN:
+            // Tratamiento especial de stock: la UI se actualiza, el 3D no para no vaciar cajones
             if (ev.topic == "f/i/stock")
             {
-                // 1. La interfaz (UI) SÍ lee el estado para actualizar los contadores e iconos de la pantalla
                 if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.isActiveAndEnabled)
                 {
                     MQTT_InterfaceClient.Instance.ProcesarMensajeExterno(ev.topic, ev.payloadJson);
                 }
-
-                // 2. La escena 3D en Unity (MQTTClient) NO recibe este mensaje, 
-                // asegurando que las piezas permanezcan inalterables y llenas en los contenedores.
                 try
                 {
                     JSON_FullStock stockActualizado = JsonUtility.FromJson<JSON_FullStock>(ev.payloadJson);
@@ -288,16 +255,15 @@ public class SimuladorOffline : MonoBehaviour
                 }
                 catch { }
 
-                continue; // Saltamos la inyección general para que el 3D no se entere
+                continue;
             }
 
-            // Resto de topics normales de la simulación
             InyectarMensajeOffline(ev.topic, ev.payloadJson);
         }
 
         EnEjecucion = false;
         OnEstadoSimulacionOfflineCambiado?.Invoke(false);
-        Debug.Log($"<color=green>✅ [Modo Offline] Finalizada reproducción de {secuencia.tipoPieza}. Botones UI habilitados.</color>");
+        Debug.Log($"<color=green>✅ [Modo Offline] Finalizada reproducción de {secuencia.tipoPieza}.</color>");
     }
 
     public void DetenerSimulacionForzada()
@@ -310,7 +276,6 @@ public class SimuladorOffline : MonoBehaviour
 
         EnEjecucion = false;
         OnEstadoSimulacionOfflineCambiado?.Invoke(false);
-        Debug.LogWarning("⚠️ [SimuladorOffline] Simulación detenida de forma forzada. Botones UI habilitados.");
     }
 
     private void InyectarMensajeOffline(string topic, string payloadJson)

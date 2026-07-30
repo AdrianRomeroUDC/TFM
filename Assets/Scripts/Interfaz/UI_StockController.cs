@@ -29,7 +29,7 @@ public class UI_StockController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI txtStockRojo;
     [SerializeField] private TextMeshProUGUI txtStockBlanco;
 
-    [Header("--- UI de Pedidos (Botones) ---")]
+    [Header("--- UI de Pedidos (Botones Almacén Principal) ---")]
     [SerializeField] private Button btnPedirAzul;
     [SerializeField] private Button btnPedirRojo;
     [SerializeField] private Button btnPedirBlanco;
@@ -41,7 +41,6 @@ public class UI_StockController : MonoBehaviour
 
     private SlotUI slotBajoElCursor = null;
 
-    // Control de stock actual retenido
     private int stockActualAzul = 0;
     private int stockActualRojo = 0;
     private int stockActualBlanco = 0;
@@ -49,24 +48,18 @@ public class UI_StockController : MonoBehaviour
 
     private void OnEnable()
     {
-        // Suscripción al evento que avisa si la simulación offline arrancó o finalizó
         SimuladorOffline.OnEstadoSimulacionOfflineCambiado += OnEstadoSimulacionOfflineCambiado;
-
-        // 🟢 Suscripción al evento del Menú que avisa si el Modo BBDD está activo o se permite pedir piezas
         UI_ControladorMenu.OnEstadoPermisoPedidoCambiado += OnEstadoPermisoPedidoCambiado;
     }
 
     private void OnDisable()
     {
         SimuladorOffline.OnEstadoSimulacionOfflineCambiado -= OnEstadoSimulacionOfflineCambiado;
-
-        // 🟢 Desuscripción para evitar fugas de memoria
         UI_ControladorMenu.OnEstadoPermisoPedidoCambiado -= OnEstadoPermisoPedidoCambiado;
     }
 
     void Start()
     {
-        // 1. Suscripción al evento de telemetría del stock MQTT
         if (MQTT_InterfaceClient.Instance != null)
         {
             MQTT_InterfaceClient.Instance.OnStockUpdateEvent += ActualizarPanelAlmacen;
@@ -77,18 +70,13 @@ public class UI_StockController : MonoBehaviour
             }
         }
 
-        // 2. Vinculación de los eventos Click de los botones de pedido
         if (btnPedirAzul != null) btnPedirAzul.onClick.AddListener(() => EnviarPedidoA_MQTT("BLUE"));
         if (btnPedirRojo != null) btnPedirRojo.onClick.AddListener(() => EnviarPedidoA_MQTT("RED"));
         if (btnPedirBlanco != null) btnPedirBlanco.onClick.AddListener(() => EnviarPedidoA_MQTT("WHITE"));
 
-        // 3. AUTOMATIZACIÓN: Añadir detectores de Mouse-Over a cada imagen del almacén
         ConfigurarDetectoresHover();
 
-        // Aseguramos que el tooltip empiece oculto
         if (panelTooltip != null) panelTooltip.SetActive(false);
-
-        // 🟢 Evaluar el estado inicial de interactividad de los botones al arrancar
         ReevaluarTodosLosBotones();
     }
 
@@ -112,9 +100,6 @@ public class UI_StockController : MonoBehaviour
         }
     }
 
-    // ====================================================================
-    // BLOQUEO / DESBLOQUEO DE BOTONES POR MODO BBDD Y SIMULACIÓN
-    // ====================================================================
     private void OnEstadoSimulacionOfflineCambiado(bool enEjecucion)
     {
         simulacionEnCurso = enEjecucion;
@@ -137,16 +122,11 @@ public class UI_StockController : MonoBehaviour
     {
         if (boton != null)
         {
-            // 🟢 El menú debe permitir el pedido (no estar en Modo BBDD ni con cambio pendiente),
-            // no debe haber simulación offline en curso Y debe haber stock disponible.
             bool permitidoPorMenu = (UI_ControladorMenu.Instance == null) || UI_ControladorMenu.Instance.PuedePedirPieza;
             boton.interactable = permitidoPorMenu && !simulacionEnCurso && (stockDisponible > 0);
         }
     }
 
-    // ====================================================================
-    // GESTIÓN DEL TOOLTIP (HOVER)
-    // ====================================================================
     private void ConfigurarDetectoresHover()
     {
         foreach (SlotUI slot in listaSlots)
@@ -199,9 +179,6 @@ public class UI_StockController : MonoBehaviour
         panelTooltip.SetActive(true);
     }
 
-    // ====================================================================
-    // LECTURA DE TELEMETRÍA: Procesa el stock recibido del Broker
-    // ====================================================================
     private void ActualizarPanelAlmacen(StockPayload datosStock)
     {
         if (datosStock == null || datosStock.stockItems == null) return;
@@ -257,22 +234,12 @@ public class UI_StockController : MonoBehaviour
         ActualizarUIElementoPedido(txtStockBlanco, btnPedirBlanco, stockActualBlanco);
     }
 
-    // ====================================================================
-    // PREDICCIÓN DE PEDIDO: Conmuta entre Online y Offline según corresponda
-    // ====================================================================
     private void EnviarPedidoA_MQTT(string colorPieza)
     {
-        if (SimuladorOffline.Instance != null)
+        if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
         {
-            SimuladorOffline.Instance.PedirPieza(colorPieza);
-        }
-        else
-        {
-            if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
-            {
-                MQTT_InterfaceClient.Instance.SendOrder(colorPieza);
-                Debug.Log($"<color=cyan>[MQTT] Orden de pieza enviada directamente: {colorPieza}</color>");
-            }
+            MQTT_InterfaceClient.Instance.SendOrder(colorPieza);
+            Debug.Log($"<color=cyan>[MQTT Directo] Orden enviada a la fábrica real: {colorPieza}</color>");
         }
     }
 

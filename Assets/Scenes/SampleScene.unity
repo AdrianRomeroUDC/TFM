@@ -32916,8 +32916,12 @@ MonoBehaviour:
   panelRelojSimulacion: {fileID: 892065321}
   textoRelojSimulacion: {fileID: 757873114}
   toggleModoBBDD: {fileID: 1182991197}
+  toggleModoSimulacion: {fileID: 1973397148}
   btnPlay: {fileID: 2076012190}
   btnReset: {fileID: 616742990}
+  btnSimPedirBlanca: {fileID: 1031053345}
+  btnSimPedirRoja: {fileID: 2130879372}
+  btnSimPedirAzul: {fileID: 291967303}
   textoBotonPlay: {fileID: 760304862}
   simboloPlay: "\u25B6"
   simboloPause: "\u23F8"
@@ -51617,7 +51621,7 @@ MonoBehaviour:
   brokerHost: 10.113.36.36
   puerto: 1884
   usuario: LearningFactory
-  contrasena: 
+  contrasena: Fischertechnik1
 --- !u!4 &2076051687
 Transform:
   m_ObjectHideFlags: 0
