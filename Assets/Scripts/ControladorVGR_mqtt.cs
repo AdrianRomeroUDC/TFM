@@ -280,30 +280,10 @@ public class ControladorVGR_mqtt : MonoBehaviour
         {
             float deltaYMundialDSO = Mathf.Abs(ejeVertical.position.y - yMundialAlSoltarDSO);
 
-            if (deltaYMundialDSO > 0.015f)
+            if (deltaYMundialDSO > 0.02f)
             {
-                ControladorDPS_mqtt dpsScript = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
-                bool sensorDsoActivo = (dpsScript != null && dpsScript.DsoSensorActivo);
-
-                Debug.Log($"<color=yellow><b>[VGR CHEQUEO DSO]:</b> VGR subió. Delta: {deltaYMundialDSO:F4}m. Sensor DSO real = {sensorDsoActivo}</color>");
-
-                if (!sensorDsoActivo)
-                {
-                    Debug.Log("<color=red><b>[VGR FALLO ENTREGA DSO]:</b> ¡FALLO! Sensor DSO = False (no hay pieza real). Eliminando pieza fantasma de la plataforma DSO.</color>");
-
-                    if (piezaMonitoreadaDSO != null)
-                    {
-                        Destroy(piezaMonitoreadaDSO.gameObject);
-                    }
-                    if (dpsScript != null)
-                    {
-                        dpsScript.LimpiarDSO();
-                    }
-                }
-                else
-                {
-                    Debug.Log("<color=green><b>[VGR ENTREGA ÉXITO DSO]:</b> Sensor DSO = True. Entrega confirmada en la plataforma DSO.</color>");
-                }
+                // Solo dejamos constancia en consola, la física de la plataforma DSO decide si la borra o no
+                Debug.Log("<color=green><b>[VGR ENTREGA DSO]:</b> Brazo VGR elevado tras la entrega.</color>");
 
                 verificarFalloEntregaDSO = false;
                 piezaMonitoreadaDSO = null;

@@ -72,8 +72,8 @@ public class MQTTClient : MonoBehaviour
     private readonly object lockCola = new object();
 
     [Header("Configuración del Broker")]
-    public string brokerHost = "10.113.36.36";
-    public int puerto = 1884;
+    public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
+    public int puerto = 8883;
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
 
