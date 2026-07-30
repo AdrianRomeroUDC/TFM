@@ -274,14 +274,18 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void ProcesarCambioDeModo()
     {
-        // 🟢 Solo despausamos si NO hay una simulación o reproducción activa.
-        // Si el usuario pausó la simulación, mantendrá su estado de pausa aunque altere los toggles.
         if (!simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
         {
             esPausado = false;
         }
 
-        if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
+        // 🟢 DESCONECTAR RED REAL SI PASAMOS A SIMULACIÓN O BBDD PARA EVITAR TRAFICO REAL
+        if (modoSeleccionado == ModoOrigen.Simulacion_Offline || modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
+        {
+            if (MQTTClient.Instance != null) { MQTTClient.Instance.DesconectarRed(); }
+            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.DesconectarRed(); }
+        }
+        else if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
         {
             modoEnEjecucion = ModoOrigen.MQTT_Directo;
             SetVisibilidadRelojSimulacion(false);
@@ -413,7 +417,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
         SetUIInteractables(modoSeleccionado == ModoOrigen.BaseDeDatos_Historico);
 
-        if (modoSeleccionado == ModoOrigen.MQTT_Directo || modoSeleccionado == ModoOrigen.Simulacion_Offline)
+        if (modoSeleccionado == ModoOrigen.MQTT_Directo)
         {
             simulacionEnCurso = false;
             fechaIniEnEjecucion = null;
@@ -421,11 +425,22 @@ public class UI_ControladorMenu : MonoBehaviour
 
             SetVisibilidadRelojSimulacion(false);
 
-            if (modoSeleccionado == ModoOrigen.MQTT_Directo)
-            {
-                if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.Connect(); }
-                if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
-            }
+            if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.Connect(); }
+            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
+
+            EvaluarEstadoBotonPlay();
+        }
+        else if (modoSeleccionado == ModoOrigen.Simulacion_Offline)
+        {
+            simulacionEnCurso = false;
+            fechaIniEnEjecucion = null;
+            fechaFinEnEjecucion = null;
+
+            SetVisibilidadRelojSimulacion(false);
+
+            // 🟢 DESCONECTAR RED REAL MQTT AL INICIAR MODO SIMULACIÓN
+            if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
+            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
 
             EvaluarEstadoBotonPlay();
         }
