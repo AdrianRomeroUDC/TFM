@@ -26,6 +26,10 @@ public class UI_ControladorMenu : MonoBehaviour
     [Header("Cierre al Clicar Fuera")]
     public GameObject fondoCierre;
 
+    [Header("Panel Informativo de Modo (Azul)")]
+    public TMP_Text txtModoTitulo;          // Texto del Título del Panel Azul
+    public TMP_Text txtModoSubtitulo;       // Texto del Subtítulo del Panel Azul
+
     [Header("Reloj Digital de la Cabecera (Hora Real)")]
     public TMP_Text textoReloj;
 
@@ -89,17 +93,22 @@ public class UI_ControladorMenu : MonoBehaviour
 
     public bool EsPausado => esPausado;
     public bool EsModoSimulacionActivo => modoSeleccionado == ModoOrigen.Simulacion_Offline;
-    public bool EsModoBBDDActivo => modoSeleccionado == ModoOrigen.BaseDeDatos_Historico || modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico;
+    public bool EsModoBBDDActivo => modoSeleccionado == ModoOrigen.BaseDeDatos_Historico;
 
     // Solo se permite pedir en el almacén principal si estamos en MQTT Directo y no hay nada en marcha
     public bool PuedePedirPieza => modoSeleccionado == ModoOrigen.MQTT_Directo &&
                                    (modoEnEjecucion == null || modoEnEjecucion == ModoOrigen.MQTT_Directo) &&
                                    !simulacionOfflinePedidoEnCurso;
 
+    // 🟢 Variables estáticas para persistir el estado del menú y modo entre recargas de escena
+    private static bool panelLateralEstabaAbierto = false;
+    public static HashSet<string> seccionesAbiertasPrevias = new HashSet<string>();
+
     private static bool autoStartPendiente = false;
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
     private static DateTime autoStartFechaIni = DateTime.Today.AddHours(8);
     private static DateTime autoStartFechaFin = DateTime.Today.AddHours(18);
+    private static string autoStartPiezaSimulacion = null;
 
     private void Awake()
     {
@@ -124,6 +133,7 @@ public class UI_ControladorMenu : MonoBehaviour
         {
             modoEnEjecucion = ModoOrigen.Simulacion_Offline;
             esPausado = false;
+            ActualizarPanelInformativoModo();
         }
         else
         {
@@ -157,10 +167,15 @@ public class UI_ControladorMenu : MonoBehaviour
             rectPanel = panelLateral.GetComponent<RectTransform>();
             VerticalLayoutGroup layout = panelLateral.GetComponentInChildren<VerticalLayoutGroup>();
             if (layout != null) rectSecciones = layout.GetComponent<RectTransform>();
-            panelLateral.SetActive(false);
+
+            // 🟢 Restaura el estado visual del panel lateral según como estaba antes del reseteo
+            CambiarEstadoMenu(panelLateralEstabaAbierto);
         }
 
-        if (fondoCierre != null) fondoCierre.SetActive(false);
+        if (fondoCierre != null && !panelLateralEstabaAbierto)
+        {
+            fondoCierre.SetActive(false);
+        }
 
         if (!autoStartPendiente)
         {
@@ -206,6 +221,8 @@ public class UI_ControladorMenu : MonoBehaviour
             ActualizarTogglesVisuales(false, false);
             ArrancarSimulacion();
         }
+
+        ActualizarPanelInformativoModo();
     }
 
     private void Update()
@@ -279,19 +296,22 @@ public class UI_ControladorMenu : MonoBehaviour
             esPausado = false;
         }
 
-        // 🟢 DESCONECTAR RED REAL SI PASAMOS A SIMULACIÓN O BBDD PARA EVITAR TRAFICO REAL
+        // DESCONECTAR RED REAL SI PASAMOS A SIMULACIÓN O BBDD
         if (modoSeleccionado == ModoOrigen.Simulacion_Offline || modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
             if (MQTTClient.Instance != null) { MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.DesconectarRed(); }
         }
-        else if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
+
+        if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
         {
             modoEnEjecucion = ModoOrigen.MQTT_Directo;
             SetVisibilidadRelojSimulacion(false);
 
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.Connect(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
+
+            ActualizarPanelInformativoModo();
         }
 
         SetUIInteractables(modoSeleccionado == ModoOrigen.BaseDeDatos_Historico);
@@ -303,6 +323,31 @@ public class UI_ControladorMenu : MonoBehaviour
         EvaluarEstadoBotonPlay();
         NotificarEstadoPermisoPedido();
         ActualizarEstadoBotonesSeccionSimulacion();
+    }
+
+    private void ActualizarPanelInformativoModo()
+    {
+        if (txtModoTitulo == null || txtModoSubtitulo == null) return;
+
+        ModoOrigen modoActivo = modoEnEjecucion ?? modoSeleccionado;
+
+        switch (modoActivo)
+        {
+            case ModoOrigen.MQTT_Directo:
+                txtModoTitulo.text = "<color=#FF4D4D>●</color> En Vivo (Fábrica Real)";
+                txtModoSubtitulo.text = "Sincronizado en tiempo real por MQTT.";
+                break;
+
+            case ModoOrigen.BaseDeDatos_Historico:
+                txtModoTitulo.text = "<color=#FFC107>●</color> Histórico (Base de Datos)";
+                txtModoSubtitulo.text = "Reproduciendo datos de InfluxDB.";
+                break;
+
+            case ModoOrigen.Simulacion_Offline:
+                txtModoTitulo.text = "<color=#00E676>●</color> Simulación Local";
+                txtModoSubtitulo.text = "Ejecución de acciones offline.";
+                break;
+        }
     }
 
     private void ActualizarTogglesVisuales(bool bbddActivo, bool simulacionActiva)
@@ -333,6 +378,15 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void PedirPiezaSimulacion(string color)
     {
+        if (modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico || simulacionEnCurso)
+        {
+            autoStartPendiente = true;
+            autoStartModo = ModoOrigen.Simulacion_Offline;
+            autoStartPiezaSimulacion = color;
+            RecargarEscenaLimpia();
+            return;
+        }
+
         if (SimuladorOffline.Instance != null && modoSeleccionado == ModoOrigen.Simulacion_Offline)
         {
             SimuladorOffline.Instance.PedirPieza(color);
@@ -398,6 +452,11 @@ public class UI_ControladorMenu : MonoBehaviour
     public void OnBotonResetPulsado()
     {
         autoStartPendiente = false;
+        autoStartPiezaSimulacion = null;
+
+        // 🟢 Al pulsar el botón Reset general, también reseteamos el estado abierto del panel
+        panelLateralEstabaAbierto = false;
+        seccionesAbiertasPrevias.Clear();
 
         if (MQTTClient.Instance != null)
         {
@@ -438,7 +497,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
             SetVisibilidadRelojSimulacion(false);
 
-            // 🟢 DESCONECTAR RED REAL MQTT AL INICIAR MODO SIMULACIÓN
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
 
@@ -468,6 +526,7 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
 
+        ActualizarPanelInformativoModo();
         NotificarEstadoPermisoPedido();
         ActualizarEstadoBotonesSeccionSimulacion();
     }
@@ -491,7 +550,17 @@ public class UI_ControladorMenu : MonoBehaviour
         SetDropdownValor(dropdownMinFin, autoStartFechaFin.Minute);
         SetDropdownValor(dropdownSegFin, autoStartFechaFin.Second);
 
+        string piezaAPedir = autoStartPiezaSimulacion;
+        autoStartPiezaSimulacion = null;
+
         ArrancarSimulacion();
+
+        if (!string.IsNullOrEmpty(piezaAPedir) && SimuladorOffline.Instance != null)
+        {
+            SimuladorOffline.Instance.PedirPieza(piezaAPedir);
+        }
+
+        ActualizarPanelInformativoModo();
     }
 
     private void EvaluarEstadoBotonPlay()
@@ -499,20 +568,26 @@ public class UI_ControladorMenu : MonoBehaviour
         if (btnPlay == null) return;
         ActualizarVisualBotonPlay();
 
-        if (simulacionOfflinePedidoEnCurso || (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso))
+        if (simulacionOfflinePedidoEnCurso)
         {
             btnPlay.interactable = true;
             return;
         }
 
-        if (modoSeleccionado != modoEnEjecucion)
+        if (modoSeleccionado == ModoOrigen.Simulacion_Offline)
         {
-            btnPlay.interactable = true;
+            btnPlay.interactable = false;
             return;
         }
 
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
+            if (simulacionEnCurso || modoEnEjecucion != ModoOrigen.BaseDeDatos_Historico)
+            {
+                btnPlay.interactable = true;
+                return;
+            }
+
             if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
             {
                 bool hayCambio = (fechaIniEnEjecucion == null || fechaFinEnEjecucion == null) ||
@@ -522,6 +597,18 @@ public class UI_ControladorMenu : MonoBehaviour
                 btnPlay.interactable = hayCambio;
                 return;
             }
+        }
+
+        if (modoSeleccionado == ModoOrigen.MQTT_Directo)
+        {
+            if (modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
+            {
+                btnPlay.interactable = true;
+                return;
+            }
+
+            btnPlay.interactable = false;
+            return;
         }
 
         btnPlay.interactable = false;
@@ -723,6 +810,9 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void CambiarEstadoMenu(bool activar)
     {
+        // 🟢 Guarda la visibilidad del panel en la variable estática
+        panelLateralEstabaAbierto = activar;
+
         if (panelLateral != null) panelLateral.SetActive(activar);
         if (fondoCierre != null) fondoCierre.SetActive(activar);
 
@@ -730,10 +820,6 @@ public class UI_ControladorMenu : MonoBehaviour
         {
             if (rectSecciones != null) LayoutRebuilder.MarkLayoutForRebuild(rectSecciones);
             if (rectPanel != null) LayoutRebuilder.MarkLayoutForRebuild(rectPanel);
-        }
-        else
-        {
-            UI_SeccionAcordeon.CerrarCualquierSeccionAbierta();
         }
     }
 }
