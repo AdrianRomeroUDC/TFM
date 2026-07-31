@@ -52,7 +52,7 @@ public class JSON_SLDCylinder
 public class MQTTClient : MonoBehaviour
 {
     private static MQTTClient instance;
-    public static MQTTClient Instance { get { return instance; } }
+    public static MQTTClient Instance => instance;
 
     private MqttClient client;
     private string lastHBWJson = "";
@@ -60,7 +60,7 @@ public class MQTTClient : MonoBehaviour
 
     private volatile bool estaActivo = true;
 
-    // 🟢 Propiedad pública para consultar el estado de la conexión desde fuera
+    // Propiedad pública para consultar el estado de la conexión desde fuera
     public bool IsConnected => client != null && client.IsConnected;
 
     private struct MensajeMQTT
@@ -76,6 +76,10 @@ public class MQTTClient : MonoBehaviour
     public int puerto = 8883;
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
+
+    // 🟢 Evento Heartbeat para el watchdog de conexión en UI_ControladorMenu
+    public delegate void OnFactoryHeartbeat(bool connected, DateTime timestamp);
+    public event OnFactoryHeartbeat OnFactoryHeartbeatEvent;
 
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
@@ -220,6 +224,10 @@ public class MQTTClient : MonoBehaviour
     public void ProcesarMensajeExterno(string topic, string msg)
     {
         if (string.IsNullOrEmpty(msg)) return;
+
+        // 🟢 Notifica al gestor que la fábrica responde en tiempo real
+        OnFactoryHeartbeatEvent?.Invoke(true, DateTime.UtcNow);
+
         msg = msg.Replace("True", "true").Replace("False", "false");
 
         if (topic == "dt/sld/belt")
@@ -328,7 +336,10 @@ public class MQTTClient : MonoBehaviour
                     OnHBWUpdatePiecesEvent?.Invoke(flatStock);
                 }
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("❌ [MQTT Stock] Error al parsear el JSON: " + ex.Message);
+            }
         }
         else if (topic == "dt/hbw/pos")
         {

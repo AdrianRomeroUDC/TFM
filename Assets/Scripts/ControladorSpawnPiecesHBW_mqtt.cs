@@ -3,6 +3,9 @@ using System.Collections;
 
 public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 {
+    private static ControladorSpawnPiecesHBW_mqtt instance;
+    public static ControladorSpawnPiecesHBW_mqtt Instance => instance;
+
     private string[] listaPendiente;
     private bool hayCambio = false;
 
@@ -13,6 +16,11 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     public GameObject prefabBlanco;
     public GameObject prefabRojo;
     public GameObject prefabAzul;
+
+    void Awake()
+    {
+        instance = this;
+    }
 
     void Start()
     {
@@ -41,10 +49,8 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
     IEnumerator SuscripcionSegura()
     {
-        // 1. Esperamos a que la arquitectura MQTT despierte
         while (MQTTClient.Instance == null) yield return null;
 
-        // 2. Comprobamos si el Broker ya envió el mensaje retenido al conectar
         string[] stockInicial = MQTTClient.Instance.GetInitialStock();
 
         if (stockInicial != null)
@@ -53,14 +59,12 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
             AlRecibirPiezas(stockInicial);
         }
 
-        // 🟢 3. Nos suscribimos permanentemente para escuchar CUALQUIER actualización futura de stock
         MQTTClient.Instance.OnHBWUpdatePiecesEvent += AlRecibirPiezas;
         Debug.Log("<color=orange><b>[HBW Spawn] Escuchando actualizaciones de stock en tiempo real...</b></color>");
     }
 
     private void AlRecibirPiezas(string[] piezas)
     {
-        // 🟢 Eliminada la desuscripción restrictiva para que admita múltiples refrescos de stock
         listaPendiente = piezas;
         hayCambio = true;
     }
@@ -74,7 +78,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
-    void ActualizarVisualizacion(string[] listaColores)
+    public void ActualizarVisualizacion(string[] listaColores)
     {
         if (listaColores == null) return;
 
@@ -92,7 +96,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
                     Destroy(cajon.GetChild(j).gameObject);
             }
 
-            // Si la lista ya no llega a este hueco, el cajón se queda vacío
+            // Si la lista no llega a este hueco, el cajón permanece vacío
             if (i >= listaColores.Length || string.IsNullOrEmpty(listaColores[i])) continue;
 
             GameObject prefab = null;
@@ -108,6 +112,40 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
             }
         }
         Debug.Log("<color=green><b>[HBW Spawn] Almacén pintado con éxito.</b></color>");
+    }
+
+    /// <summary>
+    /// Utilizado en modo Simulación Offline para rellenar el almacén.
+    /// </summary>
+    public void LlenarAlmacenConTodasLasPiezas()
+    {
+        string[] stockCompleto = new string[9];
+        for (int i = 0; i < 9; i++)
+        {
+            int fila = i / 3;
+            if (fila == 0) stockCompleto[i] = "WHITE";
+            else if (fila == 1) stockCompleto[i] = "RED";
+            else stockCompleto[i] = "BLUE";
+        }
+
+        AlRecibirPiezas(stockCompleto);
+    }
+
+    /// <summary>
+    /// Permite forzar la relectura del stock al restablecer la conexión MQTT.
+    /// </summary>
+    public void ForzarRelecturaStock()
+    {
+        LimpiarSoloPiezas();
+
+        if (MQTTClient.Instance != null)
+        {
+            string[] stockInicial = MQTTClient.Instance.GetInitialStock();
+            if (stockInicial != null)
+            {
+                AlRecibirPiezas(stockInicial);
+            }
+        }
     }
 
     void LimpiarSoloPiezas()
@@ -128,6 +166,9 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
     private void OnDisable()
     {
-        if (MQTTClient.Instance != null) MQTTClient.Instance.OnHBWUpdatePiecesEvent -= AlRecibirPiezas;
+        if (MQTTClient.Instance != null)
+        {
+            MQTTClient.Instance.OnHBWUpdatePiecesEvent -= AlRecibirPiezas;
+        }
     }
 }
