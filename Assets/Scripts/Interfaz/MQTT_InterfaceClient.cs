@@ -15,7 +15,7 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class StockItem { public string location; public Workpiece workpiece; }
 
 [Serializable] public class OrderPayload { public string ts; public string type; }
-[Serializable] public class PtuPayload { public string ts; public string cmd; public int degree; } // 🟢 'public' añadido aquí
+[Serializable] public class PtuPayload { public string ts; public string cmd; public int degree; }
 [Serializable] public class CamConfigPayload { public string ts; public bool on; public int fps; }
 [Serializable] public class SensorPeriodPayload { public string ts; public int period; }
 [Serializable] public class PtuHomePayload { public string ts; public string cmd; }
@@ -23,14 +23,13 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 public class MQTT_InterfaceClient : MonoBehaviour
 {
     private static MQTT_InterfaceClient instance;
-    public static MQTT_InterfaceClient Instance => instance; // 🟢 Sintaxis corregida
+    public static MQTT_InterfaceClient Instance => instance;
 
     private MqttClient client;
     private readonly object lockObject = new object();
 
     private volatile bool estaActivo = true;
 
-    // Propiedad pública para consultar el estado de la conexión
     public bool IsConnected => client != null && client.IsConnected;
 
     public StockPayload UltimoStock { get; private set; }
@@ -53,7 +52,14 @@ public class MQTT_InterfaceClient : MonoBehaviour
 
     void Start()
     {
-        // Lectura de la configuración en el hilo principal
+        Connect();
+    }
+
+    // 🟢 Método público para conectar / reconectar el cliente de la interfaz
+    public void Connect()
+    {
+        if (client != null && client.IsConnected) return;
+
         string brokerHost = "10.113.36.36";
         int puerto = 1884;
         string usuario = "LearningFactory";
@@ -232,7 +238,10 @@ public class MQTT_InterfaceClient : MonoBehaviour
     public void SendCameraConfig(bool isOn, int fps)
     {
         var payload = new CamConfigPayload { ts = GetISO8601Timestamp(), on = isOn, fps = fps };
-        PublishJson("c/cam", JsonUtility.ToJson(payload));
+        string json = JsonUtility.ToJson(payload);
+
+        PublishJson("c/cam", json);
+        Debug.Log($"<color=cyan>[MQTT Cámara] Publicado en 'c/cam': {json}</color>");
     }
 
     public void SendLdrPeriod(int seconds)

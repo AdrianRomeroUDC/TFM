@@ -95,8 +95,21 @@ public class UI_CameraController : MonoBehaviour
 
     private IEnumerator EnviarEstadoInicialMqtt()
     {
-        yield return new WaitForSeconds(0.2f);
-        EnviarConfiguracionMqtt();
+        // 🟢 Esperamos activamente a que MQTT_InterfaceClient complete la conexión en segundo plano (máx 5 segundos)
+        float tiempoEsperaMax = 5.0f;
+        float transcurrido = 0f;
+
+        while ((MQTT_InterfaceClient.Instance == null || !MQTT_InterfaceClient.Instance.IsConnected) && transcurrido < tiempoEsperaMax)
+        {
+            transcurrido += 0.2f;
+            yield return new WaitForSeconds(0.2f);
+        }
+
+        // Si ya está conectado, enviamos la configuración inicial
+        if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
+        {
+            EnviarConfiguracionMqtt();
+        }
     }
 
     private void OnRelojSimulacionVisibilidadCambiada(bool relojSimulacionVisible)
@@ -158,7 +171,8 @@ public class UI_CameraController : MonoBehaviour
     {
         int fpsSeleccionados = (sliderFPS != null) ? Mathf.RoundToInt(sliderFPS.value) : 2;
 
-        if (MQTT_InterfaceClient.Instance != null)
+        // 🟢 Verificamos que el cliente exista Y esté conectado antes de publicar
+        if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.IsConnected)
         {
             MQTT_InterfaceClient.Instance.SendCameraConfig(IsCameraOn, fpsSeleccionados);
             Debug.Log($"<color=cyan>[MQTT Cámara] Enviado a 'c/cam' -> Estado: {IsCameraOn}, FPS: {fpsSeleccionados}</color>");
@@ -189,7 +203,6 @@ public class UI_CameraController : MonoBehaviour
             }
         }
 
-        // 🟢 Procesa la textura continuamente si IsCameraOn es true
         if (procesar && !string.IsNullOrEmpty(base64ParaProcesar) && IsCameraOn)
         {
             PintarTexturaEnUI(base64ParaProcesar);

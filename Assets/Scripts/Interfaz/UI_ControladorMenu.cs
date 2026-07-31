@@ -109,6 +109,11 @@ public class UI_ControladorMenu : MonoBehaviour
     private static DateTime autoStartFechaFin = DateTime.Today.AddHours(18);
     private static string autoStartPiezaSimulacion = null;
 
+    // 🟢 PERSISTENCIA GLOBAL DE FECHAS SELECCIONADAS POR EL USUARIO
+    private static bool fechasGuardadasInicializadas = false;
+    private static DateTime fechaInicioGuardada;
+    private static DateTime fechaFinGuardada;
+
     // Control global y local de desconexión
     public static bool estaDesconectadoMQTT = false;
     private static bool yaSeRecargoPorDesconexion = false;
@@ -577,6 +582,9 @@ public class UI_ControladorMenu : MonoBehaviour
 
     public void OnBotonResetPulsado()
     {
+        // 🟢 Guardamos las fechas actualmente puestas en la UI antes de recargar por RESET
+        ObtenerRangoFechas(out _, out _);
+
         autoStartPendiente = false;
         autoStartPiezaSimulacion = null;
 
@@ -679,6 +687,10 @@ public class UI_ControladorMenu : MonoBehaviour
 
         modoSeleccionado = autoStartModo;
         ActualizarTogglesVisuales(esBBDD, esSim);
+
+        // Actualizamos las variables persistentes con las fechas de autoStart
+        fechaInicioGuardada = autoStartFechaIni;
+        fechaFinGuardada = autoStartFechaFin;
 
         if (calendarInicio != null) calendarInicio.SetFechaInicial(autoStartFechaIni);
         if (calendarFin != null) calendarFin.SetFechaInicial(autoStartFechaFin);
@@ -856,22 +868,31 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void InicializarControlesTiempo()
     {
+        // 🟢 Inicialización por defecto solo la primera vez
+        if (!fechasGuardadasInicializadas)
+        {
+            fechaInicioGuardada = DateTime.Today.AddHours(8);
+            fechaFinGuardada = DateTime.Today.AddHours(18);
+            fechasGuardadasInicializadas = true;
+        }
+
         List<string> horas = new List<string>();
         for (int i = 0; i < 24; i++) horas.Add(i.ToString("D2"));
 
         List<string> minSeg = new List<string>();
         for (int i = 0; i < 60; i++) minSeg.Add(i.ToString("D2"));
 
-        PoblarDropdown(dropdownHoraInicio, horas, 8);
-        PoblarDropdown(dropdownMinInicio, minSeg, 0);
-        PoblarDropdown(dropdownSegInicio, minSeg, 0);
+        // 🟢 Poblamos y seteamos los dropdowns con la última fecha/hora guardada
+        PoblarDropdown(dropdownHoraInicio, horas, fechaInicioGuardada.Hour);
+        PoblarDropdown(dropdownMinInicio, minSeg, fechaInicioGuardada.Minute);
+        PoblarDropdown(dropdownSegInicio, minSeg, fechaInicioGuardada.Second);
 
-        PoblarDropdown(dropdownHoraFin, horas, 18);
-        PoblarDropdown(dropdownMinFin, minSeg, 0);
-        PoblarDropdown(dropdownSegFin, minSeg, 0);
+        PoblarDropdown(dropdownHoraFin, horas, fechaFinGuardada.Hour);
+        PoblarDropdown(dropdownMinFin, minSeg, fechaFinGuardada.Minute);
+        PoblarDropdown(dropdownSegFin, minSeg, fechaFinGuardada.Second);
 
-        if (calendarInicio != null) calendarInicio.SetFechaInicial(DateTime.Today);
-        if (calendarFin != null) calendarFin.SetFechaInicial(DateTime.Today);
+        if (calendarInicio != null) calendarInicio.SetFechaInicial(fechaInicioGuardada);
+        if (calendarFin != null) calendarFin.SetFechaInicial(fechaFinGuardada);
     }
 
     private void PoblarDropdown(TMP_Dropdown dropdown, List<string> opciones, int indiceDefecto)
@@ -910,6 +931,10 @@ public class UI_ControladorMenu : MonoBehaviour
             int mFin = ObtenerValorDropdown(dropdownMinFin, 0);
             int sFin = ObtenerValorDropdown(dropdownSegFin, 0);
             fechaFin = new DateTime(diaFin.Year, diaFin.Month, diaFin.Day, hFin, mFin, sFin);
+
+            // 🟢 Guardamos dinámicamente las últimas fechas obtenidas de la UI
+            fechaInicioGuardada = fechaInicio;
+            fechaFinGuardada = fechaFin;
 
             return true;
         }
