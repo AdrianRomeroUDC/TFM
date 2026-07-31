@@ -39,8 +39,8 @@ public class UI_ControladorMenu : MonoBehaviour
     [Header("UI Control de Simulación (Cabecera)")]
     public Toggle toggleModoBBDD;             // Toggle de BBDD
     public Toggle toggleModoSimulacion;      // Toggle de Modo Simulación
-    public Button btnPlay;                   // Botón PLAY / PAUSE
-    public Button btnReset;                  // Botón RESET
+    public Button btnPlay;                    // Botón PLAY / PAUSE
+    public Button btnReset;                   // Botón RESET
 
     [Header("UI Sección Simulación (Nuevos Botones)")]
     public Button btnSimPedirBlanca;         // Botón pedir Blanca en panel Simulación
@@ -94,8 +94,7 @@ public class UI_ControladorMenu : MonoBehaviour
     public bool EsModoSimulacionActivo => modoSeleccionado == ModoOrigen.Simulacion_Offline;
     public bool EsModoBBDDActivo => modoSeleccionado == ModoOrigen.BaseDeDatos_Historico;
 
-    public bool PuedePedirPieza => modoSeleccionado == ModoOrigen.MQTT_Directo &&
-                                   (modoEnEjecucion == null || modoEnEjecucion == ModoOrigen.MQTT_Directo) &&
+    public bool PuedePedirPieza => (modoEnEjecucion == null || modoEnEjecucion == ModoOrigen.MQTT_Directo) &&
                                    !simulacionOfflinePedidoEnCurso &&
                                    !estaDesconectadoMQTT;
 
@@ -151,7 +150,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void OnFactoryHeartbeatRecibido(bool connected, DateTime timestamp)
     {
-        if (modoSeleccionado != ModoOrigen.MQTT_Directo) return;
+        if (modoEnEjecucion.HasValue && modoEnEjecucion.Value != ModoOrigen.MQTT_Directo) return;
 
         double desfaseSegundos = Math.Abs((DateTime.UtcNow - timestamp).TotalSeconds);
         bool esMensajeReciente = desfaseSegundos < 5.0;
@@ -306,8 +305,8 @@ public class UI_ControladorMenu : MonoBehaviour
             ActualizarTextoRelojPrincipal(DateTime.Now);
         }
 
-        // Watchdog de conexión MQTT Directo
-        if (modoSeleccionado == ModoOrigen.MQTT_Directo && (modoEnEjecucion == null || modoEnEjecucion == ModoOrigen.MQTT_Directo))
+        // Watchdog de conexión MQTT Directo (solo mientras esté ejecutándose en vivo)
+        if (modoEnEjecucion == ModoOrigen.MQTT_Directo)
         {
             if (!estaDesconectadoMQTT)
             {
@@ -342,7 +341,7 @@ public class UI_ControladorMenu : MonoBehaviour
     }
 
     // ====================================================================
-    // GESTIÓN DE TOGGLES EXCLUYENTES
+    // GESTIÓN DE TOGGLES EXCLUYENTES (SIN CORTAR MQTT EN VIVO HASTA PLAY)
     // ====================================================================
 
     public void OnToggleSimulacionCambiado(bool activo)
@@ -356,11 +355,6 @@ public class UI_ControladorMenu : MonoBehaviour
                 if (sw != null) sw.ActualizarEstadoInstantaneo(false);
             }
             modoSeleccionado = ModoOrigen.Simulacion_Offline;
-
-            if (SimuladorOffline.Instance != null)
-            {
-                SimuladorOffline.Instance.ComprobarYConfigurarModoOffline();
-            }
         }
         else
         {
@@ -370,7 +364,7 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
 
-        ProcesarCambioDeModo();
+        ProcesarCambioDeSeleccionToggle();
     }
 
     public void OnToggleBBDDCambiado(bool activo)
@@ -393,48 +387,12 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
 
-        ProcesarCambioDeModo();
+        ProcesarCambioDeSeleccionToggle();
     }
 
-    private void ProcesarCambioDeModo()
+    private void ProcesarCambioDeSeleccionToggle()
     {
-        if (!simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
-        {
-            esPausado = false;
-        }
-
-        if (modoSeleccionado == ModoOrigen.Simulacion_Offline || modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
-        {
-            if (MQTTClient.Instance != null) { MQTTClient.Instance.DesconectarRed(); }
-            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.DesconectarRed(); }
-        }
-
-        if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
-        {
-            modoEnEjecucion = ModoOrigen.MQTT_Directo;
-            tiempoUltimoHeartbeatReal = Time.realtimeSinceStartup;
-            SetVisibilidadRelojSimulacion(false);
-
-            if (MQTTClient.Instance != null)
-            {
-                MQTTClient.Instance.enabled = true;
-                MQTTClient.Instance.Connect();
-
-                if (!MQTTClient.Instance.IsConnected)
-                {
-                    estaDesconectadoMQTT = true;
-                }
-                else
-                {
-                    MQTTClient.Instance.ReemitirUltimoStock();
-                }
-            }
-
-            if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
-
-            ActualizarPanelInformativoModo();
-        }
-
+        // NO cortamos MQTT ni cambiamos modoEnEjecucion. Solo preparamos la UI.
         SetUIInteractables(modoSeleccionado == ModoOrigen.BaseDeDatos_Historico);
 
         bool esBBDD = (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico);
@@ -498,6 +456,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void ActualizarEstadoBotonesSeccionSimulacion()
     {
+        // Se pueden pulsar si el toggle de simulación está activado
         bool sePuedePedirSimulacion = (modoSeleccionado == ModoOrigen.Simulacion_Offline) && !simulacionOfflinePedidoEnCurso;
 
         if (btnSimPedirBlanca != null) btnSimPedirBlanca.interactable = sePuedePedirSimulacion;
@@ -507,9 +466,8 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void PedirPiezaSimulacion(string color)
     {
-        if (!PuedePedirPieza && modoSeleccionado == ModoOrigen.MQTT_Directo) return;
-
-        if (modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico || simulacionEnCurso)
+        // Si estábamos en vivo MQTT y el usuario pulsa pedir pieza en panel simulación, arrancamos la simulación
+        if (modoEnEjecucion != ModoOrigen.Simulacion_Offline)
         {
             autoStartPendiente = true;
             autoStartModo = ModoOrigen.Simulacion_Offline;
@@ -537,6 +495,7 @@ public class UI_ControladorMenu : MonoBehaviour
     {
         bool hayCambioModo = (modoEnEjecucion.HasValue && modoSeleccionado != modoEnEjecucion.Value);
 
+        // Si ya estamos ejecutando Simulación Offline y se vuelve a pulsar Play, pausamos/reanudamos
         if (simulacionOfflinePedidoEnCurso && !hayCambioModo)
         {
             esPausado = !esPausado;
@@ -544,6 +503,7 @@ public class UI_ControladorMenu : MonoBehaviour
             return;
         }
 
+        // Si ya estamos ejecutando BBDD y se vuelve a pulsar Play con las mismas fechas, pausamos/reanudamos
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso && !hayCambioModo)
         {
             if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
@@ -568,6 +528,7 @@ public class UI_ControladorMenu : MonoBehaviour
             return;
         }
 
+        // 🎯 Si estamos en vivo y pulsamos PLAY con un modo seleccionado (BBDD o Simulación), arrancamos ese modo
         autoStartPendiente = true;
         autoStartModo = modoSeleccionado;
 
@@ -582,7 +543,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
     public void OnBotonResetPulsado()
     {
-        // 🟢 Guardamos las fechas actualmente puestas en la UI antes de recargar por RESET
+        // Guardamos las fechas actualmente puestas en la UI antes de recargar por RESET
         ObtenerRangoFechas(out _, out _);
 
         autoStartPendiente = false;
@@ -621,7 +582,7 @@ public class UI_ControladorMenu : MonoBehaviour
 
             SetVisibilidadRelojSimulacion(false);
 
-            // 🟢 Fuerza la carga del stock real en 3D al arrancar modo Conectado
+            // Fuerza la carga del stock real en 3D al arrancar modo Conectado
             if (ControladorSpawnPiecesHBW_mqtt.Instance != null)
             {
                 ControladorSpawnPiecesHBW_mqtt.Instance.ForzarRelecturaStock();
@@ -652,13 +613,18 @@ public class UI_ControladorMenu : MonoBehaviour
 
             SetVisibilidadRelojSimulacion(false);
 
+            // 🎯 AQUÍ ES DONDE SE DESCONECTA MQTT AL ENTRAR AL MODO SIMULACIÓN
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
 
-            // 🟢 Al presionar PLAY en modo simulación, llenamos el almacén 3D al 100% (9/9)
             if (ControladorSpawnPiecesHBW_mqtt.Instance != null)
             {
                 ControladorSpawnPiecesHBW_mqtt.Instance.LlenarAlmacenConTodasLasPiezas();
+            }
+
+            if (SimuladorOffline.Instance != null)
+            {
+                SimuladorOffline.Instance.ComprobarYConfigurarModoOffline();
             }
 
             EvaluarEstadoBotonPlay();
@@ -670,6 +636,7 @@ public class UI_ControladorMenu : MonoBehaviour
                 SimuladorOffline.Instance.DetenerSimulacionForzada();
             }
 
+            // 🎯 AQUÍ ES DONDE SE DESCONECTA MQTT AL ENTRAR AL MODO BBDD
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
 
@@ -740,14 +707,22 @@ public class UI_ControladorMenu : MonoBehaviour
             return;
         }
 
-        // 2. Si seleccionamos Modo Simulación Offline, permitimos pulsar Play para entrar/iniciar el modo
+        // 2. Si el usuario seleccionó un modo distinto al que se está ejecutando en vivo, el botón PLAY se activa
+        bool hayCambioModoPendiente = (modoEnEjecucion.HasValue && modoSeleccionado != modoEnEjecucion.Value);
+        if (hayCambioModoPendiente)
+        {
+            btnPlay.interactable = true;
+            return;
+        }
+
+        // 3. Modo Simulación Offline (si ya está en ejecución)
         if (modoSeleccionado == ModoOrigen.Simulacion_Offline)
         {
             btnPlay.interactable = true;
             return;
         }
 
-        // 3. Modo Base de Datos Histórico
+        // 4. Modo Base de Datos Histórico
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
             if (simulacionEnCurso || modoEnEjecucion != ModoOrigen.BaseDeDatos_Historico)
@@ -767,15 +742,9 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
 
-        // 4. Modo MQTT Directo (solo habilitado si venimos de otro modo para aplicar el cambio)
+        // 5. Modo MQTT Directo (si no hay cambios pendientes, Play deshabilitado)
         if (modoSeleccionado == ModoOrigen.MQTT_Directo)
         {
-            if (modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
-            {
-                btnPlay.interactable = true;
-                return;
-            }
-
             btnPlay.interactable = false;
             return;
         }
@@ -880,7 +849,6 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void InicializarControlesTiempo()
     {
-        // 🟢 Inicialización por defecto solo la primera vez
         if (!fechasGuardadasInicializadas)
         {
             fechaInicioGuardada = DateTime.Today.AddHours(8);
@@ -894,7 +862,6 @@ public class UI_ControladorMenu : MonoBehaviour
         List<string> minSeg = new List<string>();
         for (int i = 0; i < 60; i++) minSeg.Add(i.ToString("D2"));
 
-        // 🟢 Poblamos y seteamos los dropdowns con la última fecha/hora guardada
         PoblarDropdown(dropdownHoraInicio, horas, fechaInicioGuardada.Hour);
         PoblarDropdown(dropdownMinInicio, minSeg, fechaInicioGuardada.Minute);
         PoblarDropdown(dropdownSegInicio, minSeg, fechaInicioGuardada.Second);
@@ -944,7 +911,6 @@ public class UI_ControladorMenu : MonoBehaviour
             int sFin = ObtenerValorDropdown(dropdownSegFin, 0);
             fechaFin = new DateTime(diaFin.Year, diaFin.Month, diaFin.Day, hFin, mFin, sFin);
 
-            // 🟢 Guardamos dinámicamente las últimas fechas obtenidas de la UI
             fechaInicioGuardada = fechaInicio;
             fechaFinGuardada = fechaFin;
 
