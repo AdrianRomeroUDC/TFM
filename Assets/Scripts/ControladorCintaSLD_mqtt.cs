@@ -29,6 +29,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     public bool SensorEntrada = false;
     public bool SensorCilindros = false;
 
+    [Header("Ajustes Anti-Duplicados (Filtro por Tiempo)")]
+    [Tooltip("Tiempo mínimo en segundos entre dos flancos de bajada para permitir un nuevo spawn.")]
+    public float cooldownFlancoBajada = 1.0f;
+    private float ultimoTiempoFlanco = -999f;
+
     [Header("Ajuste de Posición Manual")]
     [Tooltip("Modifica estos tres valores (X, Y, Z) en el Inspector para centrar y elevar la pieza respecto al eslabón.")]
     public Vector3 offsetLocalPieza = new Vector3(0f, 0.000154f, -0.000238f);
@@ -68,7 +73,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     private Quaternion[] rotRailes;
     private float progresoCiclo = 0f;
 
-    // --- NUEVO: Bloque de propiedades de material para evitar lag ---
+    // Bloque de propiedades de material para evitar lag
     private MaterialPropertyBlock propBlock;
 
     void Start()
@@ -79,7 +84,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             return;
         }
 
-        // Inicializamos el bloque de propiedades una sola vez en el inicio
         propBlock = new MaterialPropertyBlock();
 
         ConfigurarEslabones();
@@ -140,10 +144,21 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         SensorCilindros = (data.SensorCilindros == 1);
 
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
+
+        // 🎯 DETECCIÓN DE FLANCO DE BAJADA CON FILTRO DE COOLDOWN (1 SEGUNDO)
         if (SensorEntrada && !nuevoSensorEntrada)
         {
-            solicitarReaparicion = true;
+            if (Time.time - ultimoTiempoFlanco >= cooldownFlancoBajada)
+            {
+                solicitarReaparicion = true;
+                ultimoTiempoFlanco = Time.time; // Guardamos el momento de este disparo
+            }
+            else
+            {
+                Debug.LogWarning($"<color=yellow><b>[CINTA SLD]:</b> Flanco de bajada ignorado por filtro de tiempo (pasaron menos de {cooldownFlancoBajada}s).</color>");
+            }
         }
+
         SensorEntrada = nuevoSensorEntrada;
     }
 
@@ -304,9 +319,6 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
         return Vector3.zero;
     }
 
-    // =======================================================================
-    // NUEVA FUNCIÓN OPTIMIZADA: SIN INSTANCIAR MATERIALES (Cero Lag)
-    // =======================================================================
     private void EjecutarCambioColorPieza()
     {
         Transform piezaAColorear = ObtenerPiezaSegura();
@@ -328,14 +340,11 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
                 default: colorObjetivo = Color.white; break;
             }
 
-            // 1. Obtenemos las propiedades de renderizado actuales de la pieza
             renderizador.GetPropertyBlock(propBlock);
 
-            // 2. Modificamos el color directamente en la GPU usando el buffer seguro de propiedades
-            propBlock.SetColor("_Color", colorObjetivo);      // Para Shaders tradicionales / Standard
-            propBlock.SetColor("_BaseColor", colorObjetivo);  // Para Shaders modernos URP / HDRP
+            propBlock.SetColor("_Color", colorObjetivo);
+            propBlock.SetColor("_BaseColor", colorObjetivo);
 
-            // 3. Devolvemos el bloque modificado al renderizador (Súper rápido y sin duplicar material en RAM)
             renderizador.SetPropertyBlock(propBlock);
 
             Debug.Log($"<color=cyan><b>[CINTA SLD]:</b> ¡PINTADO AL INSTANTE! Pieza '{piezaAColorear.name}' pintada de <b>{ultimoColorCilindro}</b> de forma ultra fluida.</color>");

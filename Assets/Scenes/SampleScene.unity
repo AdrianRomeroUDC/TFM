@@ -9466,6 +9466,7 @@ MonoBehaviour:
   velocidadActual: 0
   SensorEntrada: 0
   SensorCilindros: 0
+  cooldownFlancoBajada: 1
   offsetLocalPieza: {x: 0, y: 0.000154, z: 0.0001934}
   rotacionLocalPieza: {x: -2.818, y: -90, z: 90}
   finRampaBlanca: {fileID: 8972519635171573006}
@@ -9905,7 +9906,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Paso de la c\xE1mara:"
+  m_text: 'Paso de giro:'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -27135,7 +27136,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 170, y: 0}
+  m_AnchoredPosition: {x: 180, y: 0}
   m_SizeDelta: {x: 320, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1131965275

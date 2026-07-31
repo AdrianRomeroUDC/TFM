@@ -621,6 +621,12 @@ public class UI_ControladorMenu : MonoBehaviour
 
             SetVisibilidadRelojSimulacion(false);
 
+            // 🟢 Fuerza la carga del stock real en 3D al arrancar modo Conectado
+            if (ControladorSpawnPiecesHBW_mqtt.Instance != null)
+            {
+                ControladorSpawnPiecesHBW_mqtt.Instance.ForzarRelecturaStock();
+            }
+
             if (MQTTClient.Instance != null)
             {
                 MQTTClient.Instance.enabled = true;
@@ -648,6 +654,12 @@ public class UI_ControladorMenu : MonoBehaviour
 
             if (MQTTClient.Instance != null) { MQTTClient.Instance.enabled = true; MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; MQTT_InterfaceClient.Instance.DesconectarRed(); }
+
+            // 🟢 Al presionar PLAY en modo simulación, llenamos el almacén 3D al 100% (9/9)
+            if (ControladorSpawnPiecesHBW_mqtt.Instance != null)
+            {
+                ControladorSpawnPiecesHBW_mqtt.Instance.LlenarAlmacenConTodasLasPiezas();
+            }
 
             EvaluarEstadoBotonPlay();
         }
@@ -887,7 +899,7 @@ public class UI_ControladorMenu : MonoBehaviour
         PoblarDropdown(dropdownMinInicio, minSeg, fechaInicioGuardada.Minute);
         PoblarDropdown(dropdownSegInicio, minSeg, fechaInicioGuardada.Second);
 
-        PoblarDropdown(dropdownHoraFin, horas, fechaFinGuardada.Hour);
+        PoblarDropdown(dropdownHoraFin, horas, fechaInicioGuardada.Hour);
         PoblarDropdown(dropdownMinFin, minSeg, fechaFinGuardada.Minute);
         PoblarDropdown(dropdownSegFin, minSeg, fechaFinGuardada.Second);
 
