@@ -11,6 +11,19 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
     [Header("Referencias de Sensores Físicos (Arrastra el objeto 3D aquí)")]
     public Transform sensorEntradaObjeto;
 
+    [Header("Referencia para Auto-Destrucción (Expulsor Azul)")]
+    [Tooltip("Arrastra aquí el objeto 3D del Pistón Azul (Cilindro_PiezasAzules).")]
+    public Transform pistonAzul;
+
+    [Tooltip("Ajuste fino en X para desplazar el punto límite de corte respecto al pistón azul.")]
+    public float offsetX_Autodestruccion = 0f;
+
+    [Tooltip("Ajuste fino en Y para desplazar el punto límite de corte respecto al pistón azul.")]
+    public float offsetY_Autodestruccion = 0f;
+
+    [Tooltip("Ajuste fino en Z para desplazar el punto límite de corte respecto al pistón azul.")]
+    public float offsetZ_Autodestruccion = 0.0003f;
+
     [Header("Prefabs de Auto-Sanación (Fallback Spawner)")]
     [Tooltip("Arrastra aquí el prefab de tu pieza base gris (el mismo que usa el DPS y el Horno).")]
     public GameObject prefabBaseGris;
@@ -145,17 +158,27 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
 
-        // 🎯 DETECCIÓN DE FLANCO DE BAJADA CON FILTRO DE COOLDOWN (1 SEGUNDO)
+        // 🎯 DETECCIÓN DE FLANCO DE BAJADA CON CINTA EN MOVIMIENTO + FILTRO COOLDOWN
         if (SensorEntrada && !nuevoSensorEntrada)
         {
-            if (Time.time - ultimoTiempoFlanco >= cooldownFlancoBajada)
+            bool cintaEstaEnMovimiento = velocidadActual > 0f;
+
+            if (cintaEstaEnMovimiento)
             {
-                solicitarReaparicion = true;
-                ultimoTiempoFlanco = Time.time; // Guardamos el momento de este disparo
+                if (Time.time - ultimoTiempoFlanco >= cooldownFlancoBajada)
+                {
+                    solicitarReaparicion = true;
+                    ultimoTiempoFlanco = Time.time;
+                    Debug.Log("<color=green><b>[CINTA SLD]:</b> Flanco de bajada detectado con cinta en movimiento. Pieza solicitada.</color>");
+                }
+                else
+                {
+                    Debug.LogWarning($"<color=yellow><b>[CINTA SLD]:</b> Flanco de bajada ignorado por filtro de tiempo (pasaron menos de {cooldownFlancoBajada}s).</color>");
+                }
             }
             else
             {
-                Debug.LogWarning($"<color=yellow><b>[CINTA SLD]:</b> Flanco de bajada ignorado por filtro de tiempo (pasaron menos de {cooldownFlancoBajada}s).</color>");
+                Debug.LogWarning("<color=orange><b>[CINTA SLD]:</b> Flanco de bajada detectado, pero IGNORADO porque la cinta está detenida (velocidad = 0).</color>");
             }
         }
 
@@ -226,6 +249,37 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             solicitarReaparicion = false;
             EjecutarReaparicionPieza();
         }
+
+        // 6. Comprobación de auto-destrucción tras rebasar pistón azul
+        ComprobarDestruccionPiezaFinCinta();
+    }
+
+    private Vector3 ObtenerPuntoLimiteEliminacion()
+    {
+        if (pistonAzul == null) return Vector3.zero;
+
+        Vector3 offsetLocal = new Vector3(offsetX_Autodestruccion, offsetY_Autodestruccion, offsetZ_Autodestruccion);
+        return pistonAzul.TransformPoint(offsetLocal);
+    }
+
+    private void ComprobarDestruccionPiezaFinCinta()
+    {
+        Transform piezaAChequear = ObtenerPiezaEnCinta();
+        if (piezaAChequear == null || pistonAzul == null || sensorEntradaObjeto == null) return;
+
+        Vector3 puntoLimite = ObtenerPuntoLimiteEliminacion();
+
+        // Distancia desde la entrada hasta el punto límite y hasta la pieza
+        float distanciaLimite = Vector3.Distance(sensorEntradaObjeto.position, puntoLimite);
+        float distanciaPieza = Vector3.Distance(sensorEntradaObjeto.position, piezaAChequear.position);
+
+        if (distanciaPieza > distanciaLimite)
+        {
+            Debug.Log($"<color=red><b>[CINTA SLD]:</b> Pieza '{piezaAChequear.name}' rebasó el Gizmo de Eliminación. Destruyendo pieza.</color>");
+
+            if (piezaActual == piezaAChequear) piezaActual = null;
+            Destroy(piezaAChequear.gameObject);
+        }
     }
 
     private Transform ObtenerPiezaEnCinta()
@@ -237,7 +291,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
             foreach (Transform hijo in eslabon)
             {
                 string nombre = hijo.name.ToLower();
-                if (nombre.Contains("pieza") || nombre.Contains("workpiece") || hijo.CompareTag("Pieza"))
+                if (nombre.Contains("pieza") || nombre.Contains("workpiece") || nombre.Contains("clone") || hijo.CompareTag("Pieza"))
                 {
                     return hijo;
                 }
@@ -459,12 +513,24 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!mostrarGizmos || sensorEntradaObjeto == null) return;
+        if (!mostrarGizmos) return;
 
-        Vector3 puntoDeBusqueda = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
-        Gizmos.color = Color.green;
-        Gizmos.DrawWireSphere(puntoDeBusqueda, 0.012f);
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(sensorEntradaObjeto.position, puntoDeBusqueda);
+        // 1. Gizmo de Búsqueda / Spawn (Verde y Amarillo)
+        if (sensorEntradaObjeto != null)
+        {
+            Vector3 puntoDeBusqueda = sensorEntradaObjeto.TransformPoint(offsetBusqueda);
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(puntoDeBusqueda, 0.012f);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(sensorEntradaObjeto.position, puntoDeBusqueda);
+        }
+
+        // 2. Gizmo de Punto Límite de Eliminación (Esfera Roja)
+        if (pistonAzul != null)
+        {
+            Vector3 puntoLimite = ObtenerPuntoLimiteEliminacion();
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(puntoLimite, 0.012f);
+        }
     }
 }
