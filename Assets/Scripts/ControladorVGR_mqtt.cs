@@ -143,7 +143,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 float deltaYMundial = Mathf.Abs(ejeVertical.position.y - yMundialAlAgarrar);
 
-                if (deltaYMundial > 0.015f) // 1.5 cm reales en el espacio 3D
+                if (deltaYMundial > 0.02f) // 2 cm reales en el espacio 3D
                 {
                     Debug.Log($"<color=yellow><b>[VGR CHEQUEO DSI]:</b> Altura límite superada. Delta: {deltaYMundial:F4}m. dsi_sensor = {dsiSensorActivo}</color>");
 

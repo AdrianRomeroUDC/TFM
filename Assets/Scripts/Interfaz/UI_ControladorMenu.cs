@@ -82,9 +82,13 @@ public class UI_ControladorMenu : MonoBehaviour
                                    !simulacionOfflinePedidoEnCurso &&
                                    !estaDesconectadoMQTT;
 
-    // Persistencia de Estado de Menú
+    // Persistencia de Estado de Menú y Panel Azul
     private static bool panelLateralEstabaAbierto = false;
     public static HashSet<string> seccionesAbiertasPrevias = new HashSet<string>();
+
+    // 🎯 Persistencia estática del texto informativo para evitar parpadeos al pulsar Reset
+    private static string ultimoTituloGuardado = null;
+    private static string ultimoSubtituloGuardado = null;
 
     private static bool autoStartPendiente = false;
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
@@ -107,16 +111,10 @@ public class UI_ControladorMenu : MonoBehaviour
         if (instance == null) instance = this;
 
         if (seccionBBDD == null)
-        {
             seccionBBDD = GetComponentInChildren<UI_SeccionBBDD>();
-            Debug.Log($"🔍 [UI_ControladorMenu] Búsqueda automática de UI_SeccionBBDD -> {(seccionBBDD != null ? "Encontrado" : "NO ENCONTRADO")}");
-        }
 
         if (seccionSimulacion == null)
-        {
             seccionSimulacion = GetComponentInChildren<UI_SeccionSimulacion>();
-            Debug.Log($"🔍 [UI_ControladorMenu] Búsqueda automática de UI_SeccionSimulacion -> {(seccionSimulacion != null ? "Encontrado" : "NO ENCONTRADO")}");
-        }
     }
 
     private void OnEnable()
@@ -141,11 +139,13 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("🚀 [UI_ControladorMenu] Start() iniciado.");
         simulacionEnCurso = false;
         esPausado = false;
         estuvoEnVivoMQTT = false;
         tiempoUltimoHeartbeatReal = Time.realtimeSinceStartup;
+
+        // 🎯 Restaurar inmediatamente el texto previo guardado para evitar parpadeo visual
+        RestaurarTextoModoPrevio();
 
         if (MQTTClient.Instance != null)
         {
@@ -176,16 +176,7 @@ public class UI_ControladorMenu : MonoBehaviour
         }
 
         // Inicializar Subsecciones
-        if (seccionBBDD != null)
-        {
-            Debug.Log("📌 [UI_ControladorMenu] Llamando a seccionBBDD.Inicializar()...");
-            seccionBBDD.Inicializar(() => EvaluarEstadoBotonPlay());
-        }
-        else
-        {
-            Debug.LogError("❌ [UI_ControladorMenu] CRÍTICO: 'seccionBBDD' es NULL en UI_ControladorMenu. No se pueden inicializar los desplegables de tiempo!");
-        }
-
+        if (seccionBBDD != null) seccionBBDD.Inicializar(() => EvaluarEstadoBotonPlay());
         if (seccionSimulacion != null) seccionSimulacion.Inicializar();
 
         // Listeners Botones Principales
@@ -244,6 +235,10 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
     }
+
+    // ====================================================================
+    // GESTIÓN DE EVENTOS Y HEARTBEAT
+    // ====================================================================
 
     private void OnFactoryHeartbeatRecibido(bool connected, DateTime timestamp)
     {
@@ -326,6 +321,10 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
     }
+
+    // ====================================================================
+    // GESTIÓN DE TOGGLES Y PANELES
+    // ====================================================================
 
     public void OnToggleSimulacionCambiado(bool activo)
     {
@@ -410,6 +409,19 @@ public class UI_ControladorMenu : MonoBehaviour
                 txtModoSubtitulo.text = "Ejecución de acciones offline.";
                 break;
         }
+
+        // 🎯 Almacenar el texto visual para mantenerlo intacto en re inicios de escena
+        ultimoTituloGuardado = txtModoTitulo.text;
+        ultimoSubtituloGuardado = txtModoSubtitulo.text;
+    }
+
+    private void RestaurarTextoModoPrevio()
+    {
+        if (!string.IsNullOrEmpty(ultimoTituloGuardado) && txtModoTitulo != null)
+            txtModoTitulo.text = ultimoTituloGuardado;
+
+        if (!string.IsNullOrEmpty(ultimoSubtituloGuardado) && txtModoSubtitulo != null)
+            txtModoSubtitulo.text = ultimoSubtituloGuardado;
     }
 
     private void ActualizarTogglesVisuales(bool bbddActivo, bool simulacionActiva)
@@ -459,6 +471,10 @@ public class UI_ControladorMenu : MonoBehaviour
     {
         OnEstadoPermisoPedidoCambiado?.Invoke(PuedePedirPieza);
     }
+
+    // ====================================================================
+    // CONTROL DE REPRODUCCIÓN Y ESCENA
+    // ====================================================================
 
     public void OnBotonPlayPulsado()
     {
@@ -514,8 +530,7 @@ public class UI_ControladorMenu : MonoBehaviour
         autoStartPendiente = false;
         autoStartPiezaSimulacion = null;
 
-        bool estaConectadoMQTT = (MQTTClient.Instance != null && MQTTClient.Instance.IsConnected);
-        estaDesconectadoMQTT = !estaConectadoMQTT;
+        // 🎯 Mantenemos el estado de desconexión tal cual estaba sin forzar cambios
         yaSeRecargoPorDesconexion = false;
 
         panelLateralEstabaAbierto = false;
@@ -556,15 +571,8 @@ public class UI_ControladorMenu : MonoBehaviour
             {
                 MQTTClient.Instance.enabled = true;
                 MQTTClient.Instance.Connect();
-
-                if (!MQTTClient.Instance.IsConnected)
-                {
-                    estaDesconectadoMQTT = true;
-                }
-            }
-            else
-            {
-                estaDesconectadoMQTT = true;
+                // 🎯 Dejamos que los heartbeats reales o el watchdog manejen la desconexión
+                // sin forzar 'estaDesconectadoMQTT = true' en el primer fotograma
             }
 
             EvaluarEstadoBotonPlay();
