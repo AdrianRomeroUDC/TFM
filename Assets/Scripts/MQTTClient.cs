@@ -49,10 +49,13 @@ public class JSON_SLDCylinder
 [Serializable] public class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
 [Serializable] public class JSON_FullStock { public JSON_StockItem[] stockItems; public string ts; }
 
+// Payload Heartbeat Fábrica
+[Serializable] public class JSON_FactoryHeartbeat { public bool connected; public string ts; }
+
 public class MQTTClient : MonoBehaviour
 {
     private static MQTTClient instance;
-    public static MQTTClient Instance => instance;
+    public static MQTTClient Instance { get { return instance; } }
 
     private MqttClient client;
     private string lastHBWJson = "";
@@ -60,7 +63,6 @@ public class MQTTClient : MonoBehaviour
 
     private volatile bool estaActivo = true;
 
-    // Propiedad pública para consultar el estado de la conexión desde fuera
     public bool IsConnected => client != null && client.IsConnected;
 
     private struct MensajeMQTT
@@ -76,10 +78,6 @@ public class MQTTClient : MonoBehaviour
     public int puerto = 8883;
     public string usuario = "LearningFactory";
     public string contrasena = "Fischertechnik1";
-
-    // 🟢 Evento Heartbeat para el watchdog de conexión en UI_ControladorMenu
-    public delegate void OnFactoryHeartbeat(bool connected, DateTime timestamp);
-    public event OnFactoryHeartbeat OnFactoryHeartbeatEvent;
 
     public delegate void OnSLDBeltUpdate(SLDBeltPayload data);
     public event OnSLDBeltUpdate OnBeltUpdateEvent;
@@ -113,6 +111,10 @@ public class MQTTClient : MonoBehaviour
     public event OnSSCLEDsUpdate OnSSCLEDsUpdateEvent;
     public delegate void OnSSCCamaraUpdate(float pan, float tilt);
     public event OnSSCCamaraUpdate OnSSCCamaraUpdateEvent;
+
+    // Evento para Heartbeat enviando estado y timestamp parseado
+    public delegate void OnFactoryHeartbeatUpdate(bool connected, DateTime timestamp);
+    public event OnFactoryHeartbeatUpdate OnFactoryHeartbeatEvent;
 
     public Queue<MPOTurntablePayload> colaMensajes = new Queue<MPOTurntablePayload>();
 
@@ -191,10 +193,10 @@ public class MQTTClient : MonoBehaviour
                 string[] topics = {
                     "dt/sld/belt", "dt/sld/cylinder", "dt/dps/dsi", "dt/dps/dso", "dt/dps/color", "dt/vgr/grip",
                     "f/i/stock", "dt/vgr/pos", "dt/hbw/pos", "dt/hbw/belt", "dt/mpo/oven", "dt/mpo/turntable",
-                    "dt/mpo/belt", "dt/mpo/arm", "dt/ssc/leds", "dt/ssc/camera"
+                    "dt/mpo/belt", "dt/mpo/arm", "dt/ssc/leds", "dt/ssc/camera", "dt/factory"
                 };
 
-                byte[] qos = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+                byte[] qos = new byte[topics.Length];
                 client.Subscribe(topics, qos);
             }
         }
@@ -224,13 +226,26 @@ public class MQTTClient : MonoBehaviour
     public void ProcesarMensajeExterno(string topic, string msg)
     {
         if (string.IsNullOrEmpty(msg)) return;
-
-        // 🟢 Notifica al gestor que la fábrica responde en tiempo real
-        OnFactoryHeartbeatEvent?.Invoke(true, DateTime.UtcNow);
-
         msg = msg.Replace("True", "true").Replace("False", "false");
 
-        if (topic == "dt/sld/belt")
+        if (topic == "dt/factory")
+        {
+            try
+            {
+                JSON_FactoryHeartbeat data = JsonUtility.FromJson<JSON_FactoryHeartbeat>(msg);
+                if (data != null)
+                {
+                    DateTime tsParsed = DateTime.UtcNow;
+                    if (!string.IsNullOrEmpty(data.ts))
+                    {
+                        DateTime.TryParse(data.ts, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out tsParsed);
+                    }
+                    OnFactoryHeartbeatEvent?.Invoke(data.connected, tsParsed);
+                }
+            }
+            catch { }
+        }
+        else if (topic == "dt/sld/belt")
         {
             try
             {
@@ -336,10 +351,7 @@ public class MQTTClient : MonoBehaviour
                     OnHBWUpdatePiecesEvent?.Invoke(flatStock);
                 }
             }
-            catch (System.Exception ex)
-            {
-                Debug.LogError("❌ [MQTT Stock] Error al parsear el JSON: " + ex.Message);
-            }
+            catch { }
         }
         else if (topic == "dt/hbw/pos")
         {
@@ -464,6 +476,18 @@ public class MQTTClient : MonoBehaviour
 
     public string GetLastHBWStatus() => lastHBWJson;
     public string[] GetInitialStock() => initialStock;
+
+    public void ReemitirUltimoStock()
+    {
+        if (initialStock != null)
+        {
+            OnHBWUpdatePiecesEvent?.Invoke(initialStock);
+        }
+        else if (!string.IsNullOrEmpty(lastHBWJson))
+        {
+            ProcesarMensajeExterno("f/i/stock", lastHBWJson);
+        }
+    }
 
     private void OnApplicationQuit()
     {

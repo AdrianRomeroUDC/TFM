@@ -25,6 +25,10 @@ public class UI_ControladorMenu : MonoBehaviour
     [Header("Cierre al Clicar Fuera")]
     public GameObject fondoCierre;
 
+    [Header("Panel Informativo de Modo (Azul)")]
+    public TMP_Text txtModoTitulo;          // Texto del Título del Panel Azul
+    public TMP_Text txtModoSubtitulo;       // Texto del Subtítulo del Panel Azul
+
     [Header("Reloj Digital de la Cabecera (Hora Real)")]
     public TMP_Text textoReloj;
 
@@ -88,15 +92,14 @@ public class UI_ControladorMenu : MonoBehaviour
 
     public bool EsPausado => esPausado;
     public bool EsModoSimulacionActivo => modoSeleccionado == ModoOrigen.Simulacion_Offline;
-    public bool EsModoBBDDActivo => modoSeleccionado == ModoOrigen.BaseDeDatos_Historico || modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico;
+    public bool EsModoBBDDActivo => modoSeleccionado == ModoOrigen.BaseDeDatos_Historico;
 
-    // Inhabilita pedir piezas si estamos desconectados del Broker o la fábrica
     public bool PuedePedirPieza => modoSeleccionado == ModoOrigen.MQTT_Directo &&
                                    (modoEnEjecucion == null || modoEnEjecucion == ModoOrigen.MQTT_Directo) &&
                                    !simulacionOfflinePedidoEnCurso &&
                                    !estaDesconectadoMQTT;
 
-    // 🟢 Persistencia de Estado de Menú y Secciones Abiertas
+    // Persistencia de Estado de Menú
     private static bool panelLateralEstabaAbierto = false;
     public static HashSet<string> seccionesAbiertasPrevias = new HashSet<string>();
 
@@ -104,6 +107,7 @@ public class UI_ControladorMenu : MonoBehaviour
     private static ModoOrigen autoStartModo = ModoOrigen.MQTT_Directo;
     private static DateTime autoStartFechaIni = DateTime.Today.AddHours(8);
     private static DateTime autoStartFechaFin = DateTime.Today.AddHours(18);
+    private static string autoStartPiezaSimulacion = null;
 
     // Control global y local de desconexión
     public static bool estaDesconectadoMQTT = false;
@@ -162,14 +166,14 @@ public class UI_ControladorMenu : MonoBehaviour
             {
                 estaDesconectadoMQTT = false;
                 yaSeRecargoPorDesconexion = false;
-                Debug.Log("<color=green><b>🟢 [Fábrica MQTT] ¡Conexión Restablecida! Recargando escena para reinicializar todos los datos...</b></color>");
+                Debug.Log("<color=green><b>🟢 [Fábrica MQTT] ¡Conexión Restablecida!</b></color>");
+                ActualizarPanelInformativoModo();
+                NotificarEstadoPermisoPedido();
 
-                if (ControladorSpawnPiecesHBW_mqtt.Instance != null)
+                if (MQTTClient.Instance != null)
                 {
-                    ControladorSpawnPiecesHBW_mqtt.Instance.ForzarRelecturaStock();
+                    MQTTClient.Instance.ReemitirUltimoStock();
                 }
-
-                RecargarEscenaLimpia();
             }
         }
         else if (!connected && esMensajeReciente)
@@ -189,6 +193,7 @@ public class UI_ControladorMenu : MonoBehaviour
         {
             modoEnEjecucion = ModoOrigen.Simulacion_Offline;
             esPausado = false;
+            ActualizarPanelInformativoModo();
         }
         else
         {
@@ -247,9 +252,11 @@ public class UI_ControladorMenu : MonoBehaviour
         InicializarControlesTiempo();
         OcultarYColapsarMultiplicadores();
 
+        // Listeners Botones Principales
         if (btnPlay != null) { btnPlay.onClick.RemoveAllListeners(); btnPlay.onClick.AddListener(OnBotonPlayPulsado); }
         if (btnReset != null) { btnReset.onClick.RemoveAllListeners(); btnReset.onClick.AddListener(OnBotonResetPulsado); }
 
+        // Listeners Toggles Excluyentes
         if (toggleModoBBDD != null)
         {
             toggleModoBBDD.onValueChanged.RemoveAllListeners();
@@ -262,6 +269,7 @@ public class UI_ControladorMenu : MonoBehaviour
             toggleModoSimulacion.onValueChanged.AddListener(OnToggleSimulacionCambiado);
         }
 
+        // Listeners Botones Pedido Simulación
         if (btnSimPedirBlanca != null) btnSimPedirBlanca.onClick.AddListener(() => PedirPiezaSimulacion("WHITE"));
         if (btnSimPedirRoja != null) btnSimPedirRoja.onClick.AddListener(() => PedirPiezaSimulacion("RED"));
         if (btnSimPedirAzul != null) btnSimPedirAzul.onClick.AddListener(() => PedirPiezaSimulacion("BLUE"));
@@ -280,6 +288,9 @@ public class UI_ControladorMenu : MonoBehaviour
             ActualizarTogglesVisuales(false, false);
             ArrancarSimulacion();
         }
+
+        ActualizarPanelInformativoModo();
+        NotificarEstadoPermisoPedido();
     }
 
     private void Update()
@@ -290,6 +301,7 @@ public class UI_ControladorMenu : MonoBehaviour
             ActualizarTextoRelojPrincipal(DateTime.Now);
         }
 
+        // Watchdog de conexión MQTT Directo
         if (modoSeleccionado == ModoOrigen.MQTT_Directo && (modoEnEjecucion == null || modoEnEjecucion == ModoOrigen.MQTT_Directo))
         {
             if (!estaDesconectadoMQTT)
@@ -311,6 +323,7 @@ public class UI_ControladorMenu : MonoBehaviour
         if (!estaDesconectadoMQTT)
         {
             estaDesconectadoMQTT = true;
+            ActualizarPanelInformativoModo();
             NotificarEstadoPermisoPedido();
 
             if (estuvoEnVivoMQTT && !yaSeRecargoPorDesconexion)
@@ -322,6 +335,10 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
     }
+
+    // ====================================================================
+    // GESTIÓN DE TOGGLES EXCLUYENTES
+    // ====================================================================
 
     public void OnToggleSimulacionCambiado(bool activo)
     {
@@ -386,7 +403,8 @@ public class UI_ControladorMenu : MonoBehaviour
             if (MQTTClient.Instance != null) { MQTTClient.Instance.DesconectarRed(); }
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.DesconectarRed(); }
         }
-        else if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
+
+        if (modoSeleccionado == ModoOrigen.MQTT_Directo && !simulacionOfflinePedidoEnCurso && !simulacionEnCurso)
         {
             modoEnEjecucion = ModoOrigen.MQTT_Directo;
             tiempoUltimoHeartbeatReal = Time.realtimeSinceStartup;
@@ -401,9 +419,15 @@ public class UI_ControladorMenu : MonoBehaviour
                 {
                     estaDesconectadoMQTT = true;
                 }
+                else
+                {
+                    MQTTClient.Instance.ReemitirUltimoStock();
+                }
             }
 
             if (MQTT_InterfaceClient.Instance != null) { MQTT_InterfaceClient.Instance.enabled = true; }
+
+            ActualizarPanelInformativoModo();
         }
 
         SetUIInteractables(modoSeleccionado == ModoOrigen.BaseDeDatos_Historico);
@@ -415,6 +439,39 @@ public class UI_ControladorMenu : MonoBehaviour
         EvaluarEstadoBotonPlay();
         NotificarEstadoPermisoPedido();
         ActualizarEstadoBotonesSeccionSimulacion();
+    }
+
+    private void ActualizarPanelInformativoModo()
+    {
+        if (txtModoTitulo == null || txtModoSubtitulo == null) return;
+
+        ModoOrigen modoActivo = modoEnEjecucion ?? modoSeleccionado;
+
+        switch (modoActivo)
+        {
+            case ModoOrigen.MQTT_Directo:
+                if (estaDesconectadoMQTT)
+                {
+                    txtModoTitulo.text = "<color=#000000>●</color> Desconectado (Fábrica Real)";
+                    txtModoSubtitulo.text = "Sin respuesta de la fábrica por MQTT.";
+                }
+                else
+                {
+                    txtModoTitulo.text = "<color=#FF4D4D>●</color> En Vivo (Fábrica Real)";
+                    txtModoSubtitulo.text = "Sincronizado en tiempo real por MQTT.";
+                }
+                break;
+
+            case ModoOrigen.BaseDeDatos_Historico:
+                txtModoTitulo.text = "<color=#FFC107>●</color> Histórico (Base de Datos)";
+                txtModoSubtitulo.text = "Reproduciendo datos de InfluxDB.";
+                break;
+
+            case ModoOrigen.Simulacion_Offline:
+                txtModoTitulo.text = "<color=#00E676>●</color> Simulación Local";
+                txtModoSubtitulo.text = "Ejecución de acciones offline.";
+                break;
+        }
     }
 
     private void ActualizarTogglesVisuales(bool bbddActivo, bool simulacionActiva)
@@ -445,14 +502,20 @@ public class UI_ControladorMenu : MonoBehaviour
 
     private void PedirPiezaSimulacion(string color)
     {
+        if (!PuedePedirPieza && modoSeleccionado == ModoOrigen.MQTT_Directo) return;
+
+        if (modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico || simulacionEnCurso)
+        {
+            autoStartPendiente = true;
+            autoStartModo = ModoOrigen.Simulacion_Offline;
+            autoStartPiezaSimulacion = color;
+            RecargarEscenaLimpia();
+            return;
+        }
+
         if (SimuladorOffline.Instance != null && modoSeleccionado == ModoOrigen.Simulacion_Offline)
         {
             SimuladorOffline.Instance.PedirPieza(color);
-
-            if (ControladorSpawnPiecesHBW_mqtt.Instance != null)
-            {
-                ControladorSpawnPiecesHBW_mqtt.Instance.LlenarAlmacenConTodasLasPiezas();
-            }
         }
     }
 
@@ -460,6 +523,10 @@ public class UI_ControladorMenu : MonoBehaviour
     {
         OnEstadoPermisoPedidoCambiado?.Invoke(PuedePedirPieza);
     }
+
+    // ====================================================================
+    // REPRODUCCIÓN Y CONTROL DE ESCENA
+    // ====================================================================
 
     public void OnBotonPlayPulsado()
     {
@@ -511,6 +578,12 @@ public class UI_ControladorMenu : MonoBehaviour
     public void OnBotonResetPulsado()
     {
         autoStartPendiente = false;
+        autoStartPiezaSimulacion = null;
+
+        bool estaConectadoMQTT = (MQTTClient.Instance != null && MQTTClient.Instance.IsConnected);
+        estaDesconectadoMQTT = !estaConectadoMQTT;
+        yaSeRecargoPorDesconexion = false;
+
         panelLateralEstabaAbierto = false;
         seccionesAbiertasPrevias.Clear();
 
@@ -594,6 +667,7 @@ public class UI_ControladorMenu : MonoBehaviour
             }
         }
 
+        ActualizarPanelInformativoModo();
         NotificarEstadoPermisoPedido();
         ActualizarEstadoBotonesSeccionSimulacion();
     }
@@ -617,7 +691,17 @@ public class UI_ControladorMenu : MonoBehaviour
         SetDropdownValor(dropdownMinFin, autoStartFechaFin.Minute);
         SetDropdownValor(dropdownSegFin, autoStartFechaFin.Second);
 
+        string piezaAPedir = autoStartPiezaSimulacion;
+        autoStartPiezaSimulacion = null;
+
         ArrancarSimulacion();
+
+        if (!string.IsNullOrEmpty(piezaAPedir) && SimuladorOffline.Instance != null)
+        {
+            SimuladorOffline.Instance.PedirPieza(piezaAPedir);
+        }
+
+        ActualizarPanelInformativoModo();
     }
 
     private void EvaluarEstadoBotonPlay()
@@ -625,29 +709,51 @@ public class UI_ControladorMenu : MonoBehaviour
         if (btnPlay == null) return;
         ActualizarVisualBotonPlay();
 
-        if (simulacionOfflinePedidoEnCurso || (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso))
+        // 1. Si hay una animación de pedido offline en marcha, habilitamos Play/Pausa
+        if (simulacionOfflinePedidoEnCurso)
         {
             btnPlay.interactable = true;
             return;
         }
 
-        if (modoSeleccionado != modoEnEjecucion)
+        // 2. Si seleccionamos Modo Simulación Offline, permitimos pulsar Play para entrar/iniciar el modo
+        if (modoSeleccionado == ModoOrigen.Simulacion_Offline)
         {
             btnPlay.interactable = true;
             return;
         }
 
+        // 3. Modo Base de Datos Histórico
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
+            if (simulacionEnCurso || modoEnEjecucion != ModoOrigen.BaseDeDatos_Historico)
+            {
+                btnPlay.interactable = true;
+                return;
+            }
+
             if (ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
             {
                 bool hayCambio = (fechaIniEnEjecucion == null || fechaFinEnEjecucion == null) ||
-                               (fIni != fechaIniEnEjecucion.Value) ||
-                               (fFin != fechaFinEnEjecucion.Value);
+                                 (fIni != fechaIniEnEjecucion.Value) ||
+                                 (fFin != fechaFinEnEjecucion.Value);
 
                 btnPlay.interactable = hayCambio;
                 return;
             }
+        }
+
+        // 4. Modo MQTT Directo (solo habilitado si venimos de otro modo para aplicar el cambio)
+        if (modoSeleccionado == ModoOrigen.MQTT_Directo)
+        {
+            if (modoEnEjecucion == ModoOrigen.BaseDeDatos_Historico && simulacionEnCurso)
+            {
+                btnPlay.interactable = true;
+                return;
+            }
+
+            btnPlay.interactable = false;
+            return;
         }
 
         btnPlay.interactable = false;
@@ -858,10 +964,6 @@ public class UI_ControladorMenu : MonoBehaviour
         {
             if (rectSecciones != null) LayoutRebuilder.MarkLayoutForRebuild(rectSecciones);
             if (rectPanel != null) LayoutRebuilder.MarkLayoutForRebuild(rectPanel);
-        }
-        else
-        {
-            UI_SeccionAcordeon.CerrarCualquierSeccionAbierta();
         }
     }
 }

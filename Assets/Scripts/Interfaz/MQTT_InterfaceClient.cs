@@ -15,7 +15,7 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 [Serializable] public class StockItem { public string location; public Workpiece workpiece; }
 
 [Serializable] public class OrderPayload { public string ts; public string type; }
-[Serializable] public class PtuPayload { public string ts; public string cmd; public int degree; }
+[Serializable] public class PtuPayload { public string ts; public string cmd; public int degree; } // 🟢 'public' añadido aquí
 [Serializable] public class CamConfigPayload { public string ts; public bool on; public int fps; }
 [Serializable] public class SensorPeriodPayload { public string ts; public int period; }
 [Serializable] public class PtuHomePayload { public string ts; public string cmd; }
@@ -23,7 +23,7 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 public class MQTT_InterfaceClient : MonoBehaviour
 {
     private static MQTT_InterfaceClient instance;
-    public static MQTT_InterfaceClient Instance { get { return instance; } }
+    public static MQTT_InterfaceClient Instance => instance; // 🟢 Sintaxis corregida
 
     private MqttClient client;
     private readonly object lockObject = new object();
@@ -53,9 +53,23 @@ public class MQTT_InterfaceClient : MonoBehaviour
 
     void Start()
     {
-        // Se conecta en Start para asegurar que MQTTClient.Instance ya existe
+        // Lectura de la configuración en el hilo principal
+        string brokerHost = "10.113.36.36";
+        int puerto = 1884;
+        string usuario = "LearningFactory";
+        string contrasena = "Fischertechnik1";
+
+        if (MQTTClient.Instance != null)
+        {
+            brokerHost = MQTTClient.Instance.brokerHost;
+            puerto = MQTTClient.Instance.puerto;
+            usuario = MQTTClient.Instance.usuario;
+            contrasena = MQTTClient.Instance.contrasena;
+        }
+
         string clientIdShort = "Unity_Interfaz_" + UnityEngine.Random.Range(10000, 99999);
-        Task.Run(() => ConnectAsync(clientIdShort));
+
+        Task.Run(() => ConnectAsync(clientIdShort, brokerHost, puerto, usuario, contrasena));
     }
 
     void OnEnable()
@@ -104,36 +118,31 @@ public class MQTT_InterfaceClient : MonoBehaviour
         if (camLista != null) foreach (var item in camLista) OnCameraImageEvent?.Invoke(item);
     }
 
-    private void ConnectAsync(string clientId)
+    private void ConnectAsync(string clientId, string host, int port, string user, string pass)
     {
         try
         {
-            // Valores de respaldo por defecto
-            string brokerHost = "10.113.36.36";
-            int puerto = 1884;
-            string usuario = "LearningFactory";
-            string contrasena = "Fischertechnik1";
+            bool usarSSL = (port == 8883);
 
-            // Lee automáticamente la configuración desde MQTTClient
-            if (MQTTClient.Instance != null)
+            if (usarSSL)
             {
-                brokerHost = MQTTClient.Instance.brokerHost;
-                puerto = MQTTClient.Instance.puerto;
-                usuario = MQTTClient.Instance.usuario;
-                contrasena = MQTTClient.Instance.contrasena;
+                System.Net.ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, errors) => true;
+                client = new MqttClient(host, port, true, null, null, MqttSslProtocols.TLSv1_2, (sender, cert, chain, errors) => true);
+            }
+            else
+            {
+                client = new MqttClient(host, port, false, null, null, MqttSslProtocols.None);
             }
 
-            client = new MqttClient(brokerHost, puerto, false, null, null, MqttSslProtocols.None);
             client.MqttMsgPublishReceived += OnMessageReceived;
-
-            client.Connect(clientId, usuario, contrasena);
+            client.Connect(clientId, user, pass);
 
             if (client.IsConnected)
             {
                 string[] topics = { "i/cam", "i/bme680", "i/ldr", "f/i/stock" };
                 client.Subscribe(topics, new byte[] { 0, 0, 0, 0 });
 
-                Debug.Log($"<color=green><b>[MQTT Interfaz] ¡CONECTADO CON ÉXITO! ID: {clientId} en {brokerHost}:{puerto}</b></color>");
+                Debug.Log($"<color=green><b>[MQTT Interfaz] ¡CONECTADO CON ÉXITO! ID: {clientId} a {host}:{port}</b></color>");
             }
         }
         catch (Exception ex)
@@ -189,12 +198,21 @@ public class MQTT_InterfaceClient : MonoBehaviour
         {
             client.Publish(topic, Encoding.UTF8.GetBytes(json), MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE, false);
         }
+        else
+        {
+            Debug.LogWarning($"[MQTT Interfaz] No se pudo publicar en {topic} porque el cliente no está conectado.");
+        }
     }
 
     public void SendOrder(string workpieceType)
     {
-        var payload = new OrderPayload { ts = GetISO8601Timestamp(), type = workpieceType };
-        PublishJson("f/o/order", JsonUtility.ToJson(payload));
+        string tipoFormateado = workpieceType != null ? workpieceType.Trim() : "";
+
+        var payload = new OrderPayload { ts = GetISO8601Timestamp(), type = tipoFormateado };
+        string jsonPayload = JsonUtility.ToJson(payload);
+
+        PublishJson("f/o/order", jsonPayload);
+        Debug.Log($"<color=cyan>[MQTT Interfaz] Orden enviada a f/o/order: {jsonPayload}</color>");
     }
 
     public void SendPtuCommand(string command, int degree = 10)
@@ -236,14 +254,10 @@ public class MQTT_InterfaceClient : MonoBehaviour
             try
             {
                 SendCameraConfig(false, 2);
-                Debug.Log("<color=yellow>[MQTT Interfaz] Enviando orden de apagado de cámara (c/cam) antes de salir...</color>");
                 System.Threading.Thread.Sleep(100);
                 client.Disconnect();
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[MQTT Interfaz] Error al enviar apagar cámara en OnApplicationQuit: {ex.Message}");
-            }
+            catch { }
         }
     }
 }

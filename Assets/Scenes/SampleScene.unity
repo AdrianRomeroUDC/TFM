@@ -33184,6 +33184,7 @@ MonoBehaviour:
   multiplicadorVelocidad: 1
   modoSeleccionado: 0
   estadoActual: 0
+  timeoutHeartbeatSegundos: 5
 --- !u!114 &1346186703
 MonoBehaviour:
   m_ObjectHideFlags: 0
