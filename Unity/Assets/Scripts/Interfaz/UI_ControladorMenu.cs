@@ -86,7 +86,7 @@ public class UI_ControladorMenu : MonoBehaviour
     private static bool panelLateralEstabaAbierto = false;
     public static HashSet<string> seccionesAbiertasPrevias = new HashSet<string>();
 
-    // 🎯 Persistencia estática del texto informativo para evitar parpadeos al pulsar Reset
+    // Persistencia estática del texto informativo para evitar parpadeos al pulsar Reset
     private static string ultimoTituloGuardado = null;
     private static string ultimoSubtituloGuardado = null;
 
@@ -530,7 +530,7 @@ public class UI_ControladorMenu : MonoBehaviour
         autoStartPendiente = false;
         autoStartPiezaSimulacion = null;
 
-        // 🎯 Mantenemos el estado de desconexión tal cual estaba sin forzar cambios
+        // Mantenemos el estado de desconexión tal cual estaba sin forzar cambios
         yaSeRecargoPorDesconexion = false;
 
         panelLateralEstabaAbierto = false;
