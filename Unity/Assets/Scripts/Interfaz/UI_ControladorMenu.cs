@@ -682,21 +682,9 @@ public class UI_ControladorMenu : MonoBehaviour
 
         if (modoSeleccionado == ModoOrigen.BaseDeDatos_Historico)
         {
-            if (simulacionEnCurso || modoEnEjecucion != ModoOrigen.BaseDeDatos_Historico)
-            {
-                btnPlay.interactable = true;
-                return;
-            }
 
-            if (seccionBBDD != null && seccionBBDD.ObtenerRangoFechas(out DateTime fIni, out DateTime fFin))
-            {
-                bool hayCambio = (fechaIniEnEjecucion == null || fechaFinEnEjecucion == null) ||
-                                 (fIni != fechaIniEnEjecucion.Value) ||
-                                 (fFin != fechaFinEnEjecucion.Value);
-
-                btnPlay.interactable = hayCambio;
-                return;
-            }
+            btnPlay.interactable = true;
+            return;
         }
 
         if (modoSeleccionado == ModoOrigen.MQTT_Directo)
