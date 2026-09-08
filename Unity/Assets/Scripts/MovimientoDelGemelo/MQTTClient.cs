@@ -43,7 +43,7 @@ public class JSON_SLDCylinder
 [Serializable] public class JSON_SSCLEDs { public int led_online; public int leds_semaphore; }
 [Serializable] public class JSON_SSCCamera { public float pan; public float tilt; }
 [Serializable] public class JSON_HBWStock { public string[] stock; }
-[Serializable] public class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTrigeredIn; public bool isTriggeredOut; public string rot_direction; }
+[Serializable] public class JSON_HBWBelt { public string ts; public float belt_speed; public bool isTriggeredIn; public bool isTriggeredOut; public string rot_direction; }
 [Serializable] public class JSON_MPOArm { public bool move2Ref3; public bool move2Ref4; public bool lowering; public bool vacuum; public string ts; }
 [Serializable] public class JSON_Workpiece { public string id; public string type; public string state; }
 [Serializable] public class JSON_StockItem { public string location; public JSON_Workpiece workpiece; }
@@ -69,6 +69,7 @@ public class MQTTClient : MonoBehaviour
     {
         public string topic;
         public string payload;
+        public long t1_Recv;
     }
     private Queue<MensajeMQTT> colaMensajesRed = new Queue<MensajeMQTT>();
     private readonly object lockCola = new object();
@@ -142,6 +143,23 @@ public class MQTTClient : MonoBehaviour
         }
     }
 
+    // Método para publicar pings desde Unity
+    public void PublishPing(string payload)
+    {
+        if (client != null && client.IsConnected)
+        {
+            try
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(payload);
+                client.Publish("dt/ping", bytes, MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE, false);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("Error publicando ping: " + ex.Message);
+            }
+        }
+    }
+
     void Update()
     {
         List<MensajeMQTT> copiaMensajes = null;
@@ -159,7 +177,7 @@ public class MQTTClient : MonoBehaviour
         {
             foreach (var msg in copiaMensajes)
             {
-                ProcesarMensajeExterno(msg.topic, msg.payload);
+                ProcesarMensajeExterno(msg.topic, msg.payload, msg.t1_Recv);
             }
         }
     }
@@ -193,7 +211,7 @@ public class MQTTClient : MonoBehaviour
                 string[] topics = {
                     "dt/sld/belt", "dt/sld/cylinder", "dt/dps/dsi", "dt/dps/dso", "dt/dps/color", "dt/vgr/grip",
                     "f/i/stock", "dt/vgr/pos", "dt/hbw/pos", "dt/hbw/belt", "dt/mpo/oven", "dt/mpo/turntable",
-                    "dt/mpo/belt", "dt/mpo/arm", "dt/ssc/leds", "dt/ssc/camera", "dt/factory"
+                    "dt/mpo/belt", "dt/mpo/arm", "dt/ssc/leds", "dt/ssc/camera", "dt/factory", "dt/pong"
                 };
 
                 byte[] qos = new byte[topics.Length];
@@ -216,16 +234,32 @@ public class MQTTClient : MonoBehaviour
         if (!estaActivo) return;
 
         string msg = Encoding.UTF8.GetString(e.Message).Trim();
+        long t1 = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         lock (lockCola)
         {
-            colaMensajesRed.Enqueue(new MensajeMQTT { topic = e.Topic, payload = msg });
+            colaMensajesRed.Enqueue(new MensajeMQTT { topic = e.Topic, payload = msg, t1_Recv = t1 });
         }
     }
 
+    // Sobrecarga de método para mantener compatibilidad con SimuladorOffline e InfluxDBClient
     public void ProcesarMensajeExterno(string topic, string msg)
     {
+        long t1 = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        ProcesarMensajeExterno(topic, msg, t1);
+    }
+
+    // Método principal que recibe la marca de tiempo exacta de recepción en red (t1)
+    public void ProcesarMensajeExterno(string topic, string msg, long t1)
+    {
         if (string.IsNullOrEmpty(msg)) return;
+
+        if (topic == "dt/pong")
+        {
+            MQTTLatencyLogger.Instance?.ProcesarPong(msg, t1);
+            return;
+        }
+
         msg = msg.Replace("True", "true").Replace("False", "false");
 
         if (topic == "dt/factory")
