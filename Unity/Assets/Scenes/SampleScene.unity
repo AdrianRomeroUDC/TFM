@@ -40713,7 +40713,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 178a83231405a2941bb54bf05f257ff9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MQTTLatencyLogger
-  guardarLatencia: 1
+  guardarLatencia: 0
   nombreArchivoCSV: MQTT_Latency_Data.csv
   rutaArchivoCSV: 
   intervaloPingSec: 1
