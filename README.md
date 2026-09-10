@@ -9,7 +9,7 @@
 ## Planta Física y Gemelo Digital
 
 <p align="center">
-  <img width="914" alt="FabricaReal-GemeloDigital" src="https://github.com/user-attachments/assets/53d177aa-2018-4187-8f87-4e44a783c140" />
+  <img width="620" alt="FabricaReal-GemeloDigital" src="https://github.com/user-attachments/assets/53d177aa-2018-4187-8f87-4e44a783c140" />
 </p>
 
 ---
