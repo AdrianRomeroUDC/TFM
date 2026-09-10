@@ -6,7 +6,7 @@
 
 ---
 
-## 🏭 Planta Física y Gemelo Digital
+## Planta Física y Gemelo Digital
 
 <p align="center">
   <img width="914" alt="FabricaReal-GemeloDigital" src="https://github.com/user-attachments/assets/53d177aa-2018-4187-8f87-4e44a783c140" />
@@ -14,7 +14,7 @@
 
 ---
 
-## 🎬 Vídeos de Funcionamiento
+## Vídeos de Funcionamiento
 
 ### 🔴 1. Modo En Vivo
 Sincronización en tiempo real mediante telemetría MQTT con la planta física real.
