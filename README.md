@@ -19,30 +19,18 @@
 ### 🔴 1. Modo En Vivo
 Sincronización en tiempo real mediante telemetría MQTT con la planta física real.
 
-[![Ver Vídeo Modo En Vivo](https://img.youtube.com/vi/QrAoBLRd5Wo/hqdefault.jpg)](https://www.youtube.com/watch?v=QrAoBLRd5Wo)
-
-<a href="https://www.youtube.com/watch?v=TU_ID_DE_YOUTUBE" target="_blank">
-  <img src="https://github.com/user-attachments/assets/d41f1048-31ca-4344-96ab-6352cfc3fafe" width="620"/>
-</a>
+[![Modo En Vivo](https://ytcards.demolab.com/?id=QrAoBLRd5Wo&lang=es)](https://www.youtube.com/watch?v=QrAoBLRd5Wo)
 
 ---
 
 ### 🟡 2. Modo Reproducción de Históricos
 Descarga y reproducción de datos almacenados en la base de datos InfluxDB.
 
-[![Ver Vídeo Modo Histórico](https://img.youtube.com/vi/y0397x4YoD0/hqdefault.jpg)](https://www.youtube.com/watch?v=y0397x4YoD0)
-
-<a href="https://www.youtube.com/watch?v=TU_ID_DE_YOUTUBE" target="_blank">
-  <img src="https://github.com/user-attachments/assets/d41f1048-31ca-4344-96ab-6352cfc3fafe" width="620"/>
-</a>
+[![Modo Reproducción de Históricos](https://ytcards.demolab.com/?id=y0397x4YoD0&lang=es)](https://www.youtube.com/watch?v=y0397x4YoD0)
 
 ---
 
 ### 🟢 3. Modo Simulación
 Ejecución offline y prueba de secuencias operativas sin requerir la planta física.
 
-[![Ver Vídeo Modo Simulación](https://img.youtube.com/vi/MANPuxbMLLU/hqdefault.jpg)](https://www.youtube.com/watch?v=MANPuxbMLLU)
-
-<a href="https://www.youtube.com/watch?v=TU_ID_DE_YOUTUBE" target="_blank">
-  <img src="https://github.com/user-attachments/assets/d41f1048-31ca-4344-96ab-6352cfc3fafe" width="620"/>
-</a>
+[![Modo Simulación](https://ytcards.demolab.com/?id=MANPuxbMLLU&lang=es)](https://www.youtube.com/watch?v=MANPuxbMLLU)
