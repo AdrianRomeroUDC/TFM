@@ -21,12 +21,20 @@ Sincronización en tiempo real mediante telemetría MQTT con la planta física r
 
 [![Ver Vídeo Modo En Vivo](https://img.youtube.com/vi/QrAoBLRd5Wo/hqdefault.jpg)](https://www.youtube.com/watch?v=QrAoBLRd5Wo)
 
+<a href="https://www.youtube.com/watch?v=TU_ID_DE_YOUTUBE" target="_blank">
+  <img src="https://github.com/user-attachments/assets/d41f1048-31ca-4344-96ab-6352cfc3fafe" width="620"/>
+</a>
+
 ---
 
 ### 🟡 2. Modo Reproducción de Históricos
 Descarga y reproducción de datos almacenados en la base de datos InfluxDB.
 
-[![Ver Vídeo Modo Histórico](https://img.youtube.com/vi/0397x4YoD0/hqdefault.jpg)](https://www.youtube.com/watch?v=0397x4YoD0)
+[![Ver Vídeo Modo Histórico](https://img.youtube.com/vi/y0397x4YoD0/hqdefault.jpg)](https://www.youtube.com/watch?v=y0397x4YoD0)
+
+<a href="https://www.youtube.com/watch?v=TU_ID_DE_YOUTUBE" target="_blank">
+  <img src="https://github.com/user-attachments/assets/d41f1048-31ca-4344-96ab-6352cfc3fafe" width="620"/>
+</a>
 
 ---
 
@@ -34,3 +42,7 @@ Descarga y reproducción de datos almacenados en la base de datos InfluxDB.
 Ejecución offline y prueba de secuencias operativas sin requerir la planta física.
 
 [![Ver Vídeo Modo Simulación](https://img.youtube.com/vi/MANPuxbMLLU/hqdefault.jpg)](https://www.youtube.com/watch?v=MANPuxbMLLU)
+
+<a href="https://www.youtube.com/watch?v=TU_ID_DE_YOUTUBE" target="_blank">
+  <img src="https://github.com/user-attachments/assets/d41f1048-31ca-4344-96ab-6352cfc3fafe" width="620"/>
+</a>
