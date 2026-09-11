@@ -16,6 +16,9 @@
 
 ## 🎬 Vídeos de Funcionamiento
 
+> [!TIP]
+> **¿Cómo ver los vídeos?** Haz clic sobre cualquiera de las tarjetas o miniaturas para abrir la reproducción completa en YouTube.
+
 ### 🔴 1. Modo En Vivo
 Sincronización en tiempo real mediante telemetría MQTT con la planta física real.
 
