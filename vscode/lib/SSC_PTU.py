@@ -1,3 +1,14 @@
+"""Control de la cámara SSC (Station Supervisory Controller).
+
+SSC mueve la cámara PTU mediante los motores con encoder ``TXT_SSC_M_M1``
+(pan/rotación) y ``TXT_SSC_M_M2`` (tilt/subida y bajada), ambos en el
+controlador maestro. ``processCmd`` lanza cada orden en un hilo daemon. Las
+operaciones de referencia y parada sincronizada delegan en
+``SSC_PTU_Axes1Ref``, donde se usa ``threading.RLock`` para proteger los
+movimientos; este módulo no crea locks propios.
+"""
+
+# Recibe comandos PTU y los ejecuta en hilos para no bloquear MQTT.
 import logging
 import math
 from fischertechnik.controller.Motor import Motor
@@ -15,6 +26,15 @@ posnew_tilt = None
 
 
 def processCmd(cmd, degree):
+  """Despacha una orden de movimiento de la camara PTU a un hilo daemon.
+
+  Args:
+    cmd: Comando PTU, como ``stop``, ``home``, ``park`` o un movimiento.
+    degree: Magnitud del movimiento relativo en grados de interfaz.
+
+  Returns:
+    None. Inicia el movimiento solicitado y retorna sin bloquear al callback.
+  """
   global pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   print("processCmd: ", cmd, degree)
@@ -45,6 +65,12 @@ def processCmd(cmd, degree):
 
 
 def parkSSC():
+  """
+  Lleva la camara a su posicion de aparcado y avisa de la nueva posicion.
+
+  Returns:
+    None.
+  """
   global cmd, degree, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   movePosPark_SSC()
@@ -52,6 +78,12 @@ def parkSSC():
 
 
 def start_pan():
+  """
+  Gira la camara hasta el extremo izquierdo de su giro (pan al minimo).
+
+  Returns:
+    None.
+  """
   global cmd, degree, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   moveAbs(6, 0)
@@ -59,6 +91,12 @@ def start_pan():
 
 
 def end_pan():
+  """
+  Gira la camara hasta el extremo derecho de su giro (pan al maximo).
+
+  Returns:
+    None.
+  """
   global cmd, degree, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   moveAbs(6, (get_ABSLIMIT())[5])
@@ -66,6 +104,12 @@ def end_pan():
 
 
 def start_tilt():
+  """
+  Inclina la camara hasta el extremo inferior de su recorrido.
+
+  Returns:
+    None.
+  """
   global cmd, degree, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   moveAbs(7, 0)
@@ -73,6 +117,12 @@ def start_tilt():
 
 
 def end_tilt():
+  """
+  Inclina la camara hasta el extremo superior de su recorrido.
+
+  Returns:
+    None.
+  """
   global cmd, degree, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   moveAbs(7, (get_ABSLIMIT())[6])
@@ -80,6 +130,12 @@ def end_tilt():
 
 
 def stop_SSC():
+  """
+  Para en seco los motores de giro e inclinacion de la camara.
+
+  Returns:
+    None.
+  """
   global cmd, degree, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, '-')
   TXT_SSC_M_M1_encodermotor.stop_sync()
@@ -88,6 +144,18 @@ def stop_SSC():
 
 
 def move_left(degree):
+  """
+  Gira la camara un poco hacia la izquierda.
+
+  Resta los grados indicados a la posicion actual de giro, sin pasarse de
+  los limites mecanicos, y mueve la camara hasta ese nuevo angulo.
+
+  Args:
+    degree: Cuantos grados girar hacia la izquierda.
+
+  Returns:
+    None.
+  """
   global cmd, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, 'degree: %f', degree)
   pos_pan = get_abspos_SSC_pan()
@@ -102,6 +170,18 @@ def move_left(degree):
 
 
 def move_right(degree):
+  """
+  Gira la camara un poco hacia la derecha.
+
+  Suma los grados indicados a la posicion actual de giro, sin pasarse de
+  los limites mecanicos, y mueve la camara hasta ese nuevo angulo.
+
+  Args:
+    degree: Cuantos grados girar hacia la derecha.
+
+  Returns:
+    None.
+  """
   global cmd, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, 'degree: %f', degree)
   pos_pan = get_abspos_SSC_pan()
@@ -116,6 +196,18 @@ def move_right(degree):
 
 
 def move_down(degree):
+  """
+  Inclina la camara un poco hacia abajo.
+
+  Resta los grados indicados a la inclinacion actual, sin pasarse de los
+  limites mecanicos, y mueve la camara hasta ese nuevo angulo.
+
+  Args:
+    degree: Cuantos grados inclinar hacia abajo.
+
+  Returns:
+    None.
+  """
   global cmd, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, 'degree: %f', degree)
   pos_tilt = get_abspos_SSC_tilt()
@@ -130,6 +222,18 @@ def move_down(degree):
 
 
 def move_up(degree):
+  """
+  Inclina la camara un poco hacia arriba.
+
+  Suma los grados indicados a la inclinacion actual, sin pasarse de los
+  limites mecanicos, y mueve la camara hasta ese nuevo angulo.
+
+  Args:
+    degree: Cuantos grados inclinar hacia arriba.
+
+  Returns:
+    None.
+  """
   global cmd, pos_pan, pos_tilt, posnew_pan, posnew_tilt
   logging.log(logging.TRACE, 'degree: %f', degree)
   pos_tilt = get_abspos_SSC_tilt()

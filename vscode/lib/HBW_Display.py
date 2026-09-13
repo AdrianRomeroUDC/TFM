@@ -1,3 +1,5 @@
+"""Actualización de los indicadores gráficos y del inventario del HBW."""
+
 import logging
 from lib.display import *
 
@@ -8,6 +10,14 @@ b = None
 
 
 def update_display_HBW(state_code):
+  """Actualiza los indicadores visuales de estado del almacen HBW.
+
+  Args:
+    state_code: Codigo de estado del almacen: 1, 2, 4 o 7.
+
+  Returns:
+    None. Escribe los estados de los indicadores en la interfaz.
+  """
   global w, r, b
   logging.log(logging.TRACE0_GUI, state_code)
   if state_code == 1:
@@ -33,6 +43,16 @@ def update_display_HBW(state_code):
 
 
 def update_display_WP(w, r, b):
+  """Actualiza existencias y disponibilidad de piezas por color.
+
+  Args:
+    w: Numero de piezas blancas disponibles.
+    r: Numero de piezas rojas disponibles.
+    b: Numero de piezas azules disponibles.
+
+  Returns:
+    None. Actualiza etiquetas, botones e indicadores de la interfaz.
+  """
   global state_code
   logging.log(logging.TRACE_GUI, "%d %d %d",  w, r, b)
   display.set_attr("txt_label_white_in_stock.text", str('<h1>{}</h1>'.format(w)))

@@ -1,3 +1,5 @@
+"""Modelo de inventario y operaciones de almacenamiento del HBW."""
+
 import json
 import logging
 import subprocess
@@ -26,6 +28,16 @@ listwp_num_ts_sorted = None
 
 
 def initStorage():
+  """
+  Prepara el inventario del almacen al arrancar la fabrica.
+
+  Da nombre a las 9 casillas del estante (A1, B1, C1... hasta C3), vacia el
+  inventario en memoria y lo rellena con lo que hubiera guardado en el
+  fichero de la ultima vez, corrigiendo cualquier dato incoherente.
+
+  Returns:
+    None.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   currentNum = -1
@@ -38,6 +50,16 @@ def initStorage():
 
 
 def loadFileStorage():
+  """
+  Carga el inventario del almacen desde el fichero guardado en disco.
+
+  Si el fichero ya existe, lee de el lo que habia guardado la ultima vez.
+  Si todavia no existe (primer arranque), crea uno nuevo con el inventario
+  vacio actual.
+
+  Returns:
+    None.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   if exists('/opt/ft/workspaces/HBW.Storage.json'):
@@ -48,6 +70,12 @@ def loadFileStorage():
 
 
 def readFileStorage():
+  """
+  Lee el fichero de inventario y rellena con el la tabla en memoria.
+
+  Returns:
+    None.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   fileHBWStorage = open('/opt/ft/workspaces/HBW.Storage.json', 'r', encoding='utf8')
@@ -59,6 +87,12 @@ def readFileStorage():
 
 
 def saveFileStorage():
+  """
+  Guarda el inventario actual del almacen en el fichero de disco.
+
+  Returns:
+    None.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   fileHBWStorage = open('/opt/ft/workspaces/HBW.Storage.json', 'w', encoding='utf8')
@@ -79,6 +113,16 @@ def saveFileStorage():
 
 
 def num2xy(num):
+  """
+  Traduce el numero de una casilla del estante (1 a 9) a fila y columna.
+
+  Args:
+    num: Numero de casilla del estante, de 1 a 9.
+
+  Returns:
+    Una lista ``[fila, columna]`` con la posicion de esa casilla en el
+    estante de 3x3.
+  """
   global wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, 'num=%d', num)
   x = (num - 1) / 3
@@ -88,30 +132,65 @@ def num2xy(num):
 
 
 def get_currentpos_xy():
+  """
+  Devuelve la fila y columna de la ultima casilla usada del estante.
+
+  Returns:
+    Una lista ``[fila, columna]`` con esa posicion.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE0_HBW, '-')
   return num2xy(currentNum)
 
 
 def get_nextfetchpos_xy():
+  """
+  Devuelve la fila y columna de la casilla que toca coger o dejar ahora.
+
+  Returns:
+    Una lista ``[fila, columna]`` con esa posicion.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE0_HBW, '-')
   return num2xy(nextFetchNum)
 
 
 def get_list_storage():
+  """
+  Devuelve el inventario completo del almacen.
+
+  Returns:
+    Una lista con las 9 casillas del estante: ``None`` si esta vacia o
+    ``[timestamp, uid, color, producida]`` si tiene una pieza.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE0_HBW, '-')
   return storage_wp
 
 
 def get_storage_location():
+  """
+  Devuelve los nombres de las 9 casillas del estante.
+
+  Returns:
+    La lista de nombres ``['A1', 'B1', 'C1', 'A2', 'B2', 'C2', 'A3',
+    'B3', 'C3']``.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE0_HBW, '-')
   return storage_location
 
 
 def resetStorage():
+  """
+  Vacia por completo el inventario del almacen.
+
+  Marca las 9 casillas como libres y sin ninguna pieza guardada, y deja
+  lista la primera casilla para la proxima entrega.
+
+  Returns:
+    None.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   storage_container = [True] * 9
@@ -122,6 +201,15 @@ def resetStorage():
 
 
 def storeContainer():
+  """
+  Marca como guardado el contenedor vacio que se acaba de devolver.
+
+  Deja la casilla reservada por ``fetchContainer`` de nuevo vacia y libre.
+
+  Returns:
+    True si la casilla reservada era valida y se pudo liberar, False si
+    no.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   ret = False
@@ -134,6 +222,16 @@ def storeContainer():
 
 
 def storeWorkpiece(wp):
+  """
+  Anota en el inventario la pieza que se acaba de guardar en el estante.
+
+  Args:
+    wp: Datos de la pieza guardada: ``[timestamp, uid, color, producida]``.
+
+  Returns:
+    True si la casilla reservada era valida y se pudo anotar la pieza,
+    False si no.
+  """
   global num, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   ret = False
@@ -145,6 +243,16 @@ def storeWorkpiece(wp):
 
 
 def checkAndCorrectStorage():
+  """
+  Revisa el inventario y limpia las entradas con datos incompletos.
+
+  Si alguna casilla dice tener una pieza pero le falta el UID o el color,
+  se considera un dato corrupto y se vacia esa casilla.
+
+  Returns:
+    True si se corrigio alguna casilla, False si el inventario ya estaba
+    bien.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   ret = False
@@ -160,6 +268,20 @@ def checkAndCorrectStorage():
 
 
 def fetchWorkpiece(color):
+  """
+  Reserva la pieza mas antigua del color pedido para sacarla del almacen.
+
+  Busca entre todas las piezas guardadas las que sean de ese color y elige
+  la que lleva mas tiempo esperando (la primera que entro es la primera
+  que sale). Marca esa casilla como reservada mientras se recoge.
+
+  Args:
+    color: Color de pieza que se quiere sacar ('WHITE', 'RED' o 'BLUE').
+
+  Returns:
+    True si se encontro y reservo una pieza de ese color, False si no
+    habia ninguna.
+  """
   global num, wp, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, color)
   ret = False
@@ -179,7 +301,16 @@ def fetchWorkpiece(color):
 
       # take the second element for sort
       def take_second(elem):
-          return elem[1]
+        """
+        Devuelve la fecha de una entrada, para poder ordenar por antiguedad.
+
+        Args:
+          elem: Entrada ``[numero_casilla, timestamp]``.
+
+        Returns:
+          El timestamp de esa entrada.
+        """
+        return elem[1]
 
       listwp_num_ts_sorted = sorted(listwp_num_ts, key=take_second)
 
@@ -196,6 +327,11 @@ def fetchWorkpiece(color):
 
 
 def fetchContainer():
+  """Reserva el primer contenedor libre del almacén HBW.
+
+  Returns:
+    ``True`` si se reservó un contenedor; en otro caso, ``False``.
+  """
   global num, wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, '-')
   ret = False
@@ -213,12 +349,28 @@ def fetchContainer():
 
 
 def isValidNum(num):
+  """Comprueba si un número identifica una ubicación válida del almacén.
+
+  Args:
+    num: Número de ubicación que se valida.
+
+  Returns:
+    ``True`` para los valores de 1 a 9; en otro caso, ``False``.
+  """
   global wp, color, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, 'num=%d', num)
   return num >= 1 and num <= 9
 
 
 def can_color_be_stored(color):
+  """Comprueba si todavía hay capacidad para almacenar un color.
+
+  Args:
+    color: Color de la pieza que se quiere almacenar.
+
+  Returns:
+    ``True`` si el color puede almacenarse; en otro caso, ``False``.
+  """
   global num, wp, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE_HBW, color)
   ret = False
@@ -239,6 +391,14 @@ def can_color_be_stored(color):
 
 
 def get_num_color_stored(color):
+  """Cuenta cuántas piezas del color indicado están almacenadas.
+
+  Args:
+    color: Color que se quiere contabilizar.
+
+  Returns:
+    Número de piezas almacenadas con ese color.
+  """
   global num, wp, storage_wp, storage_location, ret, count, currentNum, fileHBWStorage, x, nextFetchNum, storage_container, storage_wp_json, y, storage_wp_map, iuid, icolor, listwp_num_ts, listwp_num_ts_sorted
   logging.log(logging.TRACE0_HBW, color)
   count = 0

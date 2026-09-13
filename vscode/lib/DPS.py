@@ -1,3 +1,12 @@
+"""Control de los sensores DPS (Delivery & Pickup Station).
+
+DPS no acciona motores: lee el fototransistor de entrada ``TXT_VGR_E2_I7`` y
+el contador/fototransistor de salida ``TXT_VGR_E2_C4`` para detectar piezas, y
+el sensor de color ``TXT_VGR_E2_I8`` para clasificar blanco, rojo o azul.
+``thread_DPS`` crea dos hilos daemon de publicación de estado. No se usa
+``threading.RLock`` ni otro lock en este módulo.
+"""
+
 import logging
 import time
 from lib.controller import *
@@ -25,6 +34,16 @@ state_active_dso = None
 _dsi = None
 _dso = None
 def thread_update_dsi():
+  """
+  Vigila el sensor de entrada de la DPS sin parar, en su propio hilo.
+
+  Cada medio segundo comprueba el fototransistor de entrada (I7 del brazo
+  VGR). En cuanto pasan mas de 10 segundos sin avisar o el sensor cambia de
+  estado, actualiza el piloto en pantalla y publica la novedad por MQTT.
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, '-')
   _ts_state_dsi = 0
@@ -40,6 +59,16 @@ def thread_update_dsi():
     time.sleep(0.5)
 
 def thread_update_dso():
+  """
+  Vigila el sensor de salida de la DPS sin parar, en su propio hilo.
+
+  Igual que ``thread_update_dsi`` pero mirando el fototransistor de salida
+  (C4 del brazo VGR): revisa cada medio segundo y avisa por pantalla y MQTT
+  cuando pasan mas de 10 segundos o el sensor cambia de estado.
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, '-')
   _ts_state_dso = 0
@@ -55,6 +84,16 @@ def thread_update_dso():
     time.sleep(0.5)
 
 def readDPSColor():
+  """
+  Decide de que color es la pieza que hay en la DPS.
+
+  Compara el voltaje medido por el sensor de color contra los dos umbrales
+  calibrados para separar blanco de rojo y rojo de azul.
+
+  Returns:
+    'WHITE', 'RED' o 'BLUE' segun el color detectado, o ``None`` si la
+    lectura no encaja en ningun rango conocido.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, '-')
   color_str = None
@@ -74,6 +113,16 @@ def readDPSColor():
 
 
 def thread_DPS():
+  """
+  Pone en marcha la estacion DPS.
+
+  Fija los umbrales de color de fabrica, resetea el estado de los puntos de
+  entrada y salida, y lanza los dos hilos vigilantes (``thread_update_dsi``
+  y ``thread_update_dso``) que corren mientras la fabrica este encendida.
+
+  Returns:
+    None. Se queda esperando para siempre una vez lanzados los hilos.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, '-')
   thresh_white_red_defaults = 1150
@@ -93,18 +142,46 @@ def thread_DPS():
 
 
 def get_calib_data_DPS_defaults():
+  """
+  Devuelve los umbrales de color de fabrica de la DPS.
+
+  Son los valores originales, sin los ajustes que se hayan hecho a mano
+  despues.
+
+  Returns:
+    Una lista ``[umbral_blanco_rojo, umbral_rojo_azul]``.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, '-')
   return [thresh_white_red_defaults, thresh_red_blue_defaults]
 
 
 def get_calib_data_DPS():
+  """
+  Devuelve los umbrales de color que la DPS esta usando ahora mismo.
+
+  Returns:
+    Una lista ``[umbral_blanco_rojo, umbral_rojo_azul]``.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, '-')
   return [thresh_white_red, thresh_red_blue]
 
 
 def set_calib_data_DPS(_data):
+  """
+  Guarda unos nuevos umbrales de color para la DPS.
+
+  A partir de ahora ``readDPSColor`` usara estos valores para decidir si
+  una pieza es blanca, roja o azul.
+
+  Args:
+    _data: Lista ``[umbral_blanco_rojo, umbral_rojo_azul]`` con los nuevos
+      umbrales.
+
+  Returns:
+    None.
+  """
   global _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE, _data)
   thresh_white_red = _data[0]
@@ -112,6 +189,19 @@ def set_calib_data_DPS(_data):
 
 
 def set_state_dsi(_active_dsi):
+  """
+  Marca si el punto de entrada de la DPS esta activo en el proceso.
+
+  Si cambia el estado de activacion o el sensor de entrada acaba de
+  cambiar, reinicia el cronometro para que ``thread_update_dsi`` avise
+  cuanto antes de la novedad.
+
+  Args:
+    _active_dsi: Nuevo estado de activacion del punto de entrada.
+
+  Returns:
+    None.
+  """
   global _data, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0, '-')
   if state_active_dsi != _active_dsi:
@@ -123,6 +213,19 @@ def set_state_dsi(_active_dsi):
 
 
 def set_state_dso(_active_dso):
+  """
+  Marca si el punto de salida de la DPS esta activo en el proceso.
+
+  Igual que ``set_state_dsi`` pero para el punto de salida: reinicia el
+  cronometro cuando cambia la activacion o el sensor de salida, para que
+  ``thread_update_dso`` avise cuanto antes.
+
+  Args:
+    _active_dso: Nuevo estado de activacion del punto de salida.
+
+  Returns:
+    None.
+  """
   global _data, _active_dsi, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0, '-')
   if state_active_dso != _active_dso:
@@ -134,6 +237,15 @@ def set_state_dso(_active_dso):
 
 
 def update_display_dsi():
+  """
+  Enciende o apaga en pantalla el piloto de entrada de la DPS.
+
+  Se enciende cuando el fototransistor de entrada detecta una pieza
+  (queda a oscuras) y se apaga cuando no hay nada delante.
+
+  Returns:
+    None.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0_GUI, '-')
   if is_dsi():
@@ -143,6 +255,15 @@ def update_display_dsi():
 
 
 def update_display_dso():
+  """
+  Enciende o apaga en pantalla el piloto de salida de la DPS.
+
+  Igual que ``update_display_dsi`` pero para el punto de salida: se
+  enciende si el sensor detecta una pieza y se apaga si no.
+
+  Returns:
+    None.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0_GUI, '-')
   if is_dso():
@@ -152,18 +273,45 @@ def update_display_dso():
 
 
 def is_dsi():
+  """
+  Pregunta al sensor de entrada de la DPS si hay una pieza delante.
+
+  Mira el fototransistor de entrada (I7 del brazo VGR): si algo le tapa la
+  luz, es que hay una pieza esperando en el punto de entrada.
+
+  Returns:
+    True si detecta una pieza (sensor a oscuras), False si no hay nada.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0, '-')
   return TXT_VGR_E2_I7_photo_transistor.is_dark()
 
 
 def is_dso():
+  """
+  Pregunta al sensor de salida de la DPS si hay una pieza delante.
+
+  Mira el fototransistor/contador de salida (C4 del brazo VGR): si algo le
+  tapa la luz, es que hay una pieza en el punto de salida.
+
+  Returns:
+    True si detecta una pieza (sensor a oscuras), False si no hay nada.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0, '-')
   return TXT_VGR_E2_C4_photo_transistor.is_dark()
 
 
 def readDPSColorValue():
+  """
+  Mide el voltaje del sensor de color de la DPS.
+
+  Toma diez lecturas seguidas y calcula la media, para que una lectura
+  suelta con ruido no estropee la deteccion del color.
+
+  Returns:
+    El voltaje medio leido por el sensor de color.
+  """
   global _data, _active_dsi, _active_dso, color_str, thresh_white_red_defaults, thresh_red_blue_defaults, thresh_white_red, thresh_red_blue, _ts_state_dsi, _ts_state_dso, list_colorValue, is_dsi_last, is_dso_last, colorValue, state_active_dsi_last, state_active_dso_last, state_active_dsi, state_active_dso, _dsi, _dso
   logging.log(logging.TRACE0, '-')
   list_colorValue = []
@@ -173,6 +321,18 @@ def readDPSColorValue():
 
 
 def math_mean(myList):
+  """
+  Calcula la media de una lista de numeros.
+
+  Ignora cualquier elemento de la lista que no sea un numero.
+
+  Args:
+    myList: Lista de valores, normalmente lecturas de un sensor.
+
+  Returns:
+    La media como numero decimal, o ``None`` si no queda ningun numero
+    valido en la lista.
+  """
   localList = [e for e in myList if isinstance(e, (float, int))]
   if not localList: return
   return float(sum(localList)) / len(localList)

@@ -1,4 +1,7 @@
-# Librerías de Python
+"""Publicación del estado de la fábrica al broker para el gemelo digital."""
+
+# Este servicio publica el estado de la planta para que Unity pueda representarlo.
+# Librerias de Python
 import json
 import threading
 import time
@@ -23,9 +26,16 @@ stop_event = threading.Event()
 
 # Publicar mensajes en el broker establecido en MQTT.py
 def publish_dt(topic, data, qos=0, retain=True):
-    """
-    Publica un mensaje MQTT agregando la marca de tiempo (timestamp).
-    Permite configurar qos y retain según la criticidad del tópico.
+    """Publica un valor del gemelo digital en el topic indicado.
+
+    Args:
+        topic: Topic MQTT donde se publica el estado.
+        data: Diccionario con los valores del estado.
+        qos: Nivel de calidad de servicio MQTT.
+        retain: Indica si el broker debe conservar el último mensaje.
+
+    Returns:
+        None.
     """
     client = get_client_local()
     if client is not None and client.is_connected():
@@ -38,6 +48,14 @@ def publish_dt(topic, data, qos=0, retain=True):
 
 # Callback para rebotar instantáneamente el paquete dt/ping recibido de Unity
 def on_ping_received(message):
+    """Procesa un ping del gemelo digital y actualiza su conexión.
+
+    Args:
+        message: Mensaje MQTT recibido desde Unity.
+
+    Returns:
+        None.
+    """
     client = get_client_local()
     if client is not None and client.is_connected():
         try:
@@ -48,6 +66,11 @@ def on_ping_received(message):
 
 
 def thread_DigitalTwin_fast():
+    """Publica periódicamente variables rápidas del gemelo digital.
+
+    Returns:
+        None. El hilo permanece activo hasta recibir la señal de parada.
+    """
     last_pos_vgr = None
     last_pos_hbw = None
     max_jumps_vgr = [200, 100, 100]
@@ -114,6 +137,11 @@ def thread_DigitalTwin_fast():
 
 
 def thread_DigitalTwin_slow():
+    """Publica periódicamente variables lentas del gemelo digital.
+
+    Returns:
+        None. El hilo permanece activo hasta recibir la señal de parada.
+    """
     last_grip_active = None
     last_hbw_belt_state = None
     last_state_dsi = None
@@ -298,6 +326,11 @@ def thread_DigitalTwin_slow():
 
 
 def publish_initial_dt_state():
+    """Publica el estado inicial de estaciones y actuadores.
+
+    Returns:
+        None.
+    """
     try:
         # VGR
         publish_dt("dt/vgr/pos", {
@@ -405,18 +438,33 @@ def publish_initial_dt_state():
 
 # Publicar el estado de conexión de la fábrica
 def publish_factory_connection_status():
+    """Publica el estado de conexión de la fábrica al gemelo digital.
+
+    Returns:
+        None.
+    """
     publish_dt("dt/factory", {
         "connected": True,
     }, qos=1, retain=True)
 
 
 def thread_DigitalTwin_connection():
+    """Mantiene la publicación periódica de conexión MQTT.
+
+    Returns:
+        None. El hilo permanece activo hasta recibir la señal de parada.
+    """
     while not stop_event.is_set():
         publish_factory_connection_status()
         stop_event.wait(timeout=2.0)
 
 
 def thread_DigitalTwin():
+    """Arranca los hilos de conexión y publicación del gemelo digital.
+
+    Returns:
+        None. El servicio permanece activo durante la ejecución de la fábrica.
+    """
     while not get_axes_ready():
         time.sleep(0.1)
 

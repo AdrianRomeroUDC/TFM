@@ -1,4 +1,6 @@
 import json
+"""Publicación MQTT del estado del almacén HBW y de su inventario."""
+
 import logging
 from fischertechnik.mqtt.Constants import CONTROLLER_ID
 from fischertechnik.mqtt.FTCloudClient import FTCloudClient
@@ -23,6 +25,17 @@ payload_storage = None
 
 
 def publish_state_HBW(_code, _active):
+  """
+  Envia a la nube el estado actual del almacen.
+
+  Args:
+    _code: Codigo de estado del almacen (por ejemplo 1=reposo,
+      2=en movimiento, 4=error).
+    _active: Indica si el almacen esta activo haciendo ese estado.
+
+  Returns:
+    None.
+  """
   global list_storage, loc, list_item, b_type, jsonitem, s, storage_location, payload, stockItems, i, payload_storage
   logging.log(logging.TRACE_FCL, '%d, %d', _code, _active)
   if get_cloud_active():
@@ -33,6 +46,20 @@ def publish_state_HBW(_code, _active):
 
 
 def publish_state_Storage(list_storage):
+  """
+  Envia el inventario completo del almacen a la nube y a la red local.
+
+  Convierte cada una de las 9 casillas del estante en un elemento de
+  inventario (con su ubicacion y, si tiene pieza, su color y estado) y
+  publica la lista resultante por MQTT.
+
+  Args:
+    list_storage: Lista con las 9 casillas del almacen, tal como la
+      devuelve ``get_list_storage``.
+
+  Returns:
+    None.
+  """
   global _code, _active, loc, list_item, b_type, jsonitem, s, storage_location, payload, stockItems, i, payload_storage
   logging.log(logging.TRACE_FCL, list_storage)
   storage_location = get_storage_location()
@@ -54,6 +81,18 @@ def publish_state_Storage(list_storage):
 
 
 def storage_wp_jsonitem(loc, list_item):
+  """
+  Convierte una casilla del almacen en el formato que espera la nube.
+
+  Args:
+    loc: Nombre de la casilla (por ejemplo 'A1').
+    list_item: Datos de la pieza guardada en esa casilla, o ``None`` si
+      esta vacia.
+
+  Returns:
+    Un diccionario con la ubicacion y, si hay pieza, su UID, color y
+    estado.
+  """
   global _code, _active, list_storage, b_type, jsonitem, s, storage_location, payload, stockItems, i, payload_storage
   logging.log(logging.TRACE0_FCL, loc)
   #print(list_item)
@@ -75,6 +114,15 @@ def storage_wp_jsonitem(loc, list_item):
 
 
 def type2str(b_type):
+  """
+  Traduce si una pieza esta mecanizada o en bruto a un texto para la nube.
+
+  Args:
+    b_type: True si la pieza ya esta procesada, False si esta en bruto.
+
+  Returns:
+    'PROCESSED' o 'RAW'.
+  """
   global _code, _active, list_storage, loc, list_item, jsonitem, s, storage_location, payload, stockItems, i, payload_storage
   logging.log(logging.TRACE0_FCL, b_type)
   if b_type:

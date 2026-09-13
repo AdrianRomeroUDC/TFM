@@ -1,3 +1,6 @@
+"""Publicación MQTT del estado y destino actual del brazo VGR."""
+
+# Publica estado, destino y actividad del VGR.
 import logging
 from fischertechnik.mqtt.Constants import CONTROLLER_ID
 from fischertechnik.mqtt.FTCloudClient import FTCloudClient
@@ -11,6 +14,16 @@ payload = None
 
 
 def publish_state_VGR(_code, _active, _target):
+  """Publica el estado y el destino actual del robot VGR.
+
+  Args:
+    _code: Codigo de estado del robot.
+    _active: Indicador de actividad del robot.
+    _target: Nombre del destino o posicion solicitada.
+
+  Returns:
+    None. Publica un payload MQTT con timestamp si el cloud esta activo.
+  """
   global payload
   logging.log(logging.TRACE_FCL, '%d, %d', _code, _active)
   if get_cloud_active():

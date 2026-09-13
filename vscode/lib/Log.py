@@ -1,3 +1,6 @@
+"""Configuración de niveles y formato de logging de la aplicación."""
+
+# Todos los subsistemas registran trazas con niveles propios.
 import logging
 from lib.Axes1Ref import *
 from lib.Axes2Ref import *
@@ -12,6 +15,19 @@ lev = None
 
 
 def initlib_log(lev):
+  """
+  Da de alta los niveles de registro de todos los modulos de la fabrica.
+
+  Registra los niveles propios de cada estacion (ejes, coordinador,
+  conexiones MQTT, interfaz, VGR, HBW y lector NFC) y configura el
+  formato con el que se escribe cada linea del log.
+
+  Args:
+    lev: Nivel minimo de mensajes que se van a mostrar.
+
+  Returns:
+    None.
+  """
   #TRACE0_A1R, TRACE_A1R, DEBUG_A1R
   initlog_A1R(1, 0, 0)
   #TRACE0_A2R, TRACE_A2R, DEBUG_A2R

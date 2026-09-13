@@ -1,3 +1,5 @@
+"""Publicación MQTT de datos leídos desde etiquetas NFC."""
+
 import json
 import logging
 import time
@@ -24,6 +26,16 @@ history_item = None
 
 
 def publish_Nfc_Data():
+  """
+  Envia a la nube los datos del chip de la ultima pieza leida.
+
+  Arma un mensaje con el UID, el color y el estado de la pieza, y con el
+  historial de fechas de cada etapa por la que ya ha pasado, y lo publica
+  por MQTT si la conexion con la nube esta activa.
+
+  Returns:
+    None.
+  """
   global nfc_data_uid, nfc_data_type_str, nfc_data_state_str, nfc_data_mask_str, ts, res, cmd, list_tsstr, history, payload, i, workpiece, history_item
   logging.log(logging.TRACE_FCL, '-')
   if get_cloud_active():
@@ -67,6 +79,19 @@ def publish_Nfc_Data():
 
 
 def mqtt_callback(message):
+  """
+  Atiende una orden de lectura o borrado de NFC llegada desde la nube.
+
+  Si el mensaje tiene menos de 60 segundos de antiguedad y pide 'read' o
+  'delete', se lo pasa al VGR para que lea o borre la etiqueta NFC de la
+  pieza mas cercana.
+
+  Args:
+    message: Mensaje MQTT recibido desde la nube, con la orden y su fecha.
+
+  Returns:
+    None.
+  """
   global nfc_data_uid, nfc_data_type_str, nfc_data_state_str, nfc_data_mask_str, ts, res, cmd, list_tsstr, history, payload, i, workpiece, history_item
   logging.log(logging.TRACE_FCL, '-')
   if (get_init_finished()) and not not len(message.payload.decode("utf-8")):
@@ -90,11 +115,33 @@ FTCloudClient.getInstance().subscribe("/j1/txt/" + str(CONTROLLER_ID) + "/f/o/nf
 
 
 def upRange(start, stop, step):
+  """
+  Genera numeros de menor a mayor, como un range() que admite subir o bajar.
+
+  Args:
+    start: Numero inicial.
+    stop: Numero hasta el que llegar (incluido).
+    step: Tamaño del paso; se usa su valor absoluto.
+
+  Returns:
+    Un numero cada vez, desde ``start`` hasta ``stop`` subiendo.
+  """
   while start <= stop:
     yield start
     start += abs(step)
 
 def downRange(start, stop, step):
+  """
+  Genera numeros de mayor a menor, como un range() que cuenta hacia atras.
+
+  Args:
+    start: Numero inicial.
+    stop: Numero hasta el que llegar (incluido).
+    step: Tamaño del paso; se usa su valor absoluto.
+
+  Returns:
+    Un numero cada vez, desde ``start`` hasta ``stop`` bajando.
+  """
   while start >= stop:
     yield start
     start -= abs(step)

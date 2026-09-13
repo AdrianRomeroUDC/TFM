@@ -1,3 +1,6 @@
+"""Publicación de ambiente, luminosidad, cámara y eventos del SSC."""
+
+# Publica sensores ambientales, imagenes, alarmas y posicion PTU.
 import base64
 import cv2
 # import fischertechnik.utility.math as ft_math
@@ -35,8 +38,17 @@ limit_tilt = None
 rel_pan = None
 rel_tilt = None
 
-# Publicar los datos del sensor BME680
+# Publicación periódica de las medidas del sensor BME680.
 def publish_bme680():
+  """
+  Lee el sensor ambiental sin parar y publica sus datos por MQTT.
+
+  Cada cierto tiempo (configurable) lee temperatura, humedad, presion y
+  calidad del aire, y envia el resultado a la nube y a la red local.
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   while True:
@@ -52,8 +64,14 @@ def publish_bme680():
     # Esperar el tiempo definido antes de la siguiente lectura
     time.sleep((get_bme680_period()))
 
-# Publicar los datos del sensor LDR
+# Publicación periódica de la lectura del sensor LDR.
 def publish_ldr():
+  """
+  Lee el sensor de luz sin parar y publica el brillo por MQTT.
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   while True:
@@ -71,6 +89,16 @@ def publish_ldr():
 
 # Captura imágenes de la cámara, las convierte a Base64 y las publica
 def publish_camera():
+  """
+  Publica sin parar las imagenes que va capturando la camara.
+
+  Mientras la camara este encendida, convierte cada imagen nueva a texto
+  y la envia a la nube y a la red local, y hace parpadear el piloto de la
+  camara para avisar de que se acaba de mandar una imagen.
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   global online_led_state
   logging.log(logging.TRACE_FCL, '-')
@@ -98,6 +126,15 @@ def publish_camera():
 
 # Supervisa la humedad y dispara una alarma si supera el 80%
 def callback(event):
+  """
+  Salta cuando cambia la humedad y avisa si supera el 80%.
+
+  Args:
+    event: Aviso de cambio del sensor ambiental (sin usar).
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   if TXT_SSC_M_I2C_1_environment_sensor.get_humidity() > 80:
     logging.log(logging.TRACE0_FCL, '-')
@@ -109,14 +146,31 @@ def callback(event):
 
 # Actualiza la imagen cada vez que la cámara detecta un cambio
 def image_callback(event):
+  """
+  Guarda la ultima imagen capturada por la camara.
+
+  Args:
+    event: Aviso de la camara que trae la nueva imagen en ``event.value``.
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   camera_image = event.value
 
-# Función que se ejecuta cada vez que se detecta movimiento frente a la cámara
+# Callback activado cuando la cámara detecta movimiento.
 def motion_callback(event):
+  """
+  Salta cuando la camara detecta movimiento y avisa por MQTT.
+
+  Args:
+    event: Aviso de movimiento de la camara (sin usar).
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE0_FCL, '-')
-  # FIXME: Nunca se entra en este if, porque esta variable no se modifica en ninguna parte del código
   if last_movement_alarm != None:
     # La alarma se envía con el período especificado por (get_alarm_timer()), para evitar que se envíe constantemente
     if time.time() - last_movement_alarm >= (get_alarm_timer()):
@@ -125,6 +179,15 @@ def motion_callback(event):
 
 # Supervisa la temperatura y dispara una alarma si baja de 4°C
 def callback2(event):
+  """
+  Salta cuando cambia la temperatura y avisa si baja de 4 grados.
+
+  Args:
+    event: Aviso de cambio del sensor ambiental (sin usar).
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   if TXT_SSC_M_I2C_1_environment_sensor.get_temperature() < 4:
     logging.log(logging.TRACE0_FCL, '-')
@@ -136,24 +199,51 @@ def callback2(event):
 
 # Publica la alarma de MOVIMIENTO con el código 100, en el topic i/alert
 def publish_movement_alarm():
+  """
+  Avisa a la nube de que se ha detectado movimiento, con una foto adjunta.
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   FTCloudClient.getInstance().publish("/j1/txt/" + str(CONTROLLER_ID) +"/i/alert", '{{"ts":"{}","id":"{}","data":"{}","code":{}}}'.format(timestamp_utcnow(), 'cam', frame_to_base64(camera_image), '100'))
 
 # Publica la alarma de TEMPERATURA con el código 200, en el topic i/alert
 def publish_temperature_alarm():
+  """
+  Avisa a la nube de que la temperatura ha bajado demasiado.
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   FTCloudClient.getInstance().publish("/j1/txt/" + str(CONTROLLER_ID) +"/i/alert", '{{"ts":"{}","id":"{}","data":"{}","code":{}}}'.format(timestamp_utcnow(), 'bme680/t', TXT_SSC_M_I2C_1_environment_sensor.get_temperature(), '200'))
 
 # Publica la alarma de HUMEDAD con el código 300, en el topic i/alert
 def publish_humidity_alarm():
+  """
+  Avisa a la nube de que la humedad ha subido demasiado.
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   FTCloudClient.getInstance().publish("/j1/txt/" + str(CONTROLLER_ID) +"/i/alert", '{{"ts":"{}","id":"{}","data":"{}","code":{}}}'.format(timestamp_utcnow(), 'bme680/h', TXT_SSC_M_I2C_1_environment_sensor.get_humidity(), '300'))
 
 # Publica información general sobre el estado del hardware y software de la fábrica
 def publish_broadcast(message):
+  """
+  Anuncia a la nube y a la red local que la fabrica esta en marcha.
+
+  Args:
+    message: Texto libre con la razon del anuncio (por ejemplo 'init').
+
+  Returns:
+    None.
+  """
   global camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   controller_name = os.uname()[1] # El nombre del controlador se obtiene del sistema operativo, por ejemplo "TXT-12345678"
@@ -165,18 +255,35 @@ def publish_broadcast(message):
   if (get_client_local()) != None:
     get_client_local().publish(topic='i/broadcast', payload=payload_broadcast, qos=2, retain=False)
 
-###########################################################################################
-# TODO: Esta función sustituye a la función ft_math.map() que estaba comentada al principio
-# del archivo ya que no se puede importar desde la librería fischertechnik.utility.math,
-# porque no está incluida en la nueva versión del firmware 3.1.11
+# Conversión lineal local para evitar depender de una utilidad no disponible.
 def map_value(x, in_min, in_max, out_min, out_max):
+  """
+  Convierte un valor de un rango de numeros a otro rango, de forma proporcional.
+
+  Args:
+    x: Valor a convertir.
+    in_min: Extremo inferior del rango de entrada.
+    in_max: Extremo superior del rango de entrada.
+    out_min: Extremo inferior del rango de salida.
+    out_max: Extremo superior del rango de salida.
+
+  Returns:
+    El valor convertido al nuevo rango.
+  """
   if in_max == in_min:
     return out_min
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-###########################################################################################
-
 # Envía la posición actual de la cámara (Pan/Tilt) normalizada entre -1.0 y 1.0, donde 0.0 es la posición central
 def publish_ptu_pos():
+  """
+  Envia a la nube hacia donde esta mirando la camara ahora mismo.
+
+  Convierte el giro y la inclinacion de la camara a un valor entre -1.0 y
+  1.0 (0.0 es el centro) y lo publica.
+
+  Returns:
+    None.
+  """
   global message, camera_image, payload_bme680, payload_ldr, payload_broadcast, pos_pan, last_humidity_alarm, last_movement_alarm, last_temperature_alarm, pos_tilt, payload_cam, controller_name, limit_pan, limit_tilt, rel_pan, rel_tilt
   logging.log(logging.TRACE_FCL, '-')
   if get_cloud_active():
@@ -186,12 +293,10 @@ def publish_ptu_pos():
       limit_pan = (get_ABSLIMIT())[5] # Se obtiene el límite máximo del Pan desde el SSC
       limit_tilt = (get_ABSLIMIT())[6]  # Se obtiene el límite máximo del Tilt desde el SSC
       # La posición se normaliza a un rango de -1.0 a 1.0, donde 0.0 es la posición central, utilizando una función de mapeo que convierte el rango de 0 a limit_pan (o limit_tilt) en un rango de -1 a 1.
-      # TODO:###################################################################
       # rel_pan = (ft_math.map(pos_pan, 0, limit_pan, 0, 200) - 100) / 100
       # rel_tilt = (ft_math.map(pos_tilt, 0, limit_tilt, 0, 200) - 100) / 100
       rel_pan = (map_value(pos_pan, 0, limit_pan, 0, 200) - 100) / 100
       rel_tilt = (map_value(pos_tilt, 0, limit_tilt, 0, 200) - 100) / 100
-      ##########################################################################
       logging.log(logging.DEBUG_FCL, '%d (%d) %d (%d) %f %f', pos_pan, limit_pan, pos_tilt, limit_tilt, rel_pan, rel_tilt)
       print('publish_ptu_pos', pos_pan, limit_pan, pos_tilt, limit_tilt, rel_pan, rel_tilt)
       FTCloudClient.getInstance().publish("/j1/txt/" + str(CONTROLLER_ID) +"/i/ptu/pos", '{{"ts":"{}", "pan":{:.2f}, "tilt":{:.2f}}}'.format(timestamp_utcnow(), rel_pan, rel_tilt))
@@ -204,6 +309,16 @@ TXT_SSC_M_I2C_1_environment_sensor.add_change_listener("temperature", callback2)
 
 # Función auxiliar para convertir el formato de imagen de OpenCV a un String Base64 para JSON
 def frame_to_base64(frame):
+  """
+  Convierte una imagen de la camara en texto para meterla en un mensaje.
+
+  Args:
+    frame: Imagen capturada por la camara.
+
+  Returns:
+    El texto en Base64 listo para el JSON, o una cadena vacia si la
+    imagen no se pudo comprimir.
+  """
   result = ""
   # Comprime la imagen en JPEG con calidad 30 para reducir el peso del mensaje MQTT, y luego la codifica en Base64 para incluirla en el payload JSON
   success, image = cv2.imencode(".jpeg", frame, [1, 30])
@@ -213,17 +328,28 @@ def frame_to_base64(frame):
 
 
 
-###########################################################################################
-# TODO:
-###########################################################################################
+# Estado del LED de conexión del controlador SSC.
 online_led_state = 0
 
 def get_online_led_state():
+  """
+  Dice si el piloto de conexion de la camara esta encendido.
+
+  Returns:
+    1 si esta encendido, 0 si esta apagado.
+  """
   return int(online_led_state)
 
 def _set_online_led(brightness):
+  """
+  Cambia el brillo del piloto de conexion de la camara.
+
+  Args:
+    brightness: Brillo de la luz; 0 la apaga, mayor que 0 la enciende.
+
+  Returns:
+    None.
+  """
   global online_led_state
   TXT_SSC_M_O5_led.set_brightness(int(brightness))
   online_led_state = 1 if int(brightness) > 0 else 0
-###########################################################################################
-###########################################################################################

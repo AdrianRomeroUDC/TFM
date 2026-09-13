@@ -1,3 +1,6 @@
+"""Primitivas de referencia, posición absoluta y movimiento de ejes con encoder y una referencia (Final de carrera)."""
+
+# Capa comun de movimiento: encoders y finales de carrera para VGR, HBW y SSC.
 import logging
 import math
 import os
@@ -25,9 +28,7 @@ _ref_last = None
 SPEED_REF = None
 TIMEOUT_S = None
 
-########################################################################################
-#TODO:
-########################################################################################
+# Estado de seguimiento en vivo de los siete ejes físicos.
 live_abspos = [0, 0, 0, 0, 0, 0, 0]
 live_base_enc = [0, 0, 0, 0, 0, 0, 0]
 live_motion_dir = [0, 0, 0, 0, 0, 0, 0]
@@ -38,7 +39,18 @@ live_ref_mode = [False, False, False, False, False, False, False]
 
 
 def begin_live_motion(axis, direction, ref_mode=False):
+  """Inicia el seguimiento de la posición de un eje mediante su encoder.
+
+  Args:
+    axis: Número lógico del eje, entre 1 y 7.
+    direction: Sentido de movimiento usado para actualizar la posición.
+    ref_mode: ``True`` para interpretar el movimiento como búsqueda de referencia.
+
+  Returns:
+    None.
+  """
   global live_base_enc, live_motion_dir, first_live_delta, live_ref_mode
+  # Ejes lógicos: VGR (1-3), HBW (4-5) y SSC (6-7).
   i = axis - 1
   if i == 0:
     live_base_enc[i] = TXT_VGR_E2_C1_motor_step_counter.get_count()
@@ -60,13 +72,27 @@ def begin_live_motion(axis, direction, ref_mode=False):
 
 
 def end_live_motion(axis):
+  """Detiene el seguimiento en vivo del eje indicado.
+
+  Args:
+    axis: Número lógico del eje cuyo movimiento debe finalizar.
+
+  Returns:
+    None.
+  """
   global live_motion_dir, live_ref_mode
   live_motion_dir[axis - 1] = 0
   live_ref_mode[axis - 1] = False
 
 
 def update_live():
+  """Actualiza las posiciones en vivo a partir de los contadores de encoder.
+
+  Returns:
+    None.
+  """
   global live_abspos, first_live_delta, live_last_delta
+  # Se consulta una vez cada encoder para calcular el desplazamiento del ciclo.
   current_encoders = [
     TXT_VGR_E2_C1_motor_step_counter.get_count(),
     TXT_VGR_E2_C2_motor_step_counter.get_count(),
@@ -90,17 +116,8 @@ def update_live():
       if delta == 0 and first_live_delta[i]:
         continue
 
-      # logging.debug(
-      #   "LIVE PRE axis=%d dir=%d base=%d current=%d delta=%d offset=%d live_before=%d",
-      #   i + 1,
-      #   live_motion_dir[i],
-      #   live_base_enc[i],
-      #   current_encoders[i],
-      #   delta,
-      #   live_offset_abs[i],
-      #   live_abspos[i],
-      # )
-
+      # En referencia se corrige la posición; en movimiento normal se conserva
+      # el extremo más cercano para evitar retrocesos de lectura.
       if live_ref_mode[i]:
         if first_live_delta[i]:
           live_last_delta[i] = delta
@@ -121,35 +138,30 @@ def update_live():
         else:
           live_abspos[i] = new_abs
 
-      # logging.debug(
-      #   "LIVE POST axis=%d dir=%d new_abs=%d live_after=%d abs_limit=%d",
-      #   i + 1,
-      #   live_motion_dir[i],
-      #   new_abs,
-      #   live_abspos[i],
-      #   ABSLIMIT[i],
-      # )
-
-      # if new_abs < 0 or new_abs > ABSLIMIT[i]:
-      #   logging.warning(
-      #     "LIVE OUT OF RANGE axis=%d dir=%d base=%d current=%d delta=%d offset=%d new_abs=%d",
-      #     i + 1,
-      #     live_motion_dir[i],
-      #     live_base_enc[i],
-      #     current_encoders[i],
-      #     delta,
-      #     live_offset_abs[i],
-      #     new_abs,
-      #   )
-
 
 def get_live_abspos(axis):
+  """Devuelve la posición absoluta seguida para un eje.
+
+  Args:
+    axis: Número lógico del eje consultado.
+
+  Returns:
+    Posición absoluta en pasos, o ``0`` si todavía no hay una posición válida.
+  """
   if live_abspos[axis - 1] == None:
     return 0
   return live_abspos[axis - 1]
 
 
 def _get_axis_step_count(num):
+  """Lee el contador de pasos asociado al número lógico de eje.
+
+  Args:
+    num: Número lógico del eje, entre 1 y 7.
+
+  Returns:
+    Conteo actual del encoder; devuelve ``0`` para un eje no reconocido.
+  """
   if num == 1:
     return TXT_VGR_E2_C1_motor_step_counter.get_count()
   elif num == 2:
@@ -167,19 +179,32 @@ def _get_axis_step_count(num):
   return 0
 
 def _set_abspos_live_from_counter(num, abs_start, rv):
+  """Calcula la posición en vivo desde una posición inicial y el encoder.
+
+  Args:
+    num: Número lógico del eje que se actualiza.
+    abs_start: Posición absoluta al comienzo del movimiento.
+    rv: Sentido del movimiento relativo; positivo incrementa y negativo decrementa.
+
+  Returns:
+    None.
+  """
   count = _get_axis_step_count(num)
   if rv > 0:
     live_abspos[int(num - 1)] = min(abs_start + count, ABSLIMIT[int(num - 1)])
   elif rv < 0:
     live_abspos[int(num - 1)] = max(abs_start - count, 0)
-########################################################################################
-########################################################################################
-
-
-# Actualiza internamente la posición absoluta sumando o restando los pasos del motor (encoder) al valor actual
-# num: número el eje (1-7)
-# rv: valor relativo (pasos del motor) a sumar o restar a la posición absoluta
+# Actualiza la posición absoluta después de un movimiento relativo.
 def _update_abspos(num, rv):
+  """Actualiza la posición absoluta usando el desplazamiento del encoder.
+
+  Args:
+    num: Número lógico del eje cuyo movimiento se procesa.
+    rv: Sentido del movimiento relativo; positivo avanza y negativo retrocede.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, msg, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE0_A1R, num)
   if num < 1 or num > len(ABSLIMIT):
@@ -217,6 +242,16 @@ def _update_abspos(num, rv):
 
 # Inicializa los niveles de log específicos para el control de los ejes
 def initlog_A1R(_tr0, _tr, _dg):
+  """Registra los niveles de trazado usados por el módulo de ejes.
+
+  Args:
+    _tr0: Nivel numérico para los mensajes de trazado detallado.
+    _tr: Nivel numérico para los mensajes de trazado normal.
+    _dg: Nivel numérico para los mensajes de depuración.
+
+  Returns:
+    None.
+  """
   global num, msg, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.TRACE0_A1R = _tr0
   logging.addLevelName(logging.TRACE0_A1R , 'TRACE0_A1R')
@@ -227,12 +262,18 @@ def initlog_A1R(_tr0, _tr, _dg):
 
 # Configura los limites físicos, velocidades y tiempos de espera (timeouts) para cada eje
 def initlib_Axes1Ref():
+  """Inicializa límites, velocidades y temporizadores de los siete ejes.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, num, msg, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   __version__ = '2022-07-25' #Axes1Ref (A1R)
   logging.log(logging.TRACE_A1R, '-')
   logging.log(logging.DEBUG_A1R, 'Axes1Ref (A1R) %s', __version__)
 
-  # num: #MX, IX, CX
+  # Correspondencia entre eje lógico, motor, final de carrera y encoder.
+  #num: #MX, IX, CX
   # 1: VGR x  # VGR_E2_M1, VGR_E2_I1, VGR_E2_C1
   # 2: VGR y  # VGR_E2_M2, VGR_E2_I2, VGR_E2_C2
   # 3: VGR z  # VGR_E2_M3, VGR_E2_I3, VGR_E2_C3
@@ -256,18 +297,36 @@ def initlib_Axes1Ref():
 
 # Devuelve la lista con las posiciones absolutas actuales de todos los ejes
 def get_abspos():
+  """Obtiene la lista de posiciones absolutas de los ejes.
+
+  Returns:
+    Lista global con una posición por eje.
+  """
   global _tr0, _tr, _dg, num, msg, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE_A1R, abspos)
   return abspos
 
 # Devuelve los límites máximos permitidos para cada eje
 def get_ABSLIMIT():
+  """Obtiene los límites absolutos configurados para los ejes.
+
+  Returns:
+    Lista de límites máximos por eje.
+  """
   global _tr0, _tr, _dg, num, msg, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE_A1R, abspos)
   return ABSLIMIT
 
 # Comprueba si un eje ha excedido su tiempo de movimiento permitido y detiene el programa si es así
 def _check_timeout_exit(num):
+  """Comprueba si la búsqueda de referencia de un eje ha superado su tiempo límite.
+
+  Args:
+    num: Número lógico del eje que se está referenciando.
+
+  Returns:
+    ``True`` cuando debe abortarse el movimiento; en otro caso, ``False``.
+  """
   global _tr0, _tr, _dg, msg, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE0_A1R, num)
   tsdiff[int(num - 1)] = time.time() - ts0[int(num - 1)]
@@ -278,6 +337,14 @@ def _check_timeout_exit(num):
 
 # Fuerza el cierre del programa de ejes y marca las referencias como no válidas tras un error
 def _exit_Axes1Ref(msg):
+  """Marca la salida del control de referencia de ejes y registra el motivo.
+
+  Args:
+    msg: Mensaje que explica la causa de la salida.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, num, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE_A1R, '-')
   _b_exit = True  
@@ -288,6 +355,14 @@ def _exit_Axes1Ref(msg):
 
 # Mueve el eje hacia el final de carrera de referencia para calibrar el punto 0
 def moveRef(num):
+  """Mueve un eje hasta su posición de referencia.
+
+  Args:
+    num: Número lógico del eje que se debe referenciar.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, msg, rv, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE_A1R, num)
   if num < 1 or num > len(ABSLIMIT):
@@ -301,20 +376,11 @@ def moveRef(num):
   live_offset_abs[num - 1] = abspos[num - 1]
   live_abspos[num - 1] = abspos[num - 1]
 
-  # logging.debug(
-  # "MOVE_REF ENTER axis=%d abspos=%s live_abspos=%s live_offset=%s base_enc=%s last_dir=%s",
-  # num,
-  # abspos[num - 1],
-  # live_abspos[num - 1],
-  # live_offset_abs[num - 1],
-  # live_base_enc[num - 1],
-  # live_motion_dir[num - 1],
-  # )
 
   try:
     # CCW: Counterclockwise, CW: Clockwise
     if num == 1:
-      # Mueve rotacionalmente el brazo central VGR hasta alcanzar el final de carrera de referencia, luego se separa un poco para marcar la posición de referencia
+      # Mueve rotacionalmente el brazo central VGR hasta alcanzar el final de carrera de referencia, luego se separa un ddpoco para marcar la posición de referencia
       # El motor se mueve a la velocidad (SPEED) hasta que el final de carrera de referencia se cierre
       begin_live_motion(1, -1, True)  # Indica que el eje 1 (VGR rotacional) está en movimiento en dirección antihoraria (CCW)
       TXT_VGR_E2_M1_encodermotor.set_speed(int(SPEED), Motor.CCW)
@@ -420,14 +486,6 @@ def moveRef(num):
 
   finally:
 
-    # logging.debug(
-    # "MOVE_REF EXIT axis=%d abspos=%s live_abspos=%s live_offset=%s",
-    # num,
-    # abspos[num - 1],
-    # live_abspos[num - 1],
-    # live_offset_abs[num - 1],
-    # )
-
     end_live_motion(num)
     live_offset_abs[int(num - 1)] = 0 # live_abspos_vgr[int(num - 1)]
     live_abspos[int(num - 1)] = 0
@@ -438,6 +496,15 @@ def moveRef(num):
 
 # Mueve el eje a una distancia relativa a su posición actual
 def moveRel(num, rv):
+  """Mueve un eje una distancia relativa y actualiza su posición.
+
+  Args:
+    num: Número lógico del eje que se debe mover.
+    rv: Desplazamiento relativo expresado en pasos de motor.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, msg, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE_A1R, num)
 
@@ -552,6 +619,15 @@ def moveRel(num, rv):
   _ref_last[int(num - 1)] = False
 # Mueve el eje a una posición absoluta (av)
 def moveAbs(num, av):
+  """Mueve un eje hasta una posición absoluta.
+
+  Args:
+    num: Número lógico del eje que se debe mover.
+    av: Posición absoluta de destino en pasos de motor.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, msg, rv, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   if num < 1 or num > len(ABSLIMIT):
     logging.error('A1R: num out of bounds: %d', num)

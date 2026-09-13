@@ -1,3 +1,6 @@
+"""Control de los pilotos LED de estado del controlador SSC."""
+
+# Mapea estados de la fabrica a los LEDs del controlador maestro.
 import logging
 import time
 from lib.controller import *
@@ -16,12 +19,33 @@ b3 = None
 
 
 def set_lights_mode(_mode):
+  """
+  Fuerza el semaforo de la camara a un modo concreto de encendido.
+
+  Args:
+    _mode: Modo de luces a mostrar (1=verde, 2=amarillo, 4=rojo, 7=parpadeo
+      de las tres luces a la vez).
+
+  Returns:
+    None.
+  """
   global bits, lights_mode, lights_mode_last, b1, b2, b3
   logging.log(logging.TRACE, _mode)
   lights_mode = _mode
 
 
 def thread_lights():
+  """
+  Enciende el semaforo de la camara segun como va la fabrica, sin parar.
+
+  Mira el estado del almacen, el VGR, la MPO y la SLD: si alguno esta en
+  error pone la luz roja, si alguno esta trabajando pone la amarilla, si
+  todos estan listos y en reposo pone la verde, y en cualquier otro caso
+  deja el modo por defecto (amarillo y verde a la vez).
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
+  """
   global _mode, bits, lights_mode, lights_mode_last, b1, b2, b3
   logging.log(logging.TRACE, '-')
   lights_mode = 3
@@ -48,6 +72,16 @@ def thread_lights():
 
 
 def set_LEDs(bits):
+  """
+  Enciende o apaga las tres luces del semaforo segun sus bits.
+
+  Args:
+    bits: Numero de 3 bits; el bit 2 controla la luz roja, el bit 1 la
+      amarilla y el bit 0 la verde.
+
+  Returns:
+    None.
+  """
   global _mode, lights_mode, lights_mode_last, b1, b2, b3
   logging.log(logging.TRACE, bits)
   b1 = bits & (1<<2)
@@ -68,10 +102,12 @@ def set_LEDs(bits):
 
 
 
-###########################################################################################
-# TODO:
-###########################################################################################
+# Estado de los LEDs y modo de iluminación SSC.
 def get_lights_mode():
+  """
+  Devuelve el modo de luces del semaforo que esta activo ahora mismo.
+
+  Returns:
+    El modo actual, o 0 si todavia no se ha establecido ninguno.
+  """
   return int(lights_mode) if lights_mode is not None else 0
-###########################################################################################
-###########################################################################################

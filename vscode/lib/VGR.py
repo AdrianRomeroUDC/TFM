@@ -1,3 +1,13 @@
+"""Control del robot VGR (Vertical Gantry Robot).
+
+El VGR es un brazo cartesiano de tres ejes en ``TXT_VGR_E2``: M1 rota, M2
+sube o baja y M3 extiende o retrae. La ventosa se controla con el compresor
+O7 y la válvula magnética O8. Los finales de carrera I1-I3 y los sensores DPS
+I7/C4 e I8 proporcionan realimentación. El ciclo principal y el publicador de
+estado usan hilos daemon; las rutinas de ejes de ``VGR_Axes1Ref`` protegen los
+movimientos con ``threading.RLock``. Este módulo no crea otro lock.
+"""
+
 import logging
 import time
 from lib.Axes1Ref import *
@@ -67,6 +77,15 @@ ack = None
 
 # Thread principal del VGR
 def thread_VGR():
+  """Ejecuta el ciclo daemon del robot cartesiano VGR.
+
+  Atiende comandos NFC, recoge piezas de SLD y DPS y coordina su entrega al
+  HBW. Acciona motores, ventosa y lector NFC; el movimiento se protege con el
+  ``RLock`` de ``VGR_Axes1Ref`` y el estado se refleja en interfaz y MQTT.
+
+  Returns:
+    None. El ciclo permanece activo durante la ejecucion de la fabrica.
+  """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, '-')
   ts_readuid = 0
@@ -199,7 +218,7 @@ def thread_VGR():
         if uid == None:
           #move: NiO
           NiO_exit()  # Si no se detecta ningún chip NFC, tira la pieza a la cesta de descarte (NiO)
-        set_nfctag_item(uid, 1, ts_dsi) #FIXME:
+        set_nfctag_item(uid, 1, ts_dsi)  # FIXME: si no habia chip (uid es None), la pieza ya se ha tirado al cesto de descarte y este apunte no sirve de nada
         set_nfctag_item(uid, 2, ts_cs) 
         res = nfc_write_history(uid, last_color)  # Escribe el color de la pieza y los timestamps de la lectura del DSI y del Color Reader en la etiqueta NFC
         if res:
@@ -265,7 +284,6 @@ def thread_VGR():
             valid = True
             break
           time.sleep(1)
-      # Si todo salió bien, actualiza los datos del chip NFC con el tiempo de fin de almacenamiento
       if valid:
         set_state_dsi(0)
         set_nfctag_item(uid, 3, (time.time() * 1000))
@@ -375,6 +393,20 @@ def thread_VGR():
 
 # Inicializa el logging específico para el VGR con los niveles TRACE0_VGR, TRACE_VGR y DEBUG_VGR
 def initlog_VGR(_tr0, _tr, _dg):
+  """
+  Da de alta los niveles de registro propios del VGR.
+
+  Crea las etiquetas TRACE0_VGR, TRACE_VGR y DEBUG_VGR para que los mensajes
+  de este brazo se puedan filtrar en el log aparte del resto de estaciones.
+
+  Args:
+    _tr0: Nivel numérico para el trazado mas detallado.
+    _tr: Nivel numérico para el trazado normal.
+    _dg: Nivel numérico para los mensajes de depuración.
+
+  Returns:
+    None.
+  """
   global m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.TRACE0_VGR= _tr0
   logging.addLevelName(logging.TRACE0_VGR , 'TRACE0_VGR')
@@ -383,15 +415,34 @@ def initlog_VGR(_tr0, _tr, _dg):
   logging.DEBUG_VGR = _dg
   logging.addLevelName(logging.DEBUG_VGR, 'DEBUG_VGR')
 
-# Función para mover el VGR a un estado de reposo
+# Movimiento del VGR hasta su estado de reposo.
 def parkVGR():
+  """
+  Manda el brazo VGR a su posicion de reposo.
+
+  Primero lo lleva a la posicion de referencia y despues lo deja aparcado
+  en unas coordenadas fijas, fuera del paso de las demas estaciones.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, '-')
   moveRef_VGR_P123()
   moveAbs_VGR_P123_list([445, 865, 10])
 
-# Función para inicializar el mapa de historial de las etiquetas NFC, que almacena los timestamps de las diferentes etapas del proceso para cada etiqueta identificada por su UID
+# Inicialización del historial de etapas de proceso indexado por UID NFC.
 def init_map_nfctag_history():
+  """
+  Vacia el historial de etapas de las piezas con chip NFC.
+
+  Crea el diccionario donde luego se va apuntando, para cada UID de
+  etiqueta NFC, en que momento paso la pieza por cada una de las 8 etapas
+  del proceso (llegada, control de calidad, almacenaje...).
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, '-')
   #nfc history code:
@@ -409,15 +460,16 @@ def init_map_nfctag_history():
 
 # 
 def map_get_uid(m, k):
-  """Devuelve el valor asociado a una UID dentro del mapa de historial.
+  """
+  Busca el historial de una pieza por el UID de su etiqueta NFC.
 
-  Parámetros:
-  - m: diccionario con estructura {uid: [ts1..ts8]}
-  - k: uid a buscar
+  Args:
+    m: Diccionario con el historial de todas las piezas.
+    k: UID de la etiqueta NFC que se busca.
 
-  Retorna:
-  - La lista de timestamps asociada a la UID si existe.
-  - None si el mapa es None o la clave no existe.
+  Returns:
+    La lista con las 8 marcas de tiempo de esa pieza, o ``None`` si ese
+    UID no esta todavia en el historial.
   """
   global _tr0, _tr, _dg, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE0_VGR, '-')
@@ -427,12 +479,15 @@ def map_get_uid(m, k):
 
 
 def map_get_msk():
-  """Calcula una máscara de bits según los timestamps presentes en el historial.
+  """
+  Calcula que etapas del proceso tiene ya registradas la ultima pieza.
 
-  Recorre list_nfctag_history (8 posiciones) y activa el bit i cuando la
-  posición i contiene un timestamp distinto de None.
+  Recorre las 8 marcas de tiempo del historial y construye un numero donde
+  cada bit dice si esa etapa ya tiene fecha guardada o no. Ese numero es el
+  que luego se graba en la etiqueta NFC de la pieza.
 
-  Ejemplo: si hay valores en posiciones 0 y 2, la máscara resultante es 0b0101.
+  Returns:
+    El numero (mascara de bits) con las etapas ya registradas.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, '-')
@@ -453,17 +508,20 @@ def map_get_msk():
 
 
 def set_nfctag_item(taguid, num, history_ts):
-  """Guarda un timestamp en la posición de historial indicada para una UID.
+  """
+  Apunta en que momento paso una pieza por una etapa del proceso.
 
-  Funcionamiento:
-  - Inicializa map_nfctag_history si aún no existe.
-  - Si la UID no está en el mapa, crea una lista de 8 posiciones [None].
-  - Escribe history_ts en segundos en la posición (num - 1).
-  - Actualiza el mapa con la lista resultante.
+  Guarda, para el UID de la etiqueta NFC dado, la fecha y hora de la etapa
+  numero ``num`` (1 a 8: llegada, control de calidad, almacenaje...) en el
+  historial en memoria de esa pieza.
 
-  Nota:
-  - num está en rango 1..8 (etapas del proceso).
-  - history_ts llega en milisegundos y se guarda en segundos.
+  Args:
+    taguid: UID de la etiqueta NFC de la pieza.
+    num: Numero de etapa del proceso (de 1 a 8).
+    history_ts: Momento (timestamp) en el que ocurrio esa etapa.
+
+  Returns:
+    None.
   """
   global _tr0, _tr, _dg, m, k, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, num)
@@ -481,18 +539,20 @@ def set_nfctag_item(taguid, num, history_ts):
 
 
 def nfc_write_history(w_uid, w_color):
-  """Escribe y verifica el bloque histórico NFC de una pieza.
+  """
+  Graba en la etiqueta NFC de la pieza su color y su historial de etapas.
 
-  Flujo:
-  - Traduce el color de la pieza a código de tipo NFC.
-  - Calcula la máscara de timestamps presentes y obtiene el vector de tiempos.
-  - Intenta escribir en la etiqueta NFC.
-  - Lee de vuelta y valida estado/tipo/máscara.
-  - Reintenta hasta 3 veces con pausa de 1 segundo.
+  Escribe fisicamente en el chip el estado, el color y la mascara de
+  etapas completadas, y lo intenta hasta 3 veces hasta que la lectura de
+  vuelta confirma que se ha grabado bien.
 
-  Retorna:
-  - True si la verificación posterior a la escritura coincide.
-  - False si no se pudo validar tras los intentos.
+  Args:
+    w_uid: UID de la etiqueta NFC que se actualiza.
+    w_color: Color que se registra en el historial de la etiqueta.
+
+  Returns:
+    True si la escritura se confirmo correctamente, False si se agotaron
+    los 3 intentos sin exito.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, '-')
@@ -520,14 +580,9 @@ def nfc_write_history(w_uid, w_color):
       _type = 0
     _mask = map_get_msk()
     _vts = map_get_uid(map_nfctag_history, taguid)
-    #print("_state", _state)
-    #print("_type", _type)
-    #print("_mask", _mask)
-    #print("_vts", _vts)
     res = nfc_write(_state, _type, _mask, _vts)
     #HINT: res=nfc_write is always false
     data = nfc_read()
-    #print(data)
     if data != None:
       publish_Nfc_Data()
     res = (get_nfc_data_state()) == _state and (get_nfc_data_type()) == _type and (get_nfc_data_mask()) == _mask
@@ -542,9 +597,15 @@ def nfc_write_history(w_uid, w_color):
 
 
 def NiO_exit():
-  """Marca la operación como inválida y reinicia la secuencia VGR-HBW.
+  """
+  Da por invalida la pieza actual y limpia la conversacion con el almacen.
 
-  Se usa cuando una pieza debe descartarse (NiO) por fallo del proceso.
+  Se llama cuando una pieza se va a tirar a la cesta de descarte (NiO):
+  marca el proceso como no valido y borra las peticiones pendientes entre
+  el VGR y el HBW, para que la siguiente pieza empiece de cero.
+
+  Returns:
+    None.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   valid = False
@@ -552,10 +613,14 @@ def NiO_exit():
 
 
 def thread_update_VGR():
-  """Hilo de publicación periódica del estado del VGR.
+  """
+  Publica el estado del VGR cada 10 segundos, en su propio hilo.
 
-  Cada 10 segundos actualiza la pantalla y publica por MQTT el estado actual
-  (code, active, target).
+  Actualiza el indicador en pantalla y avisa por MQTT del codigo de estado,
+  si esta activo y hacia donde se dirige el brazo.
+
+  Returns:
+    None. Es un bucle infinito, nunca termina por si solo.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE_VGR, '-')
@@ -569,10 +634,22 @@ def thread_update_VGR():
 
 
 def _set_state_VGR(_code, _active, _target):
-  """Actualiza el estado interno del VGR si cambia algún campo.
+  """
+  Guarda el nuevo estado del VGR si algo ha cambiado.
 
-  Si hay cambio en code/active/target, reinicia el temporizador de publicación
-  para forzar actualización inmediata en el hilo de estado.
+  Si el codigo, el indicador de actividad o el destino son distintos de
+  los que ya estaban guardados, los actualiza y reinicia el cronometro
+  para que ``thread_update_VGR`` avise cuanto antes por pantalla y MQTT.
+
+  Args:
+    _code: Codigo de estado del VGR (por ejemplo 1=reposo, 2=en reparto,
+      4=error).
+    _active: Indica si el VGR esta activo haciendo ese estado.
+    _target: Nombre de la estacion hacia la que se dirige (por ejemplo
+      'hbw', 'mpo' o 'dso').
+
+  Returns:
+    None.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE0_VGR, '-')
@@ -584,14 +661,21 @@ def _set_state_VGR(_code, _active, _target):
 
 
 def moveSLD(name, color):
-  """Gestiona la recogida en SLD y el envío a DSO con registro NFC.
+  """
+  Recoge una pieza clasificada en la cinta SLD y la lleva a la salida DSO.
 
-  Secuencia:
-  - Espera a que DSO esté libre.
-  - Registra etapa 7, recoge pieza en SLD y va a NFC.
-  - Registra etapa 8 y escribe historial NFC.
-  - Si todo va bien: entrega en DSO y publica SHIPPED.
-  - Si falla: descarta en NiO y solicita contenedor al HBW.
+  El brazo se mueve hasta la posicion ``name`` de la cinta de clasificacion,
+  coge la pieza con la ventosa, pasa por el lector NFC para grabar su
+  historial y, en cuanto el punto de salida DSO queda libre, la deja alli
+  para que el cliente la recoja.
+
+  Args:
+    name: Nombre de la posicion en la cinta SLD de la que se recoge la
+      pieza (por ejemplo 'SLD white', 'SLD red' o 'SLD blue').
+    color: Color de la pieza que se esta recogiendo.
+
+  Returns:
+    None.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   _set_state_VGR(2, 1, 'dso') # Estado de entrega a DSO (code=2, active=1, target='dso')
@@ -632,9 +716,15 @@ def moveSLD(name, color):
 
 
 def grip():
-  """Activa el sistema de vacío para agarrar la pieza.
+  """
+  Cierra la ventosa del brazo para coger la pieza que tiene debajo.
 
-  Enciende compresor, espera 2 segundos y activa la válvula magnética.
+  Enciende primero el compresor para generar vacio y, dos segundos
+  despues, abre la valvula magnetica que conecta ese vacio con la ventosa,
+  de forma que la pieza queda pegada.
+
+  Returns:
+    None.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   global grip_active
@@ -647,9 +737,15 @@ def grip():
 
 
 def release():
-  """Libera la pieza desactivando válvula y compresor.
+  """
+  Abre la ventosa del brazo para soltar la pieza que lleva agarrada.
 
-  Se introduce una espera de 2 segundos para asegurar la liberación mecánica.
+  Corta primero la valvula magnetica y luego apaga el compresor, dejando
+  una pequeña pausa despues para que la pieza caiga del todo antes de que
+  el brazo se mueva a otro sitio.
+
+  Returns:
+    None.
   """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   global grip_active
@@ -663,24 +759,41 @@ def release():
 
 
 def get_state_code_VGR():
-  """Devuelve el código de estado actual del VGR."""
+  """
+  Devuelve el codigo de estado actual del VGR.
+
+  Returns:
+    El codigo de estado guardado (por ejemplo 1=reposo, 2=en reparto,
+    4=error).
+  """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE0_VGR, '-')
   return state_code
 
 
 def get_state_active_VGR():
-  """Devuelve la bandera de actividad actual del VGR."""
+  """
+  Dice si el VGR esta activo haciendo su estado actual.
+
+  Returns:
+    True si el brazo esta ocupado con la tarea de ``state_code``, False si
+    esta libre.
+  """
   global _tr0, _tr, _dg, m, k, taguid, num, history_ts, w_uid, w_color, _code, _active, _target, name, color, mi, mask, res, valid, state_code, state_active, ts_readuid, _ts_state, count_write, list_nfctag_history, index, state_target, uid, i, map_nfctag_history, _state, bit, _type, _mask, _vts, ts_dsi, wp, wp_color, data, req, temp, ts0, ts_diff, last_color, ts_cs, ack
   logging.log(logging.TRACE0_VGR, '-')
   return state_active
 
-###########################################################################################
-# TODO:
-###########################################################################################
+# Estados publicados de la ventosa y del último color detectado.
 grip_active = False
 
 def get_grip_active():
+  """
+  Dice si la ventosa del brazo esta agarrando una pieza ahora mismo.
+
+  Returns:
+    True si la ventosa esta cerrada sujetando una pieza, False si esta
+    abierta.
+  """
   global grip_active
   return grip_active
 
@@ -690,16 +803,36 @@ def get_grip_active():
 _color_event = None
 
 def set_color_event(color_value):
+  """
+  Guarda el ultimo color de pieza que se ha detectado.
+
+  Args:
+    color_value: Color detectado ('WHITE', 'RED' o 'BLUE').
+
+  Returns:
+    None.
+  """
   global _color_event
   _color_event = color_value
 
 def get_color_event():
+  """
+  Devuelve el ultimo color de pieza que se ha detectado.
+
+  Returns:
+    El ultimo color guardado ('WHITE', 'RED' o 'BLUE'), o ``None`` si
+    todavia no se ha detectado ninguno o ya se ha limpiado.
+  """
   global _color_event
   return _color_event
 
 def clear_color_event():
+  """
+  Borra el ultimo color de pieza detectado.
+
+  Returns:
+    None.
+  """
   global _color_event
   _color_event = None
 
-###########################################################################################
-###########################################################################################

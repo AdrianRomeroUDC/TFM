@@ -1,3 +1,6 @@
+"""Publicación MQTT de los estados de entrada y salida de la estación DPS."""
+
+# Este adaptador traduce estados DPS a mensajes MQTT.
 import logging
 from fischertechnik.mqtt.Constants import CONTROLLER_ID
 from fischertechnik.mqtt.FTCloudClient import FTCloudClient
@@ -13,6 +16,15 @@ payload_dso = None
 
 
 def publish_state_DSI(_code_dsi, _active_dsi):
+  """Publica el estado del sensor de entrada DSI en el broker cloud.
+
+  Args:
+    _code_dsi: Codigo de estado que identifica la condicion del sensor.
+    _active_dsi: Indicador de si el estado DSI esta activo.
+
+  Returns:
+    None. Si el cloud esta activo, envia un payload con marca temporal.
+  """
   global _code_dso, _active_dso, payload_dsi, payload_dso
   logging.log(logging.TRACE_FCL, '%d, %d', _code_dsi, _active_dsi)
   if get_cloud_active():
@@ -22,6 +34,15 @@ def publish_state_DSI(_code_dsi, _active_dsi):
 
 
 def publish_state_DSO(_code_dso, _active_dso):
+  """Publica el estado del sensor de salida DSO en el broker cloud.
+
+  Args:
+    _code_dso: Codigo de estado que identifica la condicion del sensor.
+    _active_dso: Indicador de si el estado DSO esta activo.
+
+  Returns:
+    None. Si el cloud esta activo, envia un payload con marca temporal.
+  """
   global _code_dsi, _active_dsi, payload_dsi, payload_dso
   logging.log(logging.TRACE_FCL, '%d, %d', _code_dso, _active_dso)
   if get_cloud_active():

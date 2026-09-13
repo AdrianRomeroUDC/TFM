@@ -1,4 +1,7 @@
+"""Cola, serialización y envío de métricas MQTT a InfluxDB."""
+
 # lib/Influx_Collector.py
+# El colector desacopla callbacks MQTT del envio HTTP a InfluxDB.
 from datetime import datetime, timezone
 import json
 import threading
@@ -35,10 +38,29 @@ _worker_threads = []
 
 
 def _now_ms():
+    """
+    Devuelve el instante actual en milisegundos.
+
+    Returns:
+      El numero de milisegundos transcurridos desde 1970.
+    """
     return int(time.time() * 1000)
 
 
 def _to_ms(ts_value):
+    """
+    Convierte una fecha, venga como venga, a milisegundos desde 1970.
+
+    Acepta un numero en segundos, un numero ya en milisegundos, o un texto
+    con formato de fecha ISO. Si no consigue interpretarlo, usa la hora
+    actual como respaldo.
+
+    Args:
+      ts_value: Fecha recibida, en segundos, milisegundos o texto ISO.
+
+    Returns:
+      El numero de milisegundos correspondiente.
+    """
     try:
         if isinstance(ts_value, (int, float)):
             if ts_value < 1000000000000:
@@ -67,14 +89,51 @@ def _to_ms(ts_value):
 
 
 def _escape_tag(value):
+    """
+    Prepara un valor para poder usarlo como etiqueta de InfluxDB.
+
+    Escapa las barras invertidas, los espacios, las comas y los signos
+    igual, que tienen un significado especial en ese formato.
+
+    Args:
+      value: Valor a convertir en etiqueta.
+
+    Returns:
+      El texto ya escapado.
+    """
     return str(value).replace('\\', '\\\\').replace(' ', '\\ ').replace(',', '\\,').replace('=', '\\=')
 
 
 def _escape_field_string(value):
+    """
+    Prepara un texto para poder usarlo como campo de InfluxDB.
+
+    Lo envuelve en comillas y escapa las comillas y barras invertidas que
+    pueda llevar dentro.
+
+    Args:
+      value: Valor a convertir en texto de campo.
+
+    Returns:
+      El texto ya entrecomillado y escapado.
+    """
     return '"' + str(value).replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 
 def _field_value(value):
+    """
+    Convierte un valor de Python al formato de campo que espera InfluxDB.
+
+    Los booleanos se escriben como true/false, los enteros llevan una 'i'
+    detras, los decimales se dejan tal cual y cualquier otra cosa se
+    escribe como texto entrecomillado.
+
+    Args:
+      value: Valor a convertir (booleano, entero, decimal o cualquier otro).
+
+    Returns:
+      El texto listo para insertar en la linea de InfluxDB.
+    """
     if isinstance(value, bool):
         return 'true' if value else 'false'
     if isinstance(value, int) and not isinstance(value, bool):
@@ -85,6 +144,22 @@ def _field_value(value):
 
 
 def _format_line(measurement, tags, fields, ts_ms):
+    """
+    Construye una linea de texto en el formato que entiende InfluxDB.
+
+    Junta el nombre de la medicion, sus etiquetas, sus campos con valor y
+    la fecha, todo en una sola linea de texto.
+
+    Args:
+      measurement: Nombre de la medicion de InfluxDB.
+      tags: Etiquetas de la medicion.
+      fields: Campos y valores de la medicion.
+      ts_ms: Fecha en milisegundos.
+
+    Returns:
+      La linea de texto lista para enviar, o ``None`` si no hay ningun
+      campo con valor.
+    """
     tag_part = ''
     for key, value in (tags or {}).items():
         if value is None:
@@ -105,6 +180,15 @@ def _format_line(measurement, tags, fields, ts_ms):
 
 
 def _post_payload(payload):
+    """
+    Envia un bloque de lineas a InfluxDB por HTTP.
+
+    Args:
+      payload: Texto con una o varias lineas en formato InfluxDB.
+
+    Returns:
+      None. Si la peticion falla, la excepcion sube a quien haya llamado.
+    """
     req = Request(
         INFLUX_URL,
         data=payload.encode('utf-8'),
@@ -125,6 +209,18 @@ def _post_payload(payload):
 
 
 def _flush_buffer(lines):
+    """
+    Envia a InfluxDB las lineas acumuladas, reintentando si falla.
+
+    Si el envio falla, espera un poco mas cada vez (hasta 5 intentos) antes
+    de rendirse y descartar el lote.
+
+    Args:
+      lines: Lista de lineas de InfluxDB pendientes de enviar.
+
+    Returns:
+      True si el envio se confirmo, False si se agotaron los reintentos.
+    """
     if not lines:
         return True
     payload = '\n'.join(lines)
@@ -149,6 +245,15 @@ def _flush_buffer(lines):
 
 
 def _worker_loop():
+    """
+    Va sacando lineas de la cola y las envia a InfluxDB por lotes.
+
+    Junta lineas hasta llegar a 100 o hasta que pase un segundo desde el
+    ultimo envio, lo que ocurra antes, y entonces las manda todas juntas.
+
+    Returns:
+      None. Termina cuando se pide parar y la cola queda vacia.
+    """
     buffer = []
     last_flush = time.time()
     while not stop_event.is_set() or not _influx_queue.empty() or buffer:
@@ -172,6 +277,16 @@ def _worker_loop():
 
 
 def _monitor_loop():
+    """
+    Vigila cada 5 segundos cuanto se ha llenado la cola de envio a InfluxDB.
+
+    Avisa por consola si la cola supera el 80% de su capacidad, para
+    detectar a tiempo que los datos se estan acumulando mas rapido de lo
+    que se pueden enviar.
+
+    Returns:
+      None. Es un bucle que corre hasta que se pide parar.
+    """
     while not stop_event.is_set():
         try:
             qsize = _influx_queue.qsize()
@@ -184,10 +299,25 @@ def _monitor_loop():
 
 
 def _load_persisted():
+    """
+    Punto reservado para recuperar datos guardados si el envio se corto.
+
+    Por ahora no hace nada; esta aqui para poder añadir mas adelante la
+    carga de lineas que se hubieran quedado sin enviar.
+
+    Returns:
+      None.
+    """
     return
 
 
 def _start_workers():
+    """
+    Lanza los hilos que envian datos a InfluxDB y vigilan la cola.
+
+    Returns:
+      None.
+    """
     _load_persisted()
     for _ in range(WORKERS):
         t = threading.Thread(target=_worker_loop)
@@ -201,6 +331,22 @@ def _start_workers():
 
 
 def write_influx_line(measurement, tags, fields, ts_ms):
+    """
+    Deja un dato listo en la cola para que se envie a InfluxDB.
+
+    No lo envia directamente: lo mete en una cola para que los hilos de
+    envio se encarguen, y si la cola esta llena, descarta el dato mas
+    antiguo para no bloquear al que llama.
+
+    Args:
+      measurement: Nombre de la medicion de InfluxDB.
+      tags: Etiquetas de la medicion.
+      fields: Campos y valores de la medicion.
+      ts_ms: Fecha en milisegundos.
+
+    Returns:
+      None.
+    """
     line = _format_line(measurement, tags, fields, ts_ms)
     if not line:
         return
@@ -218,6 +364,16 @@ def write_influx_line(measurement, tags, fields, ts_ms):
 
 
 def _payload_as_dict(message):
+    """
+    Interpreta el contenido de un mensaje MQTT como un diccionario JSON.
+
+    Args:
+      message: Mensaje MQTT recibido.
+
+    Returns:
+      El diccionario con los datos del mensaje, o ``None`` si no se pudo
+      interpretar como JSON.
+    """
     try:
         return json.loads(message.payload.decode('utf-8'))
     except Exception:
@@ -225,6 +381,17 @@ def _payload_as_dict(message):
 
 
 def _common_fields(payload, payload_text):
+    """
+    Prepara los campos que llevan todas las medidas: el texto y la fecha.
+
+    Args:
+      payload: Datos del mensaje MQTT ya interpretados como diccionario.
+      payload_text: El mensaje MQTT tal cual, en texto.
+
+    Returns:
+      Un diccionario con el texto original y, si lo trae, la fecha del
+      mensaje.
+    """
     fields = {'payload': payload_text}
     if isinstance(payload, dict) and 'ts' in payload:
         fields['ts'] = payload.get('ts')
@@ -232,6 +399,16 @@ def _common_fields(payload, payload_text):
 
 
 def mqtt_callback_bme680(message):
+    """
+    Guarda en InfluxDB la lectura del sensor ambiental (BME680).
+
+    Args:
+      message: Mensaje MQTT con temperatura, humedad, presion y calidad
+        del aire.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'i/bme680')
         payload_text = message.payload.decode('utf-8')
@@ -256,6 +433,15 @@ def mqtt_callback_bme680(message):
 
 
 def mqtt_callback_ldr(message):
+    """
+    Guarda en InfluxDB la lectura del sensor de luz ambiente (LDR).
+
+    Args:
+      message: Mensaje MQTT con el brillo medido.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'i/ldr')
         payload_text = message.payload.decode('utf-8')
@@ -274,6 +460,19 @@ def mqtt_callback_ldr(message):
 
 
 def mqtt_callback_stock(message):
+    """
+    Guarda en InfluxDB una foto del inventario completo del almacen.
+
+    Desmonta la lista de casillas del almacen en columnas separadas
+    (ubicacion, UID, color y estado de cada una) para poder consultarlas
+    facilmente despues.
+
+    Args:
+      message: Mensaje MQTT con el inventario del almacen.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'f/i/stock')
         payload_text = message.payload.decode('utf-8')
@@ -321,6 +520,16 @@ def mqtt_callback_stock(message):
 
 
 def mqtt_callback_vgr_pos(message):
+    """
+    Guarda en InfluxDB la posicion de los tres ejes del brazo VGR.
+
+    Args:
+      message: Mensaje MQTT con la rotacion, la altura y la extension del
+        brazo.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/vgr/pos')
         payload_text = message.payload.decode('utf-8')
@@ -340,6 +549,15 @@ def mqtt_callback_vgr_pos(message):
 
 
 def mqtt_callback_vgr_grip(message):
+    """
+    Guarda en InfluxDB si la ventosa del VGR esta agarrando una pieza.
+
+    Args:
+      message: Mensaje MQTT con el estado de la ventosa.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/vgr/grip')
         payload_text = message.payload.decode('utf-8')
@@ -357,6 +575,16 @@ def mqtt_callback_vgr_grip(message):
 
 
 def mqtt_callback_hbw_pos(message):
+    """
+    Guarda en InfluxDB la posicion del brazo del almacen.
+
+    Args:
+      message: Mensaje MQTT con la posicion horizontal, vertical y de
+        extension del brazo del almacen.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/hbw/pos')
         payload_text = message.payload.decode('utf-8')
@@ -376,6 +604,16 @@ def mqtt_callback_hbw_pos(message):
 
 
 def mqtt_callback_hbw_belt(message):
+    """
+    Guarda en InfluxDB el estado de la cinta del almacen.
+
+    Args:
+      message: Mensaje MQTT con la velocidad de la cinta, el sentido de
+        giro y sus dos sensores de entrada y salida.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/hbw/belt')
         payload_text = message.payload.decode('utf-8')
@@ -396,6 +634,15 @@ def mqtt_callback_hbw_belt(message):
 
 
 def mqtt_callback_dps_dsi(message):
+    """
+    Guarda en InfluxDB el sensor de entrada de la DPS.
+
+    Args:
+      message: Mensaje MQTT con el estado del sensor de entrada.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/dps/dsi')
         payload_text = message.payload.decode('utf-8')
@@ -413,6 +660,15 @@ def mqtt_callback_dps_dsi(message):
 
 
 def mqtt_callback_dps_dso(message):
+    """
+    Guarda en InfluxDB el sensor de salida de la DPS.
+
+    Args:
+      message: Mensaje MQTT con el estado del sensor de salida.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/dps/dso')
         payload_text = message.payload.decode('utf-8')
@@ -430,6 +686,15 @@ def mqtt_callback_dps_dso(message):
 
 
 def mqtt_callback_dps_color(message):
+    """
+    Guarda en InfluxDB el color de pieza detectado en la DPS.
+
+    Args:
+      message: Mensaje MQTT con el color leido.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/dps/color')
         payload_text = message.payload.decode('utf-8')
@@ -447,6 +712,15 @@ def mqtt_callback_dps_color(message):
 
 
 def mqtt_callback_dps_nfc(message):
+    """
+    Guarda en InfluxDB el dato NFC leido en la DPS.
+
+    Args:
+      message: Mensaje MQTT con el identificador y el dato del chip NFC.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/dps/nfc')
         payload_text = message.payload.decode('utf-8')
@@ -465,6 +739,16 @@ def mqtt_callback_dps_nfc(message):
 
 
 def mqtt_callback_sld_belt(message):
+    """
+    Guarda en InfluxDB el estado de la cinta de clasificacion (SLD).
+
+    Args:
+      message: Mensaje MQTT con la velocidad de la cinta y sus sensores de
+        entrada y de los cilindros expulsores.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/sld/belt')
         payload_text = message.payload.decode('utf-8')
@@ -484,6 +768,16 @@ def mqtt_callback_sld_belt(message):
 
 
 def mqtt_callback_sld_cylinder(message):
+    """
+    Guarda en InfluxDB el estado de los cilindros expulsores de la SLD.
+
+    Args:
+      message: Mensaje MQTT con el color que se esta expulsando y si cada
+        cilindro (blanco, rojo, azul) esta activo.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/sld/cylinder')
         payload_text = message.payload.decode('utf-8')
@@ -505,6 +799,16 @@ def mqtt_callback_sld_cylinder(message):
 
 
 def mqtt_callback_mpo_belt(message):
+    """
+    Guarda en InfluxDB el estado de la cinta de salida de la MPO.
+
+    Args:
+      message: Mensaje MQTT con si la cinta esta activa y el sensor del
+        final de la cinta.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/mpo/belt')
         payload_text = message.payload.decode('utf-8')
@@ -523,6 +827,16 @@ def mqtt_callback_mpo_belt(message):
 
 
 def mqtt_callback_mpo_oven(message):
+    """
+    Guarda en InfluxDB el estado del horno de la MPO.
+
+    Args:
+      message: Mensaje MQTT con si la puerta esta abierta o cerrada, la
+        luz del horno y el sensor de entrada del horno.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/mpo/oven')
         payload_text = message.payload.decode('utf-8')
@@ -545,6 +859,16 @@ def mqtt_callback_mpo_oven(message):
 
 
 def mqtt_callback_mpo_arm(message):
+    """
+    Guarda en InfluxDB el estado del brazo del horno de la MPO.
+
+    Args:
+      message: Mensaje MQTT con si el brazo esta bajado y si la ventosa
+        esta haciendo vacio.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/mpo/arm')
         payload_text = message.payload.decode('utf-8')
@@ -565,6 +889,16 @@ def mqtt_callback_mpo_arm(message):
 
 
 def mqtt_callback_mpo_turntable(message):
+    """
+    Guarda en InfluxDB el estado de la mesa giratoria y la sierra de la MPO.
+
+    Args:
+      message: Mensaje MQTT con si el cilindro expulsor esta activo y el
+        estado del giro de la mesa y de la sierra.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/mpo/turntable')
         payload_text = message.payload.decode('utf-8')
@@ -588,6 +922,16 @@ def mqtt_callback_mpo_turntable(message):
 
 
 def mqtt_callback_ssc_leds(message):
+    """
+    Guarda en InfluxDB el estado de los pilotos de la estacion de la camara.
+
+    Args:
+      message: Mensaje MQTT con el estado del piloto de conexion y del
+        semaforo de alarmas.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/ssc/leds')
         payload_text = message.payload.decode('utf-8')
@@ -606,6 +950,16 @@ def mqtt_callback_ssc_leds(message):
 
 
 def mqtt_callback_ssc_camera(message):
+    """
+    Guarda en InfluxDB la posicion de pan y tilt de la camara.
+
+    Args:
+      message: Mensaje MQTT con el angulo de giro y de inclinacion de la
+        camara.
+
+    Returns:
+      None.
+    """
     try:
         topic = getattr(message, 'topic', 'dt/ssc/camera')
         payload_text = message.payload.decode('utf-8')
@@ -624,6 +978,17 @@ def mqtt_callback_ssc_camera(message):
 
 
 def start_influx_collector():
+    """
+    Conecta con el broker MQTT y suscribe todos los temas de telemetria.
+
+    Reintenta hasta 5 veces con esperas cada vez mas largas. Si consigue
+    conectar, se suscribe a la telemetria ambiental, de luz, de
+    inventario y de todas las estaciones fisicas, y arranca los hilos que
+    envian los datos a InfluxDB.
+
+    Returns:
+      El cliente MQTT ya conectado, o ``None`` si no se pudo conectar.
+    """
     global influx_client
     max_retries = 5
     retry_count = 0
@@ -690,6 +1055,12 @@ def start_influx_collector():
 
 
 def thread_InfluxCollector():
+    """
+    Punto de entrada para lanzar el colector de InfluxDB en un hilo aparte.
+
+    Returns:
+      None.
+    """
     start_influx_collector()
     while not stop_event.is_set():
         time.sleep(1)

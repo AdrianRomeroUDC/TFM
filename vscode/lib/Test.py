@@ -1,3 +1,6 @@
+"""Pruebas manuales de movimiento y diagnóstico de actuadores."""
+
+# Pruebas manuales para validar movimientos antes de ejecutar la planta.
 import logging
 import time
 from lib.Axes1Ref import *
@@ -14,6 +17,17 @@ t_diff = None
 
 
 def test_move_Axes1Ref():
+  """
+  Mueve uno por uno todos los ejes con encoder hasta su tope y de vuelta.
+
+  Recorre los 7 ejes con encoder de la fabrica (VGR, HBW y camara),
+  llevando cada uno a su referencia, despues a su posicion maxima y otra
+  vez a la referencia, midiendo cuanto tarda cada movimiento. Solo sirve
+  para probar que todo se mueve bien antes de arrancar la fabrica.
+
+  Returns:
+    None.
+  """
   global i, absmax, j, t0, t_diff
   display.set_attr("txt_label_message.text", str('TEST: Axes1Ref'))
   # num:          MX, IX, CX
@@ -37,6 +51,16 @@ def test_move_Axes1Ref():
 
 
 def test_move_Axes2Ref():
+  """
+  Lleva a su tope, uno por uno y en orden inverso, los 10 ejes de dos posiciones.
+
+  Recorre los ejes de solo dos posiciones del horno y la mesa giratoria
+  (brazo, plataforma y mesa) midiendo cuanto tarda cada uno. Solo sirve
+  para probar que todo se mueve bien antes de arrancar la fabrica.
+
+  Returns:
+    None.
+  """
   global i, absmax, j, t0, t_diff
   display.set_attr("txt_label_message.text", str('TEST: Axes2Ref'))
   # num:                              MX, IX
@@ -62,6 +86,15 @@ def test_move_Axes2Ref():
 
 
 def test_HBW_posall():
+  """
+  Mueve el brazo del almacen por las 9 casillas del estante, una a una.
+
+  Solo sirve para probar que el brazo del almacen llega bien a cada fila y
+  columna del estante antes de arrancar la fabrica.
+
+  Returns:
+    None.
+  """
   global i, absmax, j, t0, t_diff
   moveConv()
   for i in range(1, 4):

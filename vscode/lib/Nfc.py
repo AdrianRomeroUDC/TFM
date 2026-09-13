@@ -1,3 +1,6 @@
+"""Lectura, escritura y validación de etiquetas NFC de las piezas."""
+
+# El lector NFC se protege con lockNFC para evitar accesos simultaneos.
 import ctypes
 import logging
 import pynfc
@@ -32,6 +35,13 @@ _internal_func_ntag21x = None
 list_temp = None
 ts = None
 def get_nfc_data_ts_list():
+  """
+  Devuelve las 8 fechas guardadas en el chip de la ultima lectura.
+
+  Returns:
+    La lista de 8 timestamps guardados en el chip, o ``None`` si todavia
+    no se ha leido ninguna etiqueta.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   r = None
@@ -41,6 +51,13 @@ def get_nfc_data_ts_list():
   return r
 
 def nfc_read_uid():
+  """Lee el identificador de una etiqueta NFC detectada por el lector.
+
+  Returns:
+    UID decodificado como texto, o ``None`` si no se detecta una etiqueta o
+    falla la consulta. Adquiere ``lockNFC`` mientras accede al hardware y
+    actualiza ``nfc_data``.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   lockNFC.acquire()
@@ -63,10 +80,35 @@ def nfc_read_uid():
   return target_uid
 
 def _wrapper_ntag21x(_inner_func):
+  """
+  Prepara todo lo necesario para leer o escribir un chip NFC concreto.
+
+  Busca una etiqueta cerca del lector, se conecta a ella, comprueba que es
+  del tipo correcto (NTAG213, el chip que llevan las piezas) y, si todo
+  encaja, ejecuta ``_inner_func`` (la lectura o la escritura de verdad).
+  Al terminar, se desconecta de la etiqueta.
+
+  Args:
+    _inner_func: La funcion de lectura o de escritura que se quiere
+      ejecutar una vez que la etiqueta correcta esta conectada.
+
+  Returns:
+    Una funcion lista para llamar, que hace todo el proceso anterior.
+  """
   global _tr0, _tr, _dg, epoch, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE0_NFC, '->')
   global tag
   def _internal_func_ntag21x():
+      """
+      Busca una etiqueta NFC cerca del lector y prepara la lectura o escritura.
+
+      Espera a que aparezca una etiqueta, se conecta a ella, comprueba que
+      es del tipo correcto (NTAG213) y, si lo es, deja que ``_inner_func``
+      haga la lectura o escritura real antes de desconectarse.
+
+      Returns:
+        None.
+      """
       global tag
       target_uid = None
       try:
@@ -143,6 +185,16 @@ def _wrapper_ntag21x(_inner_func):
   return _internal_func_ntag21x
 
 def init_freefare_ntag21x():
+  """Carga las librerias del sistema que saben hablar con los chips NFC.
+
+  El lector NFC en si lo maneja otra libreria (pynfc); esta funcion carga
+  ademas la libreria "freefare", que sabe reconocer el tipo concreto de
+  chip NTAG213 que llevan las piezas y leer o escribir en el, y le explica
+  a Python como llamar a cada una de sus funciones.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   # libs
@@ -151,6 +203,11 @@ def init_freefare_ntag21x():
   _libraries['libfreefare.so'] = ctypes.CDLL('libfreefare.so')
   _libraries['libnfc.so'] = ctypes.CDLL('libnfc.so')
   class struct_freefare_tag(ctypes.Structure):
+      """Representa, para la libreria del sistema, la etiqueta NFC que hay
+          conectada al lector en este momento. Es una pieza interna que solo
+          usa esta funcion para hablar con el chip; el resto del programa
+          nunca necesita tocarla directamente.
+      """
       pass
 
   global FreefareTag
@@ -241,6 +298,19 @@ def init_freefare_ntag21x():
 
 
 def initlog_NFC(_tr0, _tr, _dg):
+  """Da de alta los niveles de registro propios del lector NFC.
+
+  Crea las etiquetas TRACE0_NFC, TRACE_NFC y DEBUG_NFC para que los
+  mensajes del lector se puedan filtrar en el log aparte del resto.
+
+  Args:
+    _tr0: Nivel numérico para el trazado mas detallado.
+    _tr: Nivel numérico para el trazado normal.
+    _dg: Nivel numérico para los mensajes de depuración.
+
+  Returns:
+    None.
+  """
   global epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.TRACE0_NFC = _tr0
   logging.addLevelName(logging.TRACE0_NFC , 'TRACE0_NFC')
@@ -251,12 +321,25 @@ def initlog_NFC(_tr0, _tr, _dg):
 
 
 def get_lock_NFC():
+  """Devuelve el cerrojo que evita que dos lecturas del NFC se pisen.
+
+  Cualquier rutina que hable con el lector NFC debe pedir este cerrojo
+  primero, para que nunca haya dos lecturas o escrituras a la vez.
+
+  Returns:
+    El cerrojo (``threading.RLock``) del lector NFC.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE0_NFC, '-')
   return lockNFC
 
 
 def get_nfc_version():
+  """Devuelve la fecha de version de este modulo de lectura NFC.
+
+  Returns:
+    El texto con la fecha de version, por ejemplo ``'2022-07-13'``.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   __version__ = '2022-07-13'
   logging.log(logging.DEBUG_NFC, __version__)
@@ -264,18 +347,34 @@ def get_nfc_version():
 
 
 def get_nfc_data_uid():
+  """Devuelve el UID de la ultima etiqueta NFC leida.
+
+  Returns:
+    El identificador unico de la etiqueta.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   return nfc_data[0]
 
 
 def get_nfc_data_state():
+  """Devuelve el estado guardado en el chip de la ultima pieza leida.
+
+  Returns:
+    0 si la pieza esta sin procesar, 1 si ya se ha procesado, 2 si se ha
+    rechazado.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   return nfc_data[1]
 
 
 def get_nfc_data_state_str():
+  """Traduce el estado guardado en el chip a un texto legible.
+
+  Returns:
+    'Raw', 'Processed', 'Rejected' o 'None' segun el estado guardado.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   state_str = 'None'
@@ -289,12 +388,22 @@ def get_nfc_data_state_str():
 
 
 def get_nfc_data_type():
+  """Devuelve el color guardado en el chip de la ultima pieza leida.
+
+  Returns:
+    0 si no hay color, 1 blanco, 2 rojo o 3 azul.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   return nfc_data[2]
 
 
 def get_nfc_data_type_str():
+  """Traduce el color guardado en el chip a un texto legible.
+
+  Returns:
+    'White', 'Red', 'Blue' o 'None' segun el color guardado.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   type_str = 'None'
@@ -308,18 +417,40 @@ def get_nfc_data_type_str():
 
 
 def get_nfc_data_mask():
+  """Devuelve la mascara de etapas guardada en el chip de la pieza.
+
+  Cada bit dice si esa etapa del proceso (llegada, control de calidad,
+  almacenaje...) ya tiene una fecha guardada.
+
+  Returns:
+    El numero con la mascara de bits.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   return nfc_data[3]
 
 
 def get_nfc_data_mask_str():
+  """Escribe la mascara de etapas guardada en el chip como texto binario.
+
+  Returns:
+    La mascara como texto de 8 ceros y unos, o ``None`` si no hay datos.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   return '{:08b}'.format(get_nfc_data_mask()) if get_nfc_data_mask() != None else None
 
 
 def epoch2tsstr(epoch):
+  """Convierte una fecha numerica (timestamp) en texto legible.
+
+  Args:
+    epoch: Fecha en segundos desde 1970, tal como se guarda en el chip.
+
+  Returns:
+    La fecha como texto (por ejemplo ``'2024-05-01T10:00:00.000Z'``), o
+    una cadena vacia si el numero no se puede convertir.
+  """
   global _tr0, _tr, _dg, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE0_NFC, '-')
   try:
@@ -331,6 +462,11 @@ def epoch2tsstr(epoch):
 
 
 def get_nfc_data_tsstr_list():
+  """Traduce las 8 fechas guardadas en el chip a texto legible.
+
+  Returns:
+    Una lista con las fechas como texto, saltandose las que esten vacias.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   list_tsstr = []
@@ -345,6 +481,15 @@ def get_nfc_data_tsstr_list():
 
 
 def nfc_init():
+  """Pone en marcha el lector NFC al arrancar la fabrica.
+
+  Crea el cerrojo del lector, vacia los datos guardados, arranca la
+  conexion con el lector fisico, carga las librerias que saben hablar con
+  los chips y muestra por consola las versiones de todo.
+
+  Returns:
+    El objeto de conexion con el lector NFC.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   lockNFC = threading.RLock() #https://stackoverflow.com/questions/28017535/do-i-have-to-lock-all-functions-that-calls-to-one-or-more-locked-function-for-mu
@@ -368,6 +513,15 @@ def nfc_init():
 
 
 def is_cmd_uid():
+  """Comprueba si lo leido es la tarjeta maestra, no una etiqueta de pieza.
+
+  Se distingue por la longitud de su identificador: la tarjeta maestra
+  tiene un UID de 8 caracteres.
+
+  Returns:
+    True si el ultimo UID leido corresponde a la tarjeta maestra, False si
+    no.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, target_uid)
   is_cmd = False
@@ -378,12 +532,25 @@ def is_cmd_uid():
 
 
 def get_last_nfc_data():
+  """Devuelve todos los datos de la ultima etiqueta NFC leida.
+
+  Returns:
+    La lista completa ``[uid, estado, color, mascara, fechas]``.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   return nfc_data
 
 
 def _inner_ntag21x_read():
+  """Lee los bytes reales del chip ya conectado y los reparte en nfc_data.
+
+  Saca 144 bytes del chip y los interpreta: el estado, el color, la
+  mascara de etapas y las 8 fechas del historial de la pieza.
+
+  Returns:
+    0 si la lectura fue bien, un numero negativo si fallo.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE0_NFC, '->')
   global tag
@@ -417,6 +584,12 @@ def _inner_ntag21x_read():
 
 
 def nfc_read():
+  """Lee todos los datos guardados en el chip de la pieza mas cercana.
+
+  Returns:
+    La lista completa ``[uid, estado, color, mascara, fechas]`` leida del
+    chip.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '->')
   lockNFC.acquire()
@@ -429,6 +602,14 @@ def nfc_read():
 
 
 def _inner_ntag21x_write():
+  """Escribe en el chip ya conectado el estado, el color y las 8 fechas.
+
+  Va grabando pagina a pagina: primero el estado, el color y la mascara,
+  y despues cada una de las 8 fechas del historial de la pieza.
+
+  Returns:
+    0 si la escritura fue bien, un numero negativo si fallo alguna pagina.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE0_NFC, '->')
   global tag
@@ -487,6 +668,11 @@ def _inner_ntag21x_write():
 
 
 def print_nfc_data():
+  """Muestra por consola los datos guardados del ultimo chip leido.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   lockNFC.acquire()
@@ -503,6 +689,17 @@ def print_nfc_data():
 
 
 def nfc_write(state, type2, mask, vts):
+  """Graba el estado, el color y el historial de la pieza en su chip.
+
+  Args:
+    state: Estado de la pieza (0=sin procesar, 1=procesada, 2=rechazada).
+    type2: Color de la pieza (0=ninguno, 1=blanco, 2=rojo, 3=azul).
+    mask: Mascara que dice que etapas del proceso ya tienen fecha.
+    vts: Lista con las 8 fechas del historial de la pieza.
+
+  Returns:
+    True si la escritura salio bien, False si fallo.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '->')
   lockNFC.acquire()
@@ -517,6 +714,14 @@ def nfc_write(state, type2, mask, vts):
 
 
 def nfc_delete():
+  """Borra todos los datos guardados en el chip de la pieza mas cercana.
+
+  Escribe ceros en todo, dejando el chip como si fuera nuevo (no borra su
+  UID, que viene grabado de fabrica).
+
+  Returns:
+    True si el borrado salio bien, False si fallo.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '->')
   r = nfc_write(0, 0, 0, [0] * 8)
@@ -525,6 +730,11 @@ def nfc_delete():
 
 
 def nfc_freefare_version_text():
+  """Devuelve la version de la libreria freefare como texto.
+
+  Returns:
+    El texto con la version de la libreria que reconoce los chips NTAG213.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   r_fv = freefare_version()
@@ -533,6 +743,11 @@ def nfc_freefare_version_text():
 
 
 def nfc_version_text():
+  """Devuelve la version de la libreria del lector NFC como texto.
+
+  Returns:
+    El texto con la version de la libreria que maneja el lector fisico.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, target, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   r_fv = nfc_version()
@@ -541,6 +756,18 @@ def nfc_version_text():
 
 
 def _print_device_target(target):
+  """Identifica que tipo de tarjeta o chip se acaba de detectar.
+
+  Anota en el log si es una Desfire, una Mifare (probando sus claves por
+  defecto) o un NTAG21x como el de las piezas; si no reconoce el tipo,
+  tambien lo deja anotado.
+
+  Args:
+    target: Etiqueta o tarjeta detectada por el lector.
+
+  Returns:
+    El codigo de tipo de hardware de la etiqueta detectada.
+  """
   global _tr0, _tr, _dg, epoch, _inner_func, state, type2, mask, vts, lockNFC, __version__, state_str, type_str, r, tsstr, list_tsstr, nfc_obj, is_cmd, nfc_data, target_uid, _internal_func_ntag21x, list_temp, ts
   logging.log(logging.TRACE_NFC, '-')
   #todo: Application level error with multiple threads

@@ -1,3 +1,6 @@
+"""Primitivas de referencia y movimiento coordinado para ejes con dos referencias (Finales de carrera)."""
+
+# Capa de movimiento para actuadores con finales de carrera.
 import logging
 import math
 import os
@@ -19,6 +22,17 @@ ts0 = None
 
 # Inicializa los niveles de log específicos para el control de los ejes
 def initlog_A2R(_tr0, _tr, _dg):
+  """
+  Configura los niveles de log para A2R.
+
+  Args:
+    _tr0: Nivel numérico para el trazado detallado.
+    _tr: Nivel numérico para el trazado normal.
+    _dg: Nivel numérico para los mensajes de depuración.
+
+  Returns:
+    None.
+  """
   global num, msg, _b_exit, SPEED, tsdiff, TIMEOUT_S, ts0
   logging.TRACE0_A2R = _tr0
   logging.addLevelName(logging.TRACE0_A2R , 'TRACE0_A2R')
@@ -29,6 +43,12 @@ def initlog_A2R(_tr0, _tr, _dg):
 
 # Configura los limites físicos, velocidades y tiempos de espera (timeouts) para cada eje
 def initlib_Axes2Ref():
+  """
+  Inicializa límites, velocidades y timeouts para los ejes A2R.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, num, msg, _b_exit, SPEED, tsdiff, TIMEOUT_S, ts0
   __version__ = '2022-07-25' #Axes2Ref (A2R)
   logging.log(logging.TRACE_A2R, '-')
@@ -54,6 +74,19 @@ def initlib_Axes2Ref():
 
 # Comprueba si un eje ha excedido su tiempo de movimiento permitido y detiene el programa si es así
 def _check_timeout_exit(num):
+  """
+  Comprueba si un movimiento lleva demasiado tiempo sin llegar a su tope.
+
+  Si el eje indicado supera el tiempo maximo permitido sin activar su
+  final de carrera (por ejemplo, porque esta atascado), detiene todo el
+  programa como medida de seguridad.
+
+  Args:
+    num: Numero del eje que se esta vigilando.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, msg, _b_exit, SPEED, tsdiff, TIMEOUT_S, ts0
   logging.log(logging.TRACE0_A2R, num)
   tsdiff[int(num - 1)] = time.time() - ts0[int(num - 1)]
@@ -64,6 +97,19 @@ def _check_timeout_exit(num):
 
 # Fuerza el cierre del programa de ejes y marca las referencias como no válidas tras un error
 def _exit_Axe2Ref(msg):
+  """
+  Para todo el programa de golpe porque ha ocurrido un error grave de movimiento.
+
+  Se llama cuando un eje se ha quedado atascado demasiado tiempo. Marca las
+  referencias como no validas y cierra el programa entero para evitar
+  seguir moviendo hardware en un estado desconocido.
+
+  Args:
+    msg: Mensaje que explica que ha fallado, para dejarlo en el log.
+
+  Returns:
+    None. El programa se cierra dentro de esta funcion.
+  """
   global _tr0, _tr, _dg, num, _b_exit, SPEED, tsdiff, TIMEOUT_S, ts0
   logging.log(logging.TRACE_A2R, '-')
   _b_exit = True
@@ -73,6 +119,15 @@ def _exit_Axe2Ref(msg):
 
 # Mueve el eje hacia el final de carrera de referencia para calibrar el punto 0
 def move2Ref(num):
+  """
+  Mueve el actuador seleccionado hasta su final de carrera de referencia.
+
+  Args:
+    num: Número lógico del eje o elemento que se procesa.
+
+  Returns:
+    None.
+  """
   global _tr0, _tr, _dg, msg, _b_exit, SPEED, tsdiff, TIMEOUT_S, ts0
   logging.log(logging.TRACE_A2R, '-')
   if num < 1 or num > len(TIMEOUT_S):
@@ -170,9 +225,7 @@ def move2Ref(num):
 
 
 
-###########################################################################################
-# TODO:
-###########################################################################################
+# Estado de los movimientos de referencia de la estación MPO/HBW.
 move2ref_state = {
     "move2Ref3": False,
     "move2Ref4": False,
@@ -185,6 +238,11 @@ move2ref_state = {
 }
 
 def get_move2ref_state():
-    return move2ref_state.copy()
-###########################################################################################
-###########################################################################################
+  """
+  Devuelve una copia del estado de los movimientos de referencia.
+
+  Returns:
+    Un diccionario que dice, para cada eje de MPO/HBW con dos referencias,
+    si esta en ese momento moviendose hacia su final de carrera.
+  """
+  return move2ref_state.copy()

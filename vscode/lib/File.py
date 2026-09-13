@@ -1,3 +1,5 @@
+"""Carga y guardado de calibración y configuración de las estaciones."""
+
 import json
 import logging
 import subprocess
@@ -24,6 +26,12 @@ calib_data_SLD = None
 
 
 def loadFileFactoryCalib():
+  """Carga la calibracion de fabrica o crea el fichero con valores iniciales.
+
+  Returns:
+    None. Lee o escribe ``FactoryCalib.json`` y ajusta sus permisos mediante
+    un proceso del sistema.
+  """
   global _ssc, _hbw, _vgr, _dps, _sld, fileCalib, calib_data_SSC, calib_json, calib_data_HBW, calib_data_VGR, calib_map, calib_data_DPS, calib_data_SLD
   logging.log(logging.TRACE, '-')
   if exists('/opt/ft/workspaces/FactoryCalib.json'):
@@ -32,18 +40,22 @@ def loadFileFactoryCalib():
   else:
     logging.log(logging.DEBUG, 'use default calibration values')
     writeFileFactoryCalib_defaults()
-  #subprocess.Popen(['chown', 'ftgui:ftgui', '/opt/ft/workspaces/FactoryCalib.json'])
   subprocess.Popen(['chmod', '777', '/opt/ft/workspaces/FactoryCalib.json'])
 
 
 def readFileFactoryCalib():
+  """Lee la calibracion persistida y la aplica a todas las estaciones.
+
+  Returns:
+    None. Actualiza el mapa de calibracion y los modulos SSC, HBW, VGR, DPS y
+    SLD; produce tambien una salida de diagnostico.
+  """
   global _ssc, _hbw, _vgr, _dps, _sld, fileCalib, calib_data_SSC, calib_json, calib_data_HBW, calib_data_VGR, calib_map, calib_data_DPS, calib_data_SLD
   logging.log(logging.TRACE, '-')
   fileCalib = open('/opt/ft/workspaces/FactoryCalib.json', 'r', encoding='utf8')
   calib_json = fileCalib.read()
   fileCalib.close()
   calib_map = json.loads(calib_json)
-  #print(calib_map)
   calib_data_SSC = [calib_map['SSC']['poslist']]
   calib_data_HBW = [calib_map['HBW']['poslist']]
   calib_data_VGR = [calib_map['VGR']['poslist'], calib_map['VGR']['discard'], calib_map['VGR']['offset']]
@@ -58,6 +70,18 @@ def readFileFactoryCalib():
 
 
 def writeFileFactoryCalib(_ssc, _hbw, _vgr, _dps, _sld):
+  """Serializa y guarda la calibracion de las cinco estaciones.
+
+  Args:
+    _ssc: Datos de posiciones y limites del controlador SSC.
+    _hbw: Datos de posiciones calibradas del almacen HBW.
+    _vgr: Posiciones, descartes y offsets del robot VGR.
+    _dps: Umbrales de color de la estacion DPS.
+    _sld: Umbrales de color de la linea SLD.
+
+  Returns:
+    None. Actualiza el estado global y sobrescribe ``FactoryCalib.json``.
+  """
   global fileCalib, calib_data_SSC, calib_json, calib_data_HBW, calib_data_VGR, calib_map, calib_data_DPS, calib_data_SLD
   logging.log(logging.TRACE, '-')
   calib_data_SSC = _ssc
@@ -94,6 +118,12 @@ def writeFileFactoryCalib(_ssc, _hbw, _vgr, _dps, _sld):
 
 
 def printData():
+  """
+  Muestra por consola las tablas de calibracion de las cinco estaciones.
+
+  Returns:
+    None.
+  """
   global _ssc, _hbw, _vgr, _dps, _sld, fileCalib, calib_data_SSC, calib_json, calib_data_HBW, calib_data_VGR, calib_map, calib_data_DPS, calib_data_SLD
   logging.log(logging.TRACE, '-')
   print("SSC: ", calib_data_SSC)
@@ -104,12 +134,24 @@ def printData():
 
 
 def writeFileFactoryCalib_current():
+  """
+  Guarda en el fichero la calibracion que las estaciones usan ahora mismo.
+
+  Returns:
+    None.
+  """
   global _ssc, _hbw, _vgr, _dps, _sld, fileCalib, calib_data_SSC, calib_json, calib_data_HBW, calib_data_VGR, calib_map, calib_data_DPS, calib_data_SLD
   logging.log(logging.TRACE, '-')
   writeFileFactoryCalib(get_calib_data_SSC(), get_calib_data_HBW(), get_calib_data_VGR(), get_calib_data_DPS(), get_calib_data_SLD())
 
 
 def writeFileFactoryCalib_defaults():
+  """
+  Restablece y guarda la calibracion de fabrica de las cinco estaciones.
+
+  Returns:
+    None.
+  """
   global _ssc, _hbw, _vgr, _dps, _sld, fileCalib, calib_data_SSC, calib_json, calib_data_HBW, calib_data_VGR, calib_map, calib_data_DPS, calib_data_SLD
   logging.log(logging.TRACE, '-')
   if exists('/opt/ft/workspaces/FactoryCalib.json'):
@@ -117,8 +159,6 @@ def writeFileFactoryCalib_defaults():
     calib_json = fileCalib.read()
     fileCalib.close()
     if False:
-      #TODO: backup
-      #save and write to USB Stick -> new buttons in GUI?
       fileCalib = open('/opt/ft/workspaces/FactoryCalib_backup.json', 'w', encoding='utf8')
       fileCalib.write(calib_json)
       fileCalib.close()
