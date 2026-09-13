@@ -201,7 +201,9 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
         else
         {
-            // Modo Histórico (BBDD): el almacén se va actualizando dinámicamente según se reproducen los datos guardados.
+            // Modo Histórico (BBDD): InfluxDBClient ya se encarga de que este método solo se invoque
+            // una vez por reproducción (con el estado previo cargado al principio); los "f/i/stock"
+            // grabados que se reproducen después del arranque actualizan solo la interfaz.
             yaSpawneadoEnConexionActual = false;
         }
 

@@ -137,7 +137,8 @@ public class InfluxDBClient : MonoBehaviour
                 foreach (var estado in estadosPrevios)
                 {
                     // Inyectamos cada estado previo directamente, sin esperar tiempo simulado,
-                    // para que la escena arranque ya con las piezas y posiciones correctas.
+                    // para que la escena arranque ya con las piezas y posiciones correctas. Este es
+                    // el único momento en que el almacén físico debe pintarse en modo Histórico.
                     InyectarMensaje(estado.topic, estado.payloadJson);
                 }
             }
@@ -231,7 +232,7 @@ public class InfluxDBClient : MonoBehaviour
                     if (tsMensajeLocal <= tiempoSimuladoLocal)
                     {
                         var reg = registros[idxMensaje];
-                        InyectarMensaje(reg.topic, reg.payloadJson);
+                        InyectarMensaje(reg.topic, reg.payloadJson, permitirActualizarAlmacenFisico: false);
                         idxMensaje++;
                     }
                     else
@@ -248,7 +249,7 @@ public class InfluxDBClient : MonoBehaviour
             while (idxMensaje < registros.Count)
             {
                 var reg = registros[idxMensaje];
-                InyectarMensaje(reg.topic, reg.payloadJson);
+                InyectarMensaje(reg.topic, reg.payloadJson, permitirActualizarAlmacenFisico: false);
                 idxMensaje++;
             }
 
@@ -365,7 +366,11 @@ public class InfluxDBClient : MonoBehaviour
 
     // Reenvía un mensaje histórico (topic + JSON) a los clientes MQTT de Unity, exactamente igual
     // que si hubiera llegado en directo desde la fábrica real por la red.
-    private void InyectarMensaje(string topic, string payloadJson)
+    // <param name="permitirActualizarAlmacenFisico">El almacén físico (piezas 3D del HBW) solo debe
+    // pintarse una vez, con el estado previo cargado al principio de la reproducción; los mensajes
+    // "f/i/stock" que llegan durante la reproducción cronometrada del rango deben actualizar
+    // únicamente el panel de la interfaz, igual que ya hace SimuladorOffline.ReproducirSecuencia.</param>
+    private void InyectarMensaje(string topic, string payloadJson, bool permitirActualizarAlmacenFisico = true)
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
@@ -382,6 +387,18 @@ public class InfluxDBClient : MonoBehaviour
         else if (topic == "bme680" || topic == "bm680" || topic == "i_bme680" || topic == "i/bm680") topic = "i/bme680";
 
         Debug.Log($"<color=white>[InfluxDB] 📩 Evento Inyectado -> Topic: <b>{topic}</b></color>");
+
+        // Tratamiento especial de stock: la UI se actualiza siempre, el almacén 3D solo en la carga
+        // del estado previo (una vez al principio), para no vaciar/rellenar los cajones con cada
+        // actualización de stock reproducida del histórico.
+        if (topic == "f/i/stock" && !permitirActualizarAlmacenFisico)
+        {
+            if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.isActiveAndEnabled)
+            {
+                MQTT_InterfaceClient.Instance.ProcesarMensajeExterno(topic, payloadJson);
+            }
+            return;
+        }
 
         // Reenviamos el mensaje tanto al cliente MQTT "principal" (que mueve el gemelo digital 3D)
         // como al cliente MQTT de la interfaz (que actualiza paneles y gráficas en pantalla).
