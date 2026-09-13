@@ -71,3 +71,13 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Ajustes personales de ventanas y layouts de Unity
+UserSettings/
+/UserSettings/
+
+# Reportes de pruebas automáticas locales
+/UIElementsSchema/
+
+# Paquetes descargados localmente (si usas NuGet o paquetes externos fuera de Packages)
+.nuget/

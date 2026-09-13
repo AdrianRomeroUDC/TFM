@@ -14,3 +14,6 @@ Thumbs.db
 
 # Configuración local de VS Code (descomentar si no quieres compartir configuraciones de usuario)
 .vscode/settings.json
+
+# Ignorar toda la carpeta de configuración de VS Code
+.vscode/
