@@ -20,7 +20,7 @@ using System.Collections.Generic;
 /// </summary>
 public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
 {
-    // 🟢 Evento añadido para avisar a UI_ControladorMenu cuando el usuario cambia el día
+    // Evento añadido para avisar a UI_ControladorMenu cuando el usuario cambia el día
     public event Action<DateTime> OnFechaSeleccionada;
 
     // Fecha actualmente elegida por el usuario (por defecto, hoy)
@@ -384,7 +384,7 @@ public class UI_CalendarPicker : MonoBehaviour, IPointerClickHandler
             rootOverlay.SetActive(false);
         }
 
-        // 🟢 Avisar a UI_ControladorMenu para habilitar el botón PLAY si cambió la fecha
+        // Avisar a UI_ControladorMenu para habilitar el botón PLAY si cambió la fecha
         OnFechaSeleccionada?.Invoke(FechaSeleccionada);
     }
 

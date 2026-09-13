@@ -189,7 +189,7 @@ public class ControladorCintaSLD_mqtt : MonoBehaviour
 
         bool nuevoSensorEntrada = (data.SensorEntrada == 1);
 
-        // 🎯 DETECCIÓN DE FLANCO DE BAJADA CON CINTA EN MOVIMIENTO + FILTRO COOLDOWN
+        // DETECCIÓN DE FLANCO DE BAJADA CON CINTA EN MOVIMIENTO + FILTRO COOLDOWN
         if (SensorEntrada && !nuevoSensorEntrada)
         {
             bool cintaEstaEnMovimiento = velocidadActual > 0f;

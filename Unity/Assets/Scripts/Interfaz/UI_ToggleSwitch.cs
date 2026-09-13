@@ -69,7 +69,7 @@ public class UI_ToggleSwitch : MonoBehaviour
     /// <param name="estaActivado">Nuevo valor del Toggle (true = encendido).</param>
     private void OnToggleChanged(bool estaActivado)
     {
-        // 🟢 CLAVE: Si el objeto está inactivo en la jerarquía (menú cerrado),
+        // CLAVE: Si el objeto está inactivo en la jerarquía (menú cerrado),
         // no podemos iniciar Corrutinas en Unity. Aplicamos el cambio de forma instantánea.
         if (!gameObject.activeInHierarchy)
         {

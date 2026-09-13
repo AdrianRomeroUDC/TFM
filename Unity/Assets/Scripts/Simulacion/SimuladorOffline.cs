@@ -253,7 +253,7 @@ public class SimuladorOffline : MonoBehaviour
             return;
         }
 
-        // 🟢 Ejecutamos SIEMPRE la reproducción local cuando se pide desde la sección Simulación
+        // Ejecutamos SIEMPRE la reproducción local cuando se pide desde la sección Simulación
         // Normalizamos el texto recibido (que puede venir en español o inglés) a la clave interna
         // que usamos en el diccionario de secuencias: "WHITE", "RED" o "BLUE".
         string claveUpper = tipoPieza.ToUpper();

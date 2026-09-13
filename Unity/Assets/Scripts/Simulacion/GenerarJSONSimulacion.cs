@@ -103,7 +103,7 @@ public class GenerarJSONSimulacion : MonoBehaviour
     /// <param name="config">Qué pieza, qué rango de fechas y en qué archivo guardar el resultado.</param>
     private IEnumerator ProcesarYGuardarPieza(RangoFechaPieza config)
     {
-        // 🟢 Interpreta la hora introducida como Hora Local de tu PC y la convierte a UTC para InfluxDB
+        // Interpreta la hora introducida como Hora Local de tu PC y la convierte a UTC para InfluxDB
         DateTime inicioUTC = ParsearFecha(config.fechaHoraInicio);
         DateTime finUTC = ParsearFecha(config.fechaHoraFin);
 

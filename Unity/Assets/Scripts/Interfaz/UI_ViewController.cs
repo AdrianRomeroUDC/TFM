@@ -51,7 +51,7 @@ public class UI_ViewController : MonoBehaviour
             camaraPrincipal = Camera.main;
         }
 
-        // ⚡ CORTE INSTANTÁNEO EN EL FOTOGRAMA 0 (Sin animaciones)
+        // CORTE INSTANTÁNEO EN EL FOTOGRAMA 0 (Sin animaciones)
         ColocarVistaInstantanea(0);
     }
 

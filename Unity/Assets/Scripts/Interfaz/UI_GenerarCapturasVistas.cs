@@ -62,7 +62,7 @@ public class GeneradorCapturasVistas : MonoBehaviour
             screenShot.ReadPixels(new Rect(0, 0, 512, 512), 0, 0);
             screenShot.Apply();
 
-            // 🚀 LIMPIEZA DE CARACTERES: Limpiamos caracteres prohibidos en archivos (\, /, :, *, etc.)
+            // LIMPIEZA DE CARACTERES: Limpiamos caracteres prohibidos en archivos (\, /, :, *, etc.)
             string nombreBruto = string.IsNullOrEmpty(vista.nombreZona) ? $"Vista_{i}" : vista.nombreZona;
             string nombreLimpio = LimpiarNombreArchivo(nombreBruto);
 

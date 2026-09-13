@@ -49,7 +49,7 @@ public class UI_SeccionAcordeon : MonoBehaviour
             rectPadre = transform.parent.GetComponent<RectTransform>();
         }
 
-        // 🟢 Restaurar el estado si la sección estaba abierta antes de recargar la escena
+        // Restaurar el estado si la sección estaba abierta antes de recargar la escena
         // Comprobamos si el nombre de este GameObject está en la lista de secciones que
         // quedaron abiertas la última vez (por ejemplo, tras cambiar de escena)
         if (UI_ControladorMenu.seccionesAbiertasPrevias.Contains(gameObject.name))
@@ -92,7 +92,7 @@ public class UI_SeccionAcordeon : MonoBehaviour
 
             seccionAbiertaActualmente = this;
 
-            // 🟢 Registra esta sección como abierta
+            // Registra esta sección como abierta
             UI_ControladorMenu.seccionesAbiertasPrevias.Clear(); // Limpia si solo se permite 1 abierta a la vez
             UI_ControladorMenu.seccionesAbiertasPrevias.Add(gameObject.name);
         }
@@ -104,7 +104,7 @@ public class UI_SeccionAcordeon : MonoBehaviour
                 seccionAbiertaActualmente = null;
             }
 
-            // 🟢 Remueve el registro al cerrar
+            // Remueve el registro al cerrar
             UI_ControladorMenu.seccionesAbiertasPrevias.Remove(gameObject.name);
         }
 
@@ -132,7 +132,7 @@ public class UI_SeccionAcordeon : MonoBehaviour
             seccionAbiertaActualmente = null;
         }
 
-        // 🟢 Limpia el registro estático
+        // Limpia el registro estático
         UI_ControladorMenu.seccionesAbiertasPrevias.Clear();
     }
 
@@ -145,7 +145,7 @@ public class UI_SeccionAcordeon : MonoBehaviour
     {
         estaAbierto = false;
 
-        // 🟢 Elimina el registro de la sección
+        // Elimina el registro de la sección
         UI_ControladorMenu.seccionesAbiertasPrevias.Remove(gameObject.name);
 
         if (contenedorContenido != null)
@@ -179,7 +179,7 @@ public class UI_SeccionAcordeon : MonoBehaviour
         seccionAbiertaActualmente = this;
         estaAbierto = true;
 
-        // 🟢 Registra esta sección como abierta
+        // Registra esta sección como abierta
         UI_ControladorMenu.seccionesAbiertasPrevias.Clear();
         UI_ControladorMenu.seccionesAbiertasPrevias.Add(gameObject.name);
 

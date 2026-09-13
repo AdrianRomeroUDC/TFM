@@ -40,7 +40,7 @@ public class ControladorCilindrosSLD_mqtt : MonoBehaviour
     // Posición 3D de la rampa de salida azul. Usado también desde fuera por el VGR.
     public Transform spawnPointAzul;
 
-    // 🌐 ESTADOS PÚBLICOS DE LOS SENSORES PARA LECTURA DEL VGR
+    // ESTADOS PÚBLICOS DE LOS SENSORES PARA LECTURA DEL VGR
     /// <summary>
     /// Indica si el sensor de color real de la rampa blanca está detectando una pieza ahora mismo.
     /// El VGR consulta esta propiedad después de intentar agarrar una pieza de la rampa blanca:

@@ -321,7 +321,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
             }
         }
 
-        // --- 🎯 4. SISTEMA ANTIFALLO ENTREGA EN PLATAFORMA DSO (AL SUBIR EL VGR) ---
+        // --- 4. SISTEMA ANTIFALLO ENTREGA EN PLATAFORMA DSO (AL SUBIR EL VGR) ---
         if (verificarFalloEntregaDSO)
         {
             float deltaYMundialDSO = Mathf.Abs(ejeVertical.position.y - yMundialAlSoltarDSO);
@@ -506,7 +506,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                 }
 
-                // 🎯 D. DETECCIÓN Y MONITOREO DE ENTREGA EN LA PLATAFORMA DSO: igual que el bloque
+                // D. DETECCIÓN Y MONITOREO DE ENTREGA EN LA PLATAFORMA DSO: igual que el bloque
                 // anterior, pero para la plataforma de salida de piezas terminadas de la DPS.
                 ControladorDPS_mqtt dpsScript = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
                 if (dpsScript != null && dpsScript.plataformaDSO != null)

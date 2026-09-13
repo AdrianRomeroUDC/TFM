@@ -79,7 +79,7 @@ public class UI_SensorsMonitor : MonoBehaviour
             ToggleMostrarPanel(toggleSensores.isOn);
         }
 
-        // 🟢 4. SUSCRIPCIÓN CONTINUA A EVENTOS MQTT (En Start para que no se desconecte al cerrar UI)
+        // 4. SUSCRIPCIÓN CONTINUA A EVENTOS MQTT (En Start para que no se desconecte al cerrar UI)
         // Nos suscribimos a los eventos que MQTT_InterfaceClient dispara cada vez que llega
         // una lectura nueva del sensor LDR (luz) o del sensor BME680 (ambiente) desde la fábrica real
         if (MQTT_InterfaceClient.Instance != null)
@@ -210,7 +210,7 @@ public class UI_SensorsMonitor : MonoBehaviour
     /// <param name="datos">Datos recibidos del sensor BME680.</param>
     private void ActualizarBME680(Bme680Payload datos)
     {
-        // 🟢 Se procesa siempre que el toggle de sensores esté activo
+        // Se procesa siempre que el toggle de sensores esté activo
         if (toggleSensores != null && !toggleSensores.isOn) return;
 
         if (txtTemperatura != null) txtTemperatura.text = $"{datos.t:F1} °C";

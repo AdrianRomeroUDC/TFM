@@ -47,7 +47,7 @@ public class ControladorHorno_mqtt : MonoBehaviour
     public float duracionMovimientoPuerta = 1.5f;
     public float duracionMovimientoPlataforma = 1.0f;
 
-    // 🌐 LECTURA PÚBLICA DEL SENSOR EN TIEMPO REAL PARA EL BRAZO MPO
+    // LECTURA PÚBLICA DEL SENSOR EN TIEMPO REAL PARA EL BRAZO MPO
     // Refleja en todo momento si el sensor real del horno (ovenSensor) detecta una pieza dentro.
     // Otros scripts (VGR, Brazo MPO) consultan esta propiedad para confirmar si sus entregas/agarres
     // de piezas han funcionado de verdad en la máquina física, sin tener que suscribirse ellos mismos
