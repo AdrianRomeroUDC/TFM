@@ -1,5 +1,11 @@
 using UnityEngine;
 
+/// <summary>
+/// Este script va sobre el plato giratorio (turntable) del MPO, la mesa que gira para colocar la
+/// pieza frente a la sierra/fresa o frente a la cinta de salida. Se encarga de centrar y fijar
+/// cualquier pieza que llegue a la mesa exactamente en su centro, para que gire con ella sin
+/// desplazarse ni caerse, igual que la pieza real queda sujeta en el centro del plato giratorio.
+/// </summary>
 public class PlataformaTurntable_proxy : MonoBehaviour
 {
     [Header("Referencias")]
@@ -18,6 +24,8 @@ public class PlataformaTurntable_proxy : MonoBehaviour
         }
     }
 
+    // Si una pieza suelta entra en la zona de la mesa (por ejemplo, cae encima), la centramos y
+    // la fijamos, salvo que ya sea hija de la mesa porque el brazo la haya colocado a propósito.
     private void OnTriggerEnter(Collider other)
     {
         if (other.name.ToLower().Contains("pieza"))
@@ -33,6 +41,12 @@ public class PlataformaTurntable_proxy : MonoBehaviour
     // =======================================================================
     // METODO DE ACOPLE DIRECTO (Invocado de forma segura por el brazo MPO)
     // =======================================================================
+    /// <summary>
+    /// Centra la pieza indicada justo encima del plato giratorio y la deja fija ahí (sin física),
+    /// para que a partir de ahora gire solidaria con la mesa. Si el eyector de salida está
+    /// empujando en ese momento, no hacemos nada: dejamos que la pieza siga su camino de salida
+    /// en vez de "atraparla" de nuevo en el centro.
+    /// </summary>
     public void AcoplarPiezaEnMesa(Transform pieza)
     {
         if (controlador != null && controlador.EjectorEstaActivo)

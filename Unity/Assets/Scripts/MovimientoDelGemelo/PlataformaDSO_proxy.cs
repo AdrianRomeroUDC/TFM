@@ -1,5 +1,12 @@
 using UnityEngine;
 
+/// <summary>
+/// Este script va sobre la plataforma de salida DSO de la DPS (la estación de entrada/salida de
+/// piezas), el sitio donde el VGR deja las piezas ya terminadas para que salgan de la fábrica.
+/// Su única misión es detectar cuándo una pieza real llega a esa plataforma y avisar al
+/// controlador de la DPS para que compruebe el sensor real y coloque la pieza bien alineada,
+/// igual que ocurre quando la pieza física se detiene sobre la bandeja de salida.
+/// </summary>
 public class PlataformaDSO_proxy : MonoBehaviour
 {
     private ControladorDPS_mqtt dps;
@@ -19,6 +26,8 @@ public class PlataformaDSO_proxy : MonoBehaviour
         }
     }
 
+    // Se dispara cuando algo entra en la zona de la plataforma de salida. Comprobamos que sea de
+    // verdad una pieza (y no la ventosa del robot todavía sujetándola) antes de darla por llegada.
     private void OnTriggerEnter(Collider other)
     {
         if (dps == null) return;
@@ -35,6 +44,8 @@ public class PlataformaDSO_proxy : MonoBehaviour
         dps.AlinearPiezaEnDSO(rootPieza);
     }
 
+    // Sube por la jerarquía de objetos desde el punto de contacto hasta encontrar el objeto que
+    // representa la pieza en sí, por si lo que ha tocado el sensor es solo una parte suya.
     private Transform EncontrarRaizPieza(Transform t)
     {
         Transform actual = t;

@@ -2,6 +2,13 @@ using UnityEngine;
 using System;
 using System.Collections;
 
+/// <summary>
+/// Se encarga de crear y colocar en Unity las piezas 3D que hay guardadas dentro de los 9 huecos del
+/// almacén HBW (cuadrícula 3x3), según el inventario real que reporta la fábrica o según el modo de
+/// trabajo elegido en el menú (conectado por MQTT, simulación offline o reproducción de histórico de
+/// InfluxDB). No mueve ningún eje: solo decide qué pieza (blanca, roja o azul) aparece en cada cajón
+/// del almacén y cuándo debe destruirse o repintarse esa pieza.
+/// </summary>
 public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 {
     private static ControladorSpawnPiecesHBW_mqtt instance;
@@ -10,10 +17,10 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     private string[] listaPendiente;
     private bool hayCambio = false;
 
-    // Control para spawnear 3D solo UNA VEZ en modo Conectado
+    // Evita volver a colocar piezas 3D más de una vez mientras seguimos conectados en modo MQTT Directo.
     private bool yaSpawneadoEnConexionActual = false;
 
-    // Detección de cambio de modo en tiempo real
+    // Nos permite detectar en Update() cuándo el usuario cambia de modo de trabajo en el menú.
     private UI_ControladorMenu.ModoOrigen modoAnterior;
     private bool modoInicializado = false;
 
@@ -32,7 +39,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
     private void OnEnable()
     {
-        // 🟢 Escuchamos únicamente cuando SE INICIA o finaliza una simulación offline (Play / Pedir Pieza)
+        // Escuchamos solo el aviso de cuando arranca o termina una simulación offline (botón Play / Pedir Pieza).
         SimuladorOffline.OnEstadoSimulacionOfflineCambiado += OnEstadoSimulacionOfflineCambiado;
     }
 
@@ -54,9 +61,10 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         StartCoroutine(SuscripcionSegura());
     }
 
+    // Cuando el usuario pulsa Play o "Pedir Pieza" en el modo simulación offline, llenamos el almacén
+    // 3D al completo (los 9 huecos ocupados), simulando un almacén lleno de fábrica.
     private void OnEstadoSimulacionOfflineCambiado(bool enEjecucion)
     {
-        // 🟢 SOLO cuando se presiona Play / Pedir Pieza (enEjecucion == true), se llena el almacén 3D (9/9)
         if (enEjecucion)
         {
             if (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsModoSimulacionActivo)
@@ -67,6 +75,8 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
+    // Antes de colocar ninguna pieza, calculamos y guardamos en cada cajón la posición/rotación exacta
+    // que debería tener respecto a su hueco, para poder encajar las piezas siempre en el sitio correcto.
     void PrecalcularOffsetsEnCajones()
     {
         for (int i = 0; i < puntosDeHueco.Length; i++)
@@ -85,6 +95,8 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         Debug.Log("<color=cyan><b>[HBW Precalculo]:</b> Posiciones teóricas calculadas en todos los contenedores.</color>");
     }
 
+    // Espera a que el cliente MQTT exista y, si al arrancar la escena ya estamos en modo Conectado,
+    // pide el inventario inicial real del almacén para pintarlo de golpe.
     IEnumerator SuscripcionSegura()
     {
         while (MQTTClient.Instance == null) yield return null;
@@ -97,7 +109,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
             modoAnterior = UI_ControladorMenu.Instance.modoSeleccionado;
             modoInicializado = true;
 
-            // Solo cargamos el stock si al arrancar la escena ya estamos en Modo Conectado
+            // Solo cargamos el inventario real si al arrancar la escena ya estamos en Modo Conectado.
             if (UI_ControladorMenu.Instance.modoSeleccionado == UI_ControladorMenu.ModoOrigen.MQTT_Directo)
             {
                 string[] stockInicial = MQTTClient.Instance.GetInitialStock();
@@ -109,6 +121,8 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
+    // Si la fábrica real se desconecta, permitimos que al reconectar se vuelva a pedir el inventario
+    // desde cero (para no quedarnos con datos de una conexión anterior que ya no valen).
     private void OnFactoryHeartbeat(bool connected, DateTime timestamp)
     {
         if (!connected)
@@ -119,7 +133,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
     void Update()
     {
-        // Detección de cambios de toggle en la UI
+        // Comprobamos si el usuario ha cambiado el modo de trabajo en el menú (Conectado / Simulación / Histórico).
         if (UI_ControladorMenu.Instance != null)
         {
             UI_ControladorMenu.ModoOrigen modoActual = UI_ControladorMenu.Instance.modoSeleccionado;
@@ -136,6 +150,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
             }
         }
 
+        // Si ha llegado un inventario nuevo pendiente de pintar, lo aplicamos aquí, en el hilo principal de Unity.
         if (hayCambio)
         {
             ActualizarVisualizacion(listaPendiente);
@@ -143,10 +158,10 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
+    // Simplemente informa por consola del modo activo: ningún cambio de modo toca el almacén 3D por
+    // sí solo, siempre se espera a una acción concreta (Play, Pedir Pieza o Reset).
     private void OnModoSeleccionadoCambiado(UI_ControladorMenu.ModoOrigen nuevoModo)
     {
-        // 🟢 NINGÚN cambio de toggle altera el almacén 3D por sí solo. 
-        // Todos quedan a la espera de acciones concretas (Play, Pedir Pieza o Reset).
         if (nuevoModo == UI_ControladorMenu.ModoOrigen.MQTT_Directo)
         {
             Debug.Log("<color=cyan><b>[HBW Spawn] Toggle Conectado activo. Almacén 3D en espera de Play/Reset.</b></color>");
@@ -162,6 +177,11 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Recibe la lista de colores del inventario real del almacén (uno por cada uno de los 9 huecos)
+    /// y decide, según el modo de trabajo activo, si debe pintar ya el almacén 3D o esperar a una
+    /// acción concreta del usuario (por ejemplo, en modo simulación se ignora hasta que se dé a Play).
+    /// </summary>
     public void AlRecibirPiezas(string[] piezas)
     {
         UI_ControladorMenu.ModoOrigen modo = (UI_ControladorMenu.Instance != null)
@@ -170,18 +190,18 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
         if (modo == UI_ControladorMenu.ModoOrigen.MQTT_Directo)
         {
-            // MODO CONECTADO: Solo spawnea 1 vez al conectar con f/i/stock
+            // Modo Conectado: solo pintamos el almacén una vez, justo al conectar (con el inventario inicial real).
             if (yaSpawneadoEnConexionActual) return;
             yaSpawneadoEnConexionActual = true;
         }
         else if (modo == UI_ControladorMenu.ModoOrigen.Simulacion_Offline)
         {
-            // En simulación solo se modifica al dar Play o Pedir Pieza
+            // En modo simulación, el almacén solo se modifica al pulsar Play o Pedir Pieza, así que ignoramos este aviso.
             return;
         }
         else
         {
-            // MODO BBDD HISTÓRICO: Actualiza las piezas 3D dinámicamente según los datos reproducidos tras dar Play
+            // Modo Histórico (BBDD): el almacén se va actualizando dinámicamente según se reproducen los datos guardados.
             yaSpawneadoEnConexionActual = false;
         }
 
@@ -189,6 +209,11 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         hayCambio = true;
     }
 
+    /// <summary>
+    /// Pinta de verdad el almacén 3D: recorre los 9 huecos, borra la pieza vieja que hubiera en cada
+    /// uno y crea la pieza nueva (blanca, roja o azul) que le corresponde según la lista de colores
+    /// recibida, dejando vacíos los huecos que no tengan color asignado.
+    /// </summary>
     public void ActualizarVisualizacion(string[] listaColores)
     {
         if (listaColores == null) return;
@@ -200,14 +225,14 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
 
             Transform cajon = padreEje.GetChild(0);
 
-            // Destruir piezas viejas en este cajón
+            // Destruimos cualquier pieza vieja que hubiera dentro de este cajón antes de colocar la nueva.
             for (int j = cajon.childCount - 1; j >= 0; j--)
             {
                 if (cajon.GetChild(j).name.ToLower().Contains("pieza"))
                     Destroy(cajon.GetChild(j).gameObject);
             }
 
-            // Si la lista no llega a este hueco, el cajón permanece vacío
+            // Si la lista recibida no cubre este hueco, el cajón se queda vacío.
             if (i >= listaColores.Length || string.IsNullOrEmpty(listaColores[i])) continue;
 
             GameObject prefab = null;
@@ -232,6 +257,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
     {
         yaSpawneadoEnConexionActual = false;
 
+        // Repartimos el almacén en 3 filas de 3 huecos: la primera fila blanca, la segunda roja y la tercera azul.
         string[] stockCompleto = new string[9];
         for (int i = 0; i < 9; i++)
         {
@@ -263,6 +289,7 @@ public class ControladorSpawnPiecesHBW_mqtt : MonoBehaviour
         }
     }
 
+    // Vacía todos los huecos del almacén, destruyendo únicamente las piezas (deja intactos los cajones y estantes).
     void LimpiarSoloPiezas()
     {
         foreach (Transform h in puntosDeHueco)

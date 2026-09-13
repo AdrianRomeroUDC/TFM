@@ -1,5 +1,12 @@
 using UnityEngine;
 
+/// <summary>
+/// Este script va sobre la cinta de entrada del HBW (el almacén), en el punto exacto donde un
+/// cajón (contenedor) cae o llega desde el transelevador. En cuanto detecta que algo ha tocado
+/// esa zona, le quita cualquier "padre" que tuviera en la escena (por ejemplo, la plataforma que
+/// lo sostenía) y activa su física real (gravedad incluida) para que se comporte como el cajón
+/// físico, que simplemente se asienta sobre la cinta y empieza a moverse por ella.
+/// </summary>
 public class CintaHBW_proxy : MonoBehaviour
 {
     // Referencia al controlador principal que gestionará el desplazamiento lineal del objeto capturado

@@ -1,5 +1,12 @@
 using UnityEngine;
 
+/// <summary>
+/// Este script va sobre el pistón empujador (pusher) que hay junto al plato giratorio del MPO.
+/// Su función es asegurarse de que, mientras el eyector real está empujando una pieza hacia la
+/// cinta de salida, esa pieza vaya "pegada" al pistón en Unity aunque el motor de físicas la
+/// hubiera dejado dormida o se hubiera despistado un instante, para que el empuje se vea siempre
+/// firme y sin piezas que se queden flotando o atascadas a medio camino.
+/// </summary>
 public class PusherTurntable_proxy : MonoBehaviour
 {
     [Header("Referencias")]
@@ -55,7 +62,8 @@ public class PusherTurntable_proxy : MonoBehaviour
         EvaluarCapturaPieza(other, "STAY");
     }
 
-    // Lógica unificada para evitar duplicar código
+    // Lógica unificada para evitar duplicar código: comprueba si la pieza detectada debe quedar
+    // "atrapada" junto al pistón mientras dura el empuje real del eyector del MPO.
     private void EvaluarCapturaPieza(Collider other, string origenEvento)
     {
         if (other.name.ToLower().Contains("pieza"))

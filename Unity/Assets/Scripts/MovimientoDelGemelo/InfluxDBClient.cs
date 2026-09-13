@@ -5,8 +5,19 @@ using System.Text;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Este script es el "puente" entre Unity y la base de datos histórica InfluxDB, donde queda
+/// guardado (en la nube, en AWS) todo lo que ha ido pasando en la fábrica real a lo largo del tiempo
+/// (cada mensaje MQTT que envían las estaciones se archiva ahí). Sirve para dos cosas:
+/// 1) Descargar un rango de fechas y reproducirlo en Unity como si fuera en directo (modo "reproducción
+///    histórica"), inyectando cada mensaje antiguo en <see cref="MQTTClient"/> y <see cref="MQTT_InterfaceClient"/>
+///    en el momento simulado correcto.
+/// 2) Descargar un histórico sin reproducirlo, solo para generar un archivo JSON de exportación
+///    (usado por <c>GenerarJSONSimulacion</c>).
+/// </summary>
 public class InfluxDBClient : MonoBehaviour
 {
+    // Patrón Singleton: solo debe existir un InfluxDBClient, accesible desde cualquier script como InfluxDBClient.Instance.
     private static InfluxDBClient instance;
     public static InfluxDBClient Instance { get { return instance; } }
 
@@ -16,6 +27,8 @@ public class InfluxDBClient : MonoBehaviour
     public string org = "fischertechnik";
     public string bucket = "factory_TFM";
 
+    // Representa una única fila del histórico: en qué instante (timestamp) se recibió qué mensaje
+    // (topic + JSON) de la fábrica real.
     public struct RegistroInflux
     {
         public DateTime timestamp;
@@ -35,11 +48,14 @@ public class InfluxDBClient : MonoBehaviour
     /// </summary>
     public IEnumerator DescargarHistoricoSinReproducir(DateTime desde, DateTime hasta, Action<List<RegistroInflux>> alFinalizar)
     {
+        // InfluxDB exige las fechas en formato UTC ISO-8601, así que convertimos antes de construir la consulta.
         string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
         string isoHasta = hasta.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
 
         string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
 
+        // Consulta en lenguaje Flux (el lenguaje de consultas de InfluxDB): pide todos los mensajes
+        // guardados en el rango de fechas indicado, ordenados por tiempo.
         string fluxQueryRango = $@"
             from(bucket: ""{bucket}"")
               |> range(start: {isoDesde}, stop: {isoHasta})
@@ -54,9 +70,9 @@ public class InfluxDBClient : MonoBehaviour
 
             request.SetRequestHeader("Authorization", "Token " + token);
             request.SetRequestHeader("Content-Type", "application/vnd.flux");
-            request.SetRequestHeader("Accept", "text/csv");
+            request.SetRequestHeader("Accept", "text/csv"); // InfluxDB devuelve los resultados en formato CSV.
 
-            yield return request.SendWebRequest();
+            yield return request.SendWebRequest(); // Esperamos la respuesta del servidor sin congelar Unity.
 
             List<RegistroInflux> registros = new List<RegistroInflux>();
 
@@ -70,10 +86,20 @@ public class InfluxDBClient : MonoBehaviour
                 Debug.LogError($"❌ [InfluxDB] Error HTTP {request.responseCode}: {request.error}\n{request.downloadHandler.text}");
             }
 
+            // Avisamos a quien nos llamó (normalmente GenerarJSONSimulacion) con la lista ya lista.
             alFinalizar?.Invoke(registros);
         }
     }
 
+    /// <summary>
+    /// Descarga un rango de histórico de InfluxDB y lo va "reproduciendo" en Unity mensaje a mensaje,
+    /// como si la fábrica estuviera enviándolos en directo, respetando el tiempo real transcurrido entre
+    /// ellos (multiplicado por la velocidad de reproducción que indique <paramref name="obtenerVelocidad"/>).
+    /// </summary>
+    /// <param name="desde">Instante inicial del histórico a reproducir.</param>
+    /// <param name="hasta">Instante final del histórico a reproducir.</param>
+    /// <param name="obtenerVelocidad">Función que devuelve la velocidad actual de reproducción (1x, 2x, pausa=0, etc.), controlada normalmente desde la interfaz.</param>
+    /// <param name="alCambiarTiempo">Callback que se llama cada frame con el "reloj simulado" actual, para poder mostrarlo en la interfaz.</param>
     public IEnumerator DescargarYReproducirHistorico(DateTime desde, DateTime hasta, Func<float> obtenerVelocidad, Action<DateTime> alCambiarTiempo)
     {
         string isoDesde = desde.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -84,6 +110,8 @@ public class InfluxDBClient : MonoBehaviour
         string url = $"{serverUrl}/api/v2/query?org={Uri.EscapeDataString(org)}";
 
         // 1. CARGAR ÚLTIMO ESTADO PREVIO
+        // Antes de reproducir el rango pedido, necesitamos saber en qué estado estaba la fábrica
+        // justo antes (por ejemplo, con qué piezas en el HBW), si no, el gemelo digital arrancaría "vacío".
         string fluxQueryPrevio = $@"
             from(bucket: ""{bucket}"")
               |> range(start: 1970-01-01T00:00:00Z, stop: {isoDesde})
@@ -108,6 +136,8 @@ public class InfluxDBClient : MonoBehaviour
                 Debug.Log($"<color=cyan>[InfluxDB] 📦 Cargando {estadosPrevios.Count} estados previos para inicializar al inicio ({desde:HH:mm:ss})...</color>");
                 foreach (var estado in estadosPrevios)
                 {
+                    // Inyectamos cada estado previo directamente, sin esperar tiempo simulado,
+                    // para que la escena arranque ya con las piezas y posiciones correctas.
                     InyectarMensaje(estado.topic, estado.payloadJson);
                 }
             }
@@ -158,12 +188,15 @@ public class InfluxDBClient : MonoBehaviour
 
             bool registradoLogPausa = false;
 
+            // Bucle principal de reproducción: avanza un "reloj simulado" según la velocidad elegida
+            // por el usuario, y va inyectando los mensajes cuyo instante ya ha sido alcanzado.
             while (segundosSimuladosTranscurridos < totalSegundosRango)
             {
                 float velActual = (obtenerVelocidad != null) ? obtenerVelocidad() : 1.0f;
 
                 if (velActual <= 0f)
                 {
+                    // Velocidad 0 = reproducción en pausa: no avanzamos el reloj ni inyectamos mensajes.
                     if (!registradoLogPausa)
                     {
                         registradoLogPausa = true;
@@ -180,6 +213,8 @@ public class InfluxDBClient : MonoBehaviour
                     Debug.Log($"<color=green>[InfluxDB] ▶️ REANUDADO: Continuando reproducción a velocidad x{velActual}.</color>");
                 }
 
+                // Avanzamos el reloj simulado según el tiempo real pasado (Time.deltaTime) multiplicado
+                // por la velocidad elegida (x1, x2, x10...), permitiendo "avance rápido" del histórico.
                 float deltaReal = Time.deltaTime;
                 segundosSimuladosTranscurridos += deltaReal * velActual;
 
@@ -188,6 +223,7 @@ public class InfluxDBClient : MonoBehaviour
 
                 alCambiarTiempo?.Invoke(tiempoSimuladoLocal);
 
+                // Inyectamos todos los mensajes cuyo instante ya haya sido "alcanzado" por el reloj simulado.
                 while (idxMensaje < registros.Count)
                 {
                     DateTime tsMensajeLocal = registros[idxMensaje].timestamp.ToLocalTime();
@@ -204,9 +240,11 @@ public class InfluxDBClient : MonoBehaviour
                     }
                 }
 
-                yield return null;
+                yield return null; // Esperamos al siguiente frame antes de seguir avanzando el reloj.
             }
 
+            // Si sobrara algún mensaje por redondeos de tiempo, lo inyectamos igualmente al terminar,
+            // para no perder ningún evento del histórico.
             while (idxMensaje < registros.Count)
             {
                 var reg = registros[idxMensaje];
@@ -219,6 +257,9 @@ public class InfluxDBClient : MonoBehaviour
         }
     }
 
+    // Convierte la respuesta CSV cruda que devuelve InfluxDB en una lista de RegistroInflux fáciles de usar.
+    // InfluxDB devuelve varias "tablas" seguidas en el mismo CSV, cada una con su propia fila de cabecera,
+    // por eso hay que ir detectando dónde están las columnas "_time", "_value", "topic", etc. en cada bloque.
     private List<RegistroInflux> ParsearCSVDirecto(string csvData)
     {
         List<RegistroInflux> lista = new List<RegistroInflux>();
@@ -228,12 +269,14 @@ public class InfluxDBClient : MonoBehaviour
 
         foreach (string linea in lineas)
         {
+            // Las líneas que empiezan por "#" son metadatos internos de InfluxDB, no datos útiles.
             if (linea.StartsWith("#") || string.IsNullOrWhiteSpace(linea)) continue;
 
             List<string> columnas = ParseLineaCSV(linea);
 
             if (columnas.Contains("_time") || columnas.Contains("_value"))
             {
+                // Esta línea es una cabecera nueva: recalculamos en qué posición está cada columna.
                 colTime = columnas.IndexOf("_time");
                 colValue = columnas.IndexOf("_value");
                 colTopic = columnas.IndexOf("topic");
@@ -258,6 +301,8 @@ public class InfluxDBClient : MonoBehaviour
                     }
                     else if (colMeasurement != -1 && columnas.Count > colMeasurement)
                     {
+                        // Si el registro no trae el topic explícito, lo deducimos a partir del nombre
+                        // de la "measurement" (la tabla de InfluxDB donde se guardó el dato).
                         string m = columnas[colMeasurement];
                         if (m == "bme680" || m == "bm680") topicStr = "i/bme680";
                         else if (m == "ldr") topicStr = "i/ldr";
@@ -280,6 +325,8 @@ public class InfluxDBClient : MonoBehaviour
         return lista;
     }
 
+    // Separa una línea CSV en sus columnas, respetando los valores que van entre comillas
+    // (necesario porque el JSON de cada mensaje puede contener comas dentro de las comillas).
     private List<string> ParseLineaCSV(string linea)
     {
         List<string> resultado = new List<string>();
@@ -293,6 +340,7 @@ public class InfluxDBClient : MonoBehaviour
             {
                 if (dentroDeComillas && i + 1 < linea.Length && linea[i + 1] == '"')
                 {
+                    // Dos comillas seguidas dentro de un valor representan una comilla "escapada".
                     sb.Append('"');
                     i++;
                 }
@@ -315,21 +363,28 @@ public class InfluxDBClient : MonoBehaviour
         return resultado;
     }
 
+    // Reenvía un mensaje histórico (topic + JSON) a los clientes MQTT de Unity, exactamente igual
+    // que si hubiera llegado en directo desde la fábrica real por la red.
     private void InyectarMensaje(string topic, string payloadJson)
     {
         if (string.IsNullOrEmpty(payloadJson)) return;
 
+        // Si el usuario ha pausado la reproducción desde el menú, no inyectamos nada.
         if (UI_ControladorMenu.Instance != null && UI_ControladorMenu.Instance.EsPausado)
         {
             return;
         }
 
+        // Normalizamos distintas variantes de nombre de topic que pueden venir guardadas en InfluxDB
+        // a los nombres de topic "oficiales" que esperan MQTTClient y MQTT_InterfaceClient.
         if (topic == "stock" || topic == "f_i_stock") topic = "f/i/stock";
         else if (topic == "ldr" || topic == "i_ldr") topic = "i/ldr";
         else if (topic == "bme680" || topic == "bm680" || topic == "i_bme680" || topic == "i/bm680") topic = "i/bme680";
 
         Debug.Log($"<color=white>[InfluxDB] 📩 Evento Inyectado -> Topic: <b>{topic}</b></color>");
 
+        // Reenviamos el mensaje tanto al cliente MQTT "principal" (que mueve el gemelo digital 3D)
+        // como al cliente MQTT de la interfaz (que actualiza paneles y gráficas en pantalla).
         if (MQTTClient.Instance != null && MQTTClient.Instance.isActiveAndEnabled)
         {
             MQTTClient.Instance.ProcesarMensajeExterno(topic, payloadJson);

@@ -1,12 +1,20 @@
 using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// Controla el carro (transelevador) del almacén HBW: la pieza mecánica que se mueve por dentro de
+/// la estantería 3x3 para guardar o sacar cajones. Tiene 3 movimientos independientes -horizontal
+/// (columna A/B/C), vertical (fila 1/2/3) y extensión (el brazo que se estira para meter/sacar el
+/// cajón del hueco)- y este script se suscribe al evento de <see cref="MQTTClient"/> que informa de
+/// esos 3 valores reales para mover el modelo 3D exactamente igual que la máquina física, además de
+/// gestionar cuándo el carro "coge" o "suelta" un cajón mientras viaja.
+/// </summary>
 public class ControladorHBWposition_mqtt : MonoBehaviour
 {
-    // Historial y almacenamiento de los últimos valores recibidos para los ejes Horizontal, Vertical y Extensión
+    // Últimos valores recibidos por MQTT para cada eje: Horizontal, Vertical y Extensión (en unidades del PLC real).
     private float lastH, lastV, lastE;
 
-    // Control de flanco para disparar la animación del brazo telescópico de forma sincronizada
+    // Aviso de que ha llegado una orden nueva de estirar/recoger el brazo, para procesarla en el siguiente Update().
     private bool hayNuevaOrdenEstirar = false;
 
     [Header("Referencias de los Ejes")]
@@ -29,16 +37,16 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     [ContextMenuItem("Capturar", "CapturarExtRec")] public float unityE_Recogido;
 
     [Header("Ajustes de Animación")]
-    public float lerpSpeed = 5f;        // Velocidad de suavizado para el movimiento de los carros de los ejes
-    public float tiempoAnimacion = 4f;   // Tiempo en segundos que toma la extensión telescópica completa
+    public float lerpSpeed = 5f;        // Velocidad de suavizado del movimiento de los carros de cada eje.
+    public float tiempoAnimacion = 4f;   // Segundos que tarda el brazo en estirarse o recogerse del todo.
 
     [Header("Estado del Agarre")]
-    public Transform objetoCogido = null;      // Guarda la referencia del contenedor que se desplaza con la máquina
+    public Transform objetoCogido = null;      // Cajón que el carro lleva agarrado ahora mismo mientras se desplaza (si lleva alguno).
     public bool esOperacionDeEntrega = false;
-    private Transform padreOriginalEstante = null;   // Almacén de respaldo para el padre en la estantería
-    private Coroutine corrutinaExtension;          // Mantiene la referencia de la corrutina activa para evitar duplicidades
+    private Transform padreOriginalEstante = null;   // Guarda dónde estaba colocado el cajón en la estantería, por si hay que devolverlo.
+    private Coroutine corrutinaExtension;          // Referencia a la animación del brazo en marcha, para poder cancelarla si llega una orden nueva.
 
-    // --- FUNCIONES DE CAPTURA PARA EL INSPECTOR (Menús contextuales de conveniencia) ---
+    // --- BOTONES DE CAPTURA PARA EL INSPECTOR (sirven para calibrar a mano los límites de cada eje) ---
     void CapturarHMin() => unityH_Min = ejeHorizontal.localPosition.z;
     void CapturarHMax() => unityH_Max = ejeHorizontal.localPosition.z;
     void CapturarVMin() => unityV_Min = ejeVertical.localPosition.y;
@@ -48,38 +56,43 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
 
     void Start() { StartCoroutine(SuscripcionSegura()); }
 
+    // Espera a que el cliente MQTT ya exista antes de suscribirse, para no engancharse a un evento que todavía no está disponible.
     IEnumerator SuscripcionSegura()
     {
         while (MQTTClient.Instance == null) yield return null;
 
-        // Vinculación del método de actualización al evento de recepción de posiciones MQTT del HBW
+        // A partir de aquí, cada vez que el almacén real reporte una nueva posición del carro, se llama a ActualizarPosicionDesdeMQTT.
         MQTTClient.Instance.OnHBWPositionUpdateEvent += ActualizarPosicionDesdeMQTT;
         Debug.Log("<color=green>HBW suscrito correctamente</color>");
     }
 
+    // Guarda la posición real que acaba de reportar el carro del almacén; el movimiento suave del
+    // modelo 3D hacia esa posición se hace después, en Update().
     private void ActualizarPosicionDesdeMQTT(float hor, float vert, float ext)
     {
-        lastH = hor;   // Guardamos la nueva meta del eje Horizontal
-        lastV = vert;  // Guardamos la nueva meta del eje Vertical
+        lastH = hor;   // Nueva posición objetivo del eje Horizontal (columna A/B/C).
+        lastV = vert;  // Nueva posición objetivo del eje Vertical (fila 1/2/3).
 
-        // Detección de flanco o comandos discretos para el brazo extractor (-512 = Estirar, 512 = Recoger)
+        // El brazo extractor real no manda una posición continua, sino dos órdenes discretas:
+        // -512 significa "estirar el brazo" y 512 significa "recoger el brazo". Solo reaccionamos
+        // cuando llega una de esas dos órdenes y es distinta de la que ya teníamos guardada.
         if (ext != lastE && (ext == -512 || ext == 512))
         {
             lastE = ext;
-            hayNuevaOrdenEstirar = true; // Izamos la bandera para procesarla en el siguiente frame del Update
+            hayNuevaOrdenEstirar = true; // Marcamos que hay que animar el brazo en el próximo Update().
         }
         else if (ext == 0) lastE = 0;
     }
 
     void Update()
     {
-        // Si hay una orden pendiente de extensión o retracción del brazo, ejecutamos la rutina
+        // Si ha llegado una orden nueva de estirar/recoger el brazo desde la fábrica real, la procesamos ahora.
         if (hayNuevaOrdenEstirar)
         {
             hayNuevaOrdenEstirar = false;
 
-            // SI VAMOS A ESTIRAR: Si ya teníamos un objeto enganchado, es una ENTREGA. 
-            // Si no teníamos nada, es una RECOGIDA.
+            // Si la orden es "ESTIRAR": cuando el carro ya llevaba un cajón agarrado, significa que lo
+            // está DEJANDO en el hueco (entrega); si no llevaba nada, significa que está a punto de COGER uno.
             if (lastE == -512)
             {
                 esOperacionDeEntrega = (objetoCogido != null);
@@ -90,23 +103,23 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
 
         float dt = Time.deltaTime;
 
-        // --- INTERPOLACIÓN SUAVE DEL EJE HORIZONTAL ---
+        // --- MOVIMIENTO SUAVE DEL EJE HORIZONTAL (columna A/B/C del almacén) ---
         if (ejeHorizontal)
         {
-            float tH = Mathf.InverseLerp(plcH_Min, plcH_Max, lastH); // Normalizamos valor PLC a rango [0,1]
-            float targetZ = Mathf.Lerp(unityH_Min, unityH_Max, tH);  // Mapeamos el [0,1] al rango local de Unity
+            float tH = Mathf.InverseLerp(plcH_Min, plcH_Max, lastH); // Convertimos la posición real del PLC a un valor entre 0 y 1.
+            float targetZ = Mathf.Lerp(unityH_Min, unityH_Max, tH);  // Traducimos ese 0-1 a la posición equivalente en el modelo 3D.
             Vector3 p = ejeHorizontal.localPosition;
-            p.z = Mathf.Lerp(p.z, targetZ, lerpSpeed * dt);          // Aplicamos un suavizado Lerp en el eje Z
+            p.z = Mathf.Lerp(p.z, targetZ, lerpSpeed * dt);          // Desplazamos el carro suavemente hacia esa posición en el eje Z.
             ejeHorizontal.localPosition = p;
         }
 
-        // --- INTERPOLACIÓN SUAVE DEL EJE VERTICAL ---
+        // --- MOVIMIENTO SUAVE DEL EJE VERTICAL (fila 1/2/3 del almacén) ---
         if (ejeVertical)
         {
-            float tV = Mathf.InverseLerp(plcV_Min, plcV_Max, lastV); // Normalizamos valor PLC a rango [0,1]
-            float targetY = Mathf.Lerp(unityV_Min, unityV_Max, tV);  // Mapeamos el [0,1] al rango local de Unity
+            float tV = Mathf.InverseLerp(plcV_Min, plcV_Max, lastV); // Convertimos la posición real del PLC a un valor entre 0 y 1.
+            float targetY = Mathf.Lerp(unityV_Min, unityV_Max, tV);  // Traducimos ese 0-1 a la posición equivalente en el modelo 3D.
             Vector3 p = ejeVertical.localPosition;
-            p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);          // Aplicamos un suavizado Lerp en el eje Y
+            p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);          // Desplazamos el carro suavemente hacia esa posición en el eje Y.
             ejeVertical.localPosition = p;
 
             // Bloque original comentado para prevenir caídas accidentales basándose puramente en altura:
@@ -114,16 +127,22 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         }
     }
 
-    // --- MÉTODOS DE CAPTURA Y ANIMACIÓN ---
+    // --- MÉTODOS DE AGARRE Y ANIMACIÓN DEL BRAZO ---
+
+    /// <summary>
+    /// Se llama cuando el carro real acaba de coger un cajón de la estantería: hace que el cajón 3D
+    /// pase a moverse junto con la plataforma del carro (como si estuviera agarrado de verdad) y
+    /// apaga su física para que no se caiga durante el viaje.
+    /// </summary>
     public void ProcesarCaptura(Transform contenedor, Transform plataforma)
     {
-        // ASIGNACIÓN CRUCIAL: Guardamos la referencia para saber qué objeto tenemos cargado bajo custodia
+        // Guardamos qué cajón lleva el carro agarrado ahora mismo.
         objetoCogido = contenedor;
 
-        // Forzamos a que el contenedor cambie de jerarquía y pase a ser hijo directo de la plataforma móvil (el proxy)
+        // El cajón pasa a depender del carro (su plataforma), para que se mueva pegado a él por la estantería.
         contenedor.SetParent(plataforma);
 
-        // Volvemos el contenedor cinemático y anulamos inercias previas para evitar vibraciones en el viaje
+        // Apagamos la física normal del cajón y anulamos cualquier velocidad previa, para que viaje sin temblores ni caídas.
         if (contenedor.TryGetComponent<Rigidbody>(out Rigidbody rb))
         {
             rb.isKinematic = true;
@@ -132,14 +151,15 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         }
     }
 
-    // Nuevo método público para que el cajón le avise al controlador que ya llegó a su estante
+    // El propio cajón (su proxy) avisa aquí al carro cuando ya ha quedado bien colocado en su hueco,
+    // para que el carro sepa que puede retirarse sin llevárselo.
     public void NotificarCajonLiberado()
     {
-        objetoCogido = null; // Vaciamos la variable de custodia liberando el brazo mecánicamente
+        objetoCogido = null; // El carro deja de llevar ningún cajón agarrado.
         Debug.Log("<color=yellow><b>[Controlador HBW]:</b> El transelevador registra que ya no lleva ningún cajón y se retirará solo.</color>");
     }
 
-    // Método de seguridad para liberar forzadamente el cajón restableciendo sus componentes físicos nativos
+    // Método de emergencia para forzar la suelta del cajón, devolviéndole su física normal (por si algo falla en el proceso habitual).
     private void SoltarCajon()
     {
         if (objetoCogido != null)
@@ -154,14 +174,14 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         }
     }
 
-    // Método puente para iniciar la corrutina de movimiento del brazo interrumpiendo cualquier proceso anterior
+    // Arranca la animación de estirar/recoger el brazo, cancelando primero cualquier animación anterior que siguiera en marcha.
     void IniciarAnimacionExtension(float d)
     {
         if (corrutinaExtension != null) StopCoroutine(corrutinaExtension);
         corrutinaExtension = StartCoroutine(AnimarBrazo(d));
     }
 
-    // Corrutina que traslada el brazo extractor frame a frame simulando el pistón telescópico
+    // Corrutina que mueve el brazo extractor poco a poco, frame a frame, imitando el movimiento del pistón telescópico real.
     IEnumerator AnimarBrazo(float d)
     {
         float t = 0;
@@ -170,12 +190,12 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         {
             t += Time.deltaTime;
             float progreso = t / tiempoAnimacion;
-            // Interpolación suavizada usando SmoothStep para dar un efecto de aceleración y desaceleración elegante
+            // Usamos SmoothStep para que el brazo acelere al empezar y frene al llegar, en vez de moverse a velocidad constante.
             float vX = Mathf.Lerp(inicioX, d, Mathf.SmoothStep(0, 1, progreso));
             ejeExtension.localPosition = new Vector3(vX, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
             yield return null;
         }
-        // Aseguramos la asignación matemática exacta en la posición final al concluir el bucle
+        // Al terminar la animación, fijamos la posición final exacta para que no quede ningún desajuste por redondeo.
         ejeExtension.localPosition = new Vector3(d, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
     }
 }

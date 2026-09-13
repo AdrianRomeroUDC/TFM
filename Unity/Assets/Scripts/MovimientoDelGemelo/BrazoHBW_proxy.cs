@@ -1,11 +1,18 @@
 using UnityEngine;
 
+/// <summary>
+/// Este script va colocado sobre el brazo extractor (la "horquilla") del transelevador del HBW,
+/// el almacén automático. Su trabajo es muy sencillo: vigilar con un sensor de contacto (trigger)
+/// si el brazo ha llegado justo al lado de un cajón (contenedor) del estante, y en ese momento
+/// avisar al controlador principal del HBW para que lo recoja de verdad, igual que hace el
+/// transelevador real cuando va a sacar una pieza de su hueco.
+/// </summary>
 public class BrazoHBW_proxy : MonoBehaviour
 {
     [Header("Referencia al Controlador")]
     public ControladorHBWposition_mqtt scriptPrincipal;
 
-    // Disparador que detecta la cercanía del brazo extractor con el contenedor
+    // Este método se llama solo cuando el brazo (que lleva un collider en modo "trigger") toca a otro objeto.
     private void OnTriggerEnter(Collider other)
     {
         // Filtramos la detección asegurando que el objeto contenga la palabra clave de un contenedor

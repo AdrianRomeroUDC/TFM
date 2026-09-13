@@ -1,15 +1,26 @@
 using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// Controla el gemelo digital del VGR (Vacuum Gripper Robot): el robot cartesiano de 3 ejes con
+/// ventosa que traslada piezas entre todas las estaciones de la fábrica (HBW, DPS, SLD, MPO).
+/// Se suscribe a los eventos de <see cref="MQTTClient"/> para mover sus 3 ejes (rotación, altura,
+/// extensión) exactamente igual que el robot real, y para agarrar/soltar piezas 3D en Unity cuando
+/// la ventosa real se activa o desactiva. Además, incluye varios "sistemas antifallo" que comprueban,
+/// usando los sensores reales de otras estaciones (DSI de la <see cref="ControladorDPS_mqtt"/>, los
+/// sensores de color de <see cref="ControladorCilindrosSLD_mqtt"/> y el sensor del horno de
+/// <see cref="ControladorHorno_mqtt"/>), si el agarre o la entrega de una pieza ha funcionado de
+/// verdad en la máquina física, para que el gemelo digital nunca se desincronice de la realidad.
+/// </summary>
 public class ControladorVGR_mqtt : MonoBehaviour
 {
-    private float lastRot, lastVert, lastExt;
-    private bool estadoGripPendiente = false;
-    private bool cambioGripDetectado = false;
+    private float lastRot, lastVert, lastExt; // Última posición de los 3 ejes recibida por MQTT (en unidades del PLC real).
+    private bool estadoGripPendiente = false; // Nuevo estado de la ventosa recibido, pendiente de aplicar en Update().
+    private bool cambioGripDetectado = false; // Aviso de que ha llegado un cambio de ventosa que aún no se ha procesado.
 
-    private Transform piezaCercana;
-    private Transform piezaEnganchada;
-    private ContenedorHBW_proxy contenedorActual;
+    private Transform piezaCercana; // Pieza que está tocando el radar de la ventosa ahora mismo (pero no necesariamente agarrada).
+    private Transform piezaEnganchada; // Pieza que está actualmente "pegada" a la ventosa (agarrada de verdad).
+    private ContenedorHBW_proxy contenedorActual; // Contenedor del HBW que hay justo debajo de la ventosa (si lo hay).
 
     [Header("Referencias")]
     public Transform ejeRotacion;
@@ -29,11 +40,15 @@ public class ControladorVGR_mqtt : MonoBehaviour
     public bool mostrarGizmosVentosa = true;
 
     [Header("Calibración PLC")]
+    // Valores mínimo/máximo que envía el PLC (autómata) real para cada eje: sirven para convertir
+    // esas unidades "crudas" del robot físico a la escala de metros/grados que usa Unity.
     public float plcRot_Min = 1395; public float plcRot_Max = 21;
     public float plcVert_Min = 20; public float plcVert_Max = 1272;
     public float plcExt_Min = 40; public float plcExt_Max = 1210;
 
     [Header("Calibración Unity")]
+    // Valores equivalentes pero en el mundo de Unity, capturados a mano desde el editor con los
+    // botones de contexto de abajo (por eso son [ContextMenuItem]: aparecen como botón en el Inspector).
     [ContextMenuItem("Capturar", "CapturarRotMin")] public float unityRot_Min;
     [ContextMenuItem("Capturar", "CapturarRotMax")] public float unityRot_Max;
     [ContextMenuItem("Capturar", "CapturarVertMin")] public float unityVert_Min;
@@ -42,9 +57,12 @@ public class ControladorVGR_mqtt : MonoBehaviour
     [ContextMenuItem("Capturar", "CapturarExtMax")] public float unityExt_Max;
 
     [Header("Ajustes")]
-    public float lerpSpeed = 5f;
+    public float lerpSpeed = 5f; // Velocidad de suavizado del movimiento (más alto = el gemelo digital "alcanza" antes la posición real).
 
     // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD DSI (MUNDIAL) ---
+    // Tras agarrar una pieza que viene de la entrada DSI de la DPS, vigilamos si el sensor real
+    // dsi_sensor sigue activo cuando el brazo ya se ha alejado: si sigue activo es que el agarre
+    // ha fallado en la máquina real (la pieza se quedó atrás) y hay que corregir el gemelo digital.
     private bool dsiSensorActivo = false;
     private bool verificarFalloAgarreDSI = false;
     private float yMundialAlAgarrar = 0f;
@@ -52,6 +70,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private Quaternion rotacionLocalOriginalDSI;
 
     // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD SLD (RAMPAS BLANCA/ROJA/AZUL) ---
+    // Mismo principio que el bloque DSI, pero para piezas agarradas desde las rampas de salida
+    // de la estación clasificadora SLD (una por cada color: blanco, rojo, azul).
     private bool verificarFalloAgarreSLD = false;
     private string colorRampaMonitoreada = "";
     private Vector3 posicionLocalOriginalSLD;
@@ -60,15 +80,19 @@ public class ControladorVGR_mqtt : MonoBehaviour
     private float yMundialAlAgarrarSLD = 0f;
 
     // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN HORNO ---
+    // Al soltar una pieza dentro del horno del MPO, comprobamos que el sensor real del horno
+    // detecte la pieza; si no la detecta, es que la entrega ha fallado y quitamos la pieza fantasma.
     private bool verificarFalloEntregaHorno = false;
     private float yMundialAlSoltarHorno = 0f;
     private Transform piezaMonitoreadaHorno = null;
 
-    // --- 🎯 VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN DSO ---
+    // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD ENTREGA EN DSO ---
     private bool verificarFalloEntregaDSO = false;
     private float yMundialAlSoltarDSO = 0f;
     private Transform piezaMonitoreadaDSO = null;
 
+    // Métodos auxiliares que se ejecutan desde el botón del Inspector para "fotografiar" la posición
+    // actual del modelo 3D en Unity y guardarla como referencia de calibración (unityRot_Min, etc.).
     void CapturarRotMin() => unityRot_Min = ejeRotacion.localEulerAngles.y;
     void CapturarRotMax() => unityRot_Max = ejeRotacion.localEulerAngles.y;
     void CapturarVertMin() => unityVert_Min = ejeVertical.localPosition.y;
@@ -81,6 +105,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
         StartCoroutine(SuscripcionSegura());
     }
 
+    // Espera a que MQTTClient exista en la escena antes de suscribirse a sus eventos, para evitar
+    // errores de referencia nula si este script se inicializa antes que el cliente MQTT.
     IEnumerator SuscripcionSegura()
     {
         while (MQTTClient.Instance == null) yield return null;
@@ -91,6 +117,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
         Debug.Log("<color=green><b>[VGR SUSCRIPCIÓN]:</b> VGR Suscrito correctamente.</color>");
     }
 
+    // Nos damos de baja de todos los eventos al desactivar el objeto, para no dejar suscripciones
+    // "fantasma" que sigan intentando llamar a métodos de un objeto ya inactivo.
     private void OnDisable()
     {
         if (MQTTClient.Instance != null)
@@ -103,6 +131,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
     private void Update()
     {
+        // Si ha llegado un cambio de ventosa (agarrar/soltar) desde MQTT, lo procesamos ahora,
+        // ya en el hilo principal de Unity y de forma controlada.
         if (cambioGripDetectado)
         {
             ProcesarLogicaGrip(estadoGripPendiente);
@@ -111,6 +141,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
         float speed = lerpSpeed * Time.deltaTime;
 
+        // Movemos suavemente (con Slerp/Lerp) cada eje del robot hacia la posición real recibida
+        // por MQTT, convirtiendo primero las unidades del PLC a la escala del modelo 3D de Unity.
         if (ejeRotacion)
         {
             float t = Mathf.InverseLerp(plcRot_Min, plcRot_Max, lastRot);
@@ -133,6 +165,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
 
         // --- 1. SISTEMA ANTIFALLO DSI EN ESPACIO MUNDIAL ---
+        // Comprobamos si el brazo ya se ha alejado lo suficiente de la posición donde agarró
+        // la pieza (más de 2 cm reales) para poder confirmar si el agarre salió bien o mal.
         if (verificarFalloAgarreDSI)
         {
             if (piezaEnganchada == null)
@@ -149,6 +183,9 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
                     if (dsiSensorActivo)
                     {
+                        // Si el sensor real dsi_sensor sigue activo, significa que la pieza física
+                        // NO llegó a subir con la ventosa real: el gemelo digital debe deshacer el
+                        // agarre y devolver la pieza virtual exactamente a su posición original.
                         Debug.Log("<color=red><b>[VGR FALLO AGARRE DSI]:</b> ¡FALLO! dsi_sensor = True. Devolviendo pieza virtual a la posición de spawn exacta.</color>");
 
                         ControladorDPS_mqtt dps = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
@@ -168,6 +205,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                     else
                     {
+                        // Sensor inactivo = la pieza real subió con la ventosa: el agarre fue correcto.
                         Debug.Log("<color=green><b>[VGR AGARRE ÉXITO DSI]:</b> dsi_sensor = False. Agarre confirmado.</color>");
                     }
 
@@ -177,6 +215,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
 
         // --- 2. SISTEMA ANTIFALLO SLD (RAMPAS BLANCA/ROJA/AZUL) EN ESPACIO MUNDIAL ---
+        // Igual que el bloque anterior, pero comprobando el sensor de color correspondiente
+        // de la rampa de la SLD desde la que se agarró la pieza.
         if (verificarFalloAgarreSLD)
         {
             if (piezaEnganchada == null)
@@ -206,6 +246,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
                     if (sensorRampaActivo)
                     {
+                        // El sensor de la rampa sigue viendo la pieza: el agarre real falló, así que
+                        // devolvemos la pieza virtual a su rampa de origen exacta.
                         Debug.Log($"<color=red><b>[VGR FALLO AGARRE SLD]:</b> ¡FALLO! Sensor {colorRampaMonitoreada} = True. Devolviendo pieza a la rampa de origen.</color>");
 
                         if (padreOriginalSLD != null)
@@ -234,6 +276,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
 
         // --- 3. SISTEMA ANTIFALLO ENTREGA EN HORNO (AL SUBIR EL VGR) ---
+        // Tras soltar una pieza en el horno del MPO, esperamos a que el brazo suba y comprobamos
+        // si el sensor real del horno la detecta; si no, la pieza virtual se elimina (nunca llegó).
         if (verificarFalloEntregaHorno)
         {
             float deltaYMundialHorno = Mathf.Abs(ejeVertical.position.y - yMundialAlSoltarHorno);
@@ -255,6 +299,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                     else if (horno != null)
                     {
+                        // Por si perdimos la referencia directa, buscamos manualmente cualquier
+                        // pieza que haya quedado colgando dentro de la plataforma real del horno.
                         Transform platReal = horno.BuscarPlataformaRealHijo();
                         if (platReal != null)
                         {
@@ -291,11 +337,14 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
+    // Guarda la última posición de los 3 ejes recibida por MQTT; el suavizado real ocurre en Update().
     private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
     {
         lastRot = rot; lastVert = vert; lastExt = ext;
     }
 
+    // Marca que ha llegado un cambio de estado de la ventosa (agarrar/soltar), para procesarlo
+    // de forma segura en el siguiente Update().
     private void RecibirGripMQTT(bool activo)
     {
         estadoGripPendiente = activo;
@@ -316,12 +365,21 @@ public class ControladorVGR_mqtt : MonoBehaviour
     }
     public void SetPiezaCercana(Transform pieza) => piezaCercana = pieza;
 
+    /// <summary>
+    /// Aplica de verdad el cambio de estado de la ventosa (llamado desde Update() cuando llega un
+    /// mensaje MQTT nuevo): si se activa, busca y "engancha" físicamente la pieza más cercana bajo
+    /// la ventosa; si se desactiva, suelta la pieza y decide dónde debe quedar en la escena 3D
+    /// (dentro de un hueco del HBW, cayendo por gravedad, etc.), además de arrancar los controles
+    /// de calidad correspondientes según de dónde venga o hacia dónde vaya la pieza.
+    /// </summary>
     private void ProcesarLogicaGrip(bool activo)
     {
         if (activo)
         {
+            // --- AGARRAR PIEZA ---
             if (puntoAnclajeVentosa != null && piezaEnganchada == null)
             {
+                // Buscamos con una esfera de físicas (radar) si hay alguna pieza justo debajo de la ventosa.
                 Vector3 centroBusquedaMundial = puntoAnclajeVentosa.TransformPoint(offsetBusquedaVentosa);
 
                 Collider[] collidersEnVentosa = Physics.OverlapSphere(centroBusquedaMundial, radioBusquedaVentosa);
@@ -330,6 +388,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     Transform objetoActual = col.transform;
                     Transform piezaReal = null;
 
+                    // Subimos por la jerarquía de objetos hasta encontrar el que representa la "pieza"
+                    // en sí (y no, por ejemplo, el cajón o contenedor que la sostiene).
                     while (objetoActual != null)
                     {
                         if (objetoActual.name.ToLower().StartsWith("pieza")) { piezaReal = objetoActual; break; }
@@ -344,7 +404,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
             if (piezaEnganchada != null)
             {
-                // A. VERIFICACIÓN DSI
+                // A. VERIFICACIÓN DSI: si la pieza venía de la plataforma de entrada de la DPS,
+                // activamos el control de calidad que vigilará el sensor dsi_sensor real.
                 bool esDeDSI = piezaEnganchada.name.ToLower().Contains("dsi") ||
                                (piezaEnganchada.parent != null && piezaEnganchada.parent.name.ToLower().Contains("dsi"));
 
@@ -359,7 +420,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     Debug.Log($"<color=orange><b>[VGR MONITOREO DSI]:</b> Altura inicial: {yMundialAlAgarrar:F6}. Posición original memorizada: {posicionLocalOriginalDSI}.</color>");
                 }
 
-                // B. VERIFICACIÓN SLD (RAMPAS BLANCA, ROJA, AZUL)
+                // B. VERIFICACIÓN SLD (RAMPAS BLANCA, ROJA, AZUL): si la pieza venía de una de las
+                // rampas de salida de la clasificadora, activamos el control de calidad correspondiente.
                 ControladorCilindrosSLD_mqtt sldScript = Object.FindFirstObjectByType<ControladorCilindrosSLD_mqtt>();
                 Transform padreActual = piezaEnganchada.parent;
 
@@ -387,6 +449,9 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                 }
 
+                // Convertimos la pieza en cinemática (no le afecta la física) para que se mueva
+                // pegada a la ventosa en vez de caer por gravedad, y activamos sus colliders como
+                // "trigger" para que no choque físicamente contra otros objetos mientras viaja.
                 Rigidbody rb = piezaEnganchada.GetComponent<Rigidbody>();
                 if (rb == null) rb = piezaEnganchada.gameObject.AddComponent<Rigidbody>();
                 rb.isKinematic = true;
@@ -395,6 +460,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
                 BoxCollider[] colliders = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
                 foreach (BoxCollider col in colliders) if (col != null) col.isTrigger = true;
 
+                // "Enganchamos" la pieza a la ventosa: la hacemos hija del punto de anclaje y la
+                // colocamos en la posición/rotación exactas configuradas para el agarre.
                 piezaEnganchada.SetParent(puntoAnclajeVentosa);
                 piezaEnganchada.position = puntoAnclajeVentosa.position;
                 piezaEnganchada.rotation = Quaternion.Euler(rotacionEnPinza);
@@ -404,8 +471,11 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
         else
         {
+            // --- SOLTAR PIEZA ---
             if (piezaEnganchada == null && puntoAnclajeVentosa != null)
             {
+                // Por si acaso perdimos la referencia, buscamos entre los hijos directos de la
+                // ventosa alguno que sea una pieza (para no dejar piezas "huérfanas" sin soltar bien).
                 foreach (Transform hijo in puntoAnclajeVentosa)
                 {
                     if (hijo.name.ToLower().Contains("pieza")) { piezaEnganchada = hijo; break; }
@@ -416,7 +486,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
             {
                 Transform piezaASoltar = piezaEnganchada;
 
-                // C. DETECCIÓN Y MONITOREO DE ENTREGA EN EL HORNO
+                // C. DETECCIÓN Y MONITOREO DE ENTREGA EN EL HORNO: si soltamos la pieza cerca de la
+                // plataforma real del horno, activamos el control de calidad de entrega en el horno.
                 ControladorHorno_mqtt hornoScript = Object.FindFirstObjectByType<ControladorHorno_mqtt>();
                 if (hornoScript != null)
                 {
@@ -435,7 +506,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                 }
 
-                // 🎯 D. DETECCIÓN Y MONITOREO DE ENTREGA EN LA PLATAFORMA DSO
+                // 🎯 D. DETECCIÓN Y MONITOREO DE ENTREGA EN LA PLATAFORMA DSO: igual que el bloque
+                // anterior, pero para la plataforma de salida de piezas terminadas de la DPS.
                 ControladorDPS_mqtt dpsScript = Object.FindFirstObjectByType<ControladorDPS_mqtt>();
                 if (dpsScript != null && dpsScript.plataformaDSO != null)
                 {
@@ -450,6 +522,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     }
                 }
 
+                // Buscamos si justo debajo de la pieza hay un hueco/contenedor del HBW donde deba encajar.
                 ContenedorHBW_proxy destinoFinal = contenedorActual;
                 if (destinoFinal == null)
                 {
@@ -465,10 +538,13 @@ public class ControladorVGR_mqtt : MonoBehaviour
 
                 if (destinoFinal != null)
                 {
+                    // Hay un hueco del HBW debajo: encajamos la pieza directamente ahí.
                     destinoFinal.AcoplarPiezaDirecto(piezaEnganchada);
                 }
                 else
                 {
+                    // No hay ningún contenedor debajo: dejamos que la pieza caiga con física normal
+                    // (gravedad activada) en el lugar donde se soltó.
                     piezaEnganchada.position += new Vector3(0f, 0.025f, 0f);
                     BoxCollider[] allCols = piezaEnganchada.GetComponentsInChildren<BoxCollider>();
                     foreach (BoxCollider c in allCols) if (c != null) c.isTrigger = false;
@@ -479,6 +555,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
                     rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
                 }
 
+                // Reiniciamos todo el estado del agarre para quedar listos para el siguiente ciclo.
                 contenedorActual = null;
                 piezaEnganchada = null;
                 piezaCercana = null;
@@ -488,6 +565,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
+    // Detecta cuándo una pieza entra en el radar de la ventosa (útil para depuración/gizmos).
     private void OnTriggerEnter(Collider other)
     {
         if (other.name.ToLower().Contains("pieza")) SetPiezaCercana(other.transform);
@@ -498,6 +576,8 @@ public class ControladorVGR_mqtt : MonoBehaviour
         if (other.name.ToLower().Contains("pieza") && piezaEnganchada == null) SetPiezaCercana(null);
     }
 
+    // Dibuja ayudas visuales en el editor de Unity (solo se ven en la vista de Escena, no en el
+    // juego real) para poder calibrar y depurar el radar de agarre y los sistemas antifallo.
     void OnDrawGizmos()
     {
         if (mostrarGizmosVentosa && puntoAnclajeVentosa != null)

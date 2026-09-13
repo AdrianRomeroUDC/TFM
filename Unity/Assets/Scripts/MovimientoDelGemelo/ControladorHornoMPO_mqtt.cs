@@ -2,6 +2,21 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Controla el gemelo digital del horno de la estación MPO (Multi-Processing Oven): la puerta que
+/// abre/cierra, la luz interior, y la pequeña plataforma que entra y sale del horno llevando la pieza
+/// a hornear. Se suscribe a <see cref="MQTTClient.OnHornoUpdateEvent"/> para recibir en tiempo real
+/// las órdenes del PLC (autómata) real y mueve los objetos 3D exactamente igual que la máquina física.
+/// También expone la propiedad pública <see cref="SensorHornoActivo"/> y el método público
+/// <see cref="BuscarPlataformaRealHijo"/>, que usan otros scripts (como
+/// <see cref="ControladorVGR_mqtt"/> y <see cref="ControladorBrazoMPO"/>) para saber si el sensor
+/// real del horno detecta una pieza y para encontrar el objeto exacto de la plataforma, de modo que
+/// puedan comprobar si sus propios agarres/entregas de piezas han funcionado de verdad en la fábrica
+/// física. Por último, incluye un sistema de "auto-sanación": si el sensor real del horno detecta una
+/// pieza pero en Unity no hay ninguna (por ejemplo, porque la pieza llegó sin pasar por el gemelo
+/// digital del VGR o del brazo), crea una pieza de repuesto para que la escena no se quede vacía; y al
+/// revés, si el sensor deja de detectar nada, destruye las piezas virtuales que hayan quedado en el horno.
+/// </summary>
 public class ControladorHorno_mqtt : MonoBehaviour
 {
     [Header("Componentes")]
@@ -33,12 +48,19 @@ public class ControladorHorno_mqtt : MonoBehaviour
     public float duracionMovimientoPlataforma = 1.0f;
 
     // 🌐 LECTURA PÚBLICA DEL SENSOR EN TIEMPO REAL PARA EL BRAZO MPO
+    // Refleja en todo momento si el sensor real del horno (ovenSensor) detecta una pieza dentro.
+    // Otros scripts (VGR, Brazo MPO) consultan esta propiedad para confirmar si sus entregas/agarres
+    // de piezas han funcionado de verdad en la máquina física, sin tener que suscribirse ellos mismos
+    // al evento MQTT del horno.
     public bool SensorHornoActivo { get; private set; } = false;
 
+    // Cola de mensajes del horno pendientes de procesar (se llenan desde el evento MQTT y se vacían en Update()).
     private Queue<MPOHornoPayload> colaMensajes = new Queue<MPOHornoPayload>();
     private Coroutine movimientoPuerta;
     private Coroutine movimientoPlataforma;
 
+    // Botones de calibración del Inspector: guardan la posición actual del modelo 3D como referencia
+    // para la puerta abierta/cerrada y la plataforma dentro/fuera del horno.
     void CapturarPuertaCerrada() => posPuertaCerrada = puerta.position;
     void CapturarPuertaAbierta() => posPuertaAbierta = puerta.position;
     void CapturarPlataformaFuera() => posPlataformaFuera = plataformaPieza.position;
@@ -46,6 +68,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
 
     private void Start() => StartCoroutine(SuscripcionSegura());
 
+    // Espera a que MQTTClient exista en la escena y entonces se suscribe a su evento del horno.
+    // En vez de procesar el mensaje al vuelo, lo mete en una cola para tratarlo con calma en Update(),
+    // ya en el hilo principal de Unity.
     private IEnumerator SuscripcionSegura()
     {
         while (MQTTClient.Instance == null) yield return null;
@@ -58,6 +83,7 @@ public class ControladorHorno_mqtt : MonoBehaviour
 
     private void Update()
     {
+        // Vaciamos la cola de mensajes pendientes del horno, procesándolos uno a uno y en orden.
         lock (colaMensajes)
         {
             while (colaMensajes.Count > 0)
@@ -67,6 +93,12 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Aplica al gemelo digital un mensaje del PLC real del horno: actualiza el sensor de presencia,
+    /// enciende/apaga la luz, mueve la puerta y la plataforma hacia su posición objetivo, y decide si
+    /// hay que crear o destruir una pieza virtual dentro del horno según lo que reporte el sensor real.
+    /// </summary>
+    /// <param name="data">Datos recibidos por MQTT con el estado de puertas, luces, plataforma y sensor del horno.</param>
     private void ProcesarHorno(MPOHornoPayload data)
     {
         // Actualizamos la variable de estado pública para consulta externa del Brazo MPO
@@ -75,6 +107,8 @@ public class ControladorHorno_mqtt : MonoBehaviour
         if (luzHorno) luzHorno.enabled = (data.lights == 1);
 
         // MOVIMIENTO PUERTA
+        // Si el PLC ordena abrir o cerrar la puerta, cancelamos cualquier movimiento de puerta en
+        // curso y lanzamos uno nuevo hacia la posición correspondiente (abierta o cerrada).
         if (data.openDoor == 1)
         {
             if (movimientoPuerta != null) StopCoroutine(movimientoPuerta);
@@ -87,6 +121,7 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
 
         // MOVIMIENTO PLATAFORMA
+        // Lo mismo que con la puerta, pero para la plataforma que entra (Ref5) o sale (Ref6) del horno.
         if (data.move2Ref5 == 1)
         {
             if (movimientoPlataforma != null) StopCoroutine(movimientoPlataforma);
@@ -99,6 +134,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
 
         // SENSOR DEL HORNO (Gestión de presencia con filtro de Z y X del Brazo MPO)
+        // Si el sensor real detecta algo, comprobamos primero que no sea el propio brazo MPO tapando
+        // la barrera de luz (falso positivo); si es una detección real de pieza, intentamos crear la
+        // pieza de respaldo. Si el sensor deja de detectar nada, limpiamos las piezas virtuales.
         if (data.ovenSensor == 1)
         {
             if (EsElBrazoEnElHorno())
@@ -116,6 +154,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
     }
 
+    // Comprueba si el propio brazo interno del MPO está en este instante posicionado justo encima
+    // del horno y bajado, para no confundir su presencia física con la de una pieza real (evita que
+    // el sensor del horno dé un falso positivo mientras el brazo tapa la barrera de luz).
     private bool EsElBrazoEnElHorno()
     {
         ControladorBrazoMPO brazoMPO = Object.FindFirstObjectByType<ControladorBrazoMPO>();
@@ -134,6 +175,13 @@ public class ControladorHorno_mqtt : MonoBehaviour
         return estaEnZHorno && estaAbajo;
     }
 
+    /// <summary>
+    /// Busca y devuelve el objeto exacto de la plataforma real del horno (el hijo cuyo nombre
+    /// contiene la palabra "plataforma"), partiendo del objeto raíz asignado en el Inspector. Otros
+    /// scripts (como <see cref="ControladorVGR_mqtt"/> y <see cref="ControladorBrazoMPO"/>) usan este
+    /// método público para saber exactamente dónde debe quedar posicionada una pieza dentro del horno.
+    /// </summary>
+    /// <returns>El transform de la plataforma real del horno, o el objeto raíz si no se encuentra un hijo más específico.</returns>
     public Transform BuscarPlataformaRealHijo()
     {
         if (plataformaPieza == null) return null;
@@ -151,6 +199,10 @@ public class ControladorHorno_mqtt : MonoBehaviour
         return plataformaPieza;
     }
 
+    // Sistema de "auto-sanación": si el sensor real del horno detecta una pieza pero en Unity no hay
+    // ninguna pieza virtual ahí (por ejemplo porque llegó sin pasar por el VGR o el brazo del MPO),
+    // creamos una pieza de repuesto (gris) para que el gemelo digital no se quede vacío mientras la
+    // máquina real sí tiene una pieza dentro.
     private void IntentarSpawnPiezaHorno()
     {
         if (plataformaPieza == null) return;
@@ -164,6 +216,8 @@ public class ControladorHorno_mqtt : MonoBehaviour
         Transform plataformaReal = BuscarPlataformaRealHijo();
         if (plataformaReal == null) return;
 
+        // Si el VGR está sujetando una pieza y está muy cerca del horno, es que la entrega la va a
+        // hacer él mismo en cualquier momento: cancelamos el spawn de respaldo para no duplicar la pieza.
         ControladorVGR_mqtt vgr = Object.FindFirstObjectByType<ControladorVGR_mqtt>();
         if (vgr != null && vgr.ObtenerPiezaEnganchada() != null)
         {
@@ -179,6 +233,8 @@ public class ControladorHorno_mqtt : MonoBehaviour
         Collider colPlat = plataformaReal.GetComponent<Collider>();
         Vector3 centroPlatMundo = (colPlat != null) ? colPlat.bounds.center : plataformaReal.position;
 
+        // Comprobamos con una esfera de físicas si ya hay una pieza virtual cerca de la plataforma,
+        // para no crear una segunda pieza duplicada encima de una que ya existe.
         bool yaHayPieza = false;
         Collider[] collidersCercanos = Physics.OverlapSphere(centroPlatMundo, 0.05f);
 
@@ -204,6 +260,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
 
         if (!yaHayPieza)
         {
+            // Creamos la pieza de repuesto, la colocamos como hija de la plataforma real, en la
+            // posición y rotación calibradas exactas, y la dejamos cinemática (sin gravedad) para
+            // que se quede fija dentro del horno como la pieza física real.
             GameObject nuevaPieza = Instantiate(prefabBaseGris);
             nuevaPieza.name = "pieza_base_horno";
             nuevaPieza.transform.localScale = prefabBaseGris.transform.localScale;
@@ -226,6 +285,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
     }
 
+    // Cuando el sensor real deja de detectar pieza y la plataforma ya está fuera del horno, borramos
+    // cualquier pieza virtual que hubiera quedado dentro, para que el gemelo digital no muestre una
+    // pieza fantasma que ya no existe en la máquina real.
     private void IntentarLimpiezaPiezaHorno()
     {
         if (plataformaPieza == null) return;
@@ -258,6 +320,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
         }
     }
 
+    // Corrutina genérica de movimiento suave: desplaza un objeto desde su posición actual hasta
+    // "destino" a lo largo de "duracion" segundos, usando un SmoothStep para que arranque y frene
+    // con suavidad (como haría un mecanismo real, no un salto brusco).
     private IEnumerator MoverObjeto(Transform objeto, Vector3 destino, float duracion)
     {
         Vector3 inicio = objeto.position;
@@ -276,6 +341,9 @@ public class ControladorHorno_mqtt : MonoBehaviour
         objeto.position = destino;
     }
 
+    // Ayuda visual solo para el editor de Unity (al seleccionar este objeto): dibuja la esfera de
+    // seguridad alrededor de la plataforma del horno y una línea hacia el VGR, coloreada según si
+    // el VGR lleva una pieza y está dentro o fuera de la distancia límite de seguridad.
     void OnDrawGizmosSelected()
     {
         Transform plataformaReal = BuscarPlataformaRealHijo();

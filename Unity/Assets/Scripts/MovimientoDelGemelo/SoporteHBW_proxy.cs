@@ -1,5 +1,12 @@
 using UnityEngine;
 
+/// <summary>
+/// Este script va sobre el soporte fijo del estante del HBW donde el transelevador deja de nuevo
+/// un cajón después de haberlo llevado a la cinta y traído de vuelta. Cuando detecta que el cajón
+/// correcto ha llegado y el transelevador confirma que viene con una orden real de "entrega" (no
+/// de simple paso), se encarga de devolver el cajón a su hueco exacto y de avisar al controlador
+/// principal de que el brazo ya puede soltarlo y quedar libre para el siguiente movimiento.
+/// </summary>
 public class SoporteHBW_proxy : MonoBehaviour
 {
     private void OnTriggerEnter(Collider other)
