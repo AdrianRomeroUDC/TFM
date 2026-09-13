@@ -8,11 +8,19 @@ using System;
 /// creado y desde qué punto exacto del código. No influye en el comportamiento de la fábrica ni
 /// del gemelo digital: solo sirve para entender, cuando algo no cuadra, de dónde ha salido cada
 /// pieza que aparece en la escena.
+/// Este componente está enganchado al prefab base de las piezas, así que por defecto viene
+/// DESACTIVADO (<see cref="activarDebug"/> = false) para no llenar la consola ni gastar CPU
+/// calculando el Stack Trace cada vez que se genera una pieza durante una demo normal.
 /// </summary>
 public class InspectorSpawnPiezas : MonoBehaviour
 {
+    [Tooltip("Actívalo solo mientras estés depurando: registra en consola (con Stack Trace) quién ha creado esta pieza.")]
+    public bool activarDebug = false;
+
     void Awake()
     {
+        if (!activarDebug) return;
+
         // Se ejecuta en el microsegundo exacto en que la pieza se crea (Instantiate)
         // El StackTrace muestra la cadena completa de llamadas de código que terminó creando este
         // objeto, así se puede localizar exactamente qué script (y qué línea) hizo el Instantiate.

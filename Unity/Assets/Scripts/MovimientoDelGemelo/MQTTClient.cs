@@ -120,6 +120,12 @@ public class MQTTClient : MonoBehaviour
     private Queue<MensajeMQTT> colaMensajesRed = new Queue<MensajeMQTT>();
     private readonly object lockCola = new object(); // Candado para que ambos hilos no toquen la cola a la vez.
 
+    // Red de seguridad: en funcionamiento normal Update() vacía esta cola entera cada frame, así que
+    // nunca debería acumular más de un puñado de mensajes. Este límite solo actuaría si Unity dejara
+    // de llamar a Update() durante mucho tiempo (por ejemplo, una carga de escena larga), descartando
+    // los mensajes más antiguos en vez de dejar que la cola crezca sin límite.
+    private const int MAX_COLA_MENSAJES_RED = 500;
+
     [Header("Configuración del Broker")]
     public string brokerHost = "4ca80baa3731405580bfa27dc37e6665.s1.eu.hivemq.cloud";
     public int puerto = 8883;
@@ -172,6 +178,9 @@ public class MQTTClient : MonoBehaviour
     // ningún giro ni ninguna orden de expulsión de pieza).
     public Queue<MPOTurntablePayload> colaMensajes = new Queue<MPOTurntablePayload>();
 
+    // Red de seguridad equivalente a MAX_COLA_MENSAJES_RED, pero para esta cola específica del turntable.
+    private const int MAX_COLA_TURNTABLE = 100;
+
     void Awake()
     {
         // Aplicamos el patrón Singleton: si ya existe un MQTTClient, este nuevo se destruye
@@ -197,7 +206,8 @@ public class MQTTClient : MonoBehaviour
     {
         if (client != null && client.IsConnected)
         {
-            try { client.Disconnect(); } catch { }
+            try { client.Disconnect(); }
+            catch (Exception ex) { Debug.LogWarning($"[MQTTClient] Error al desconectar del broker: {ex.Message}"); }
         }
     }
 
@@ -320,6 +330,14 @@ public class MQTTClient : MonoBehaviour
         lock (lockCola)
         {
             colaMensajesRed.Enqueue(new MensajeMQTT { topic = e.Topic, payload = msg, t1_Recv = t1 });
+
+            // Si por lo que sea la cola creciera más allá del límite de seguridad, descartamos los
+            // mensajes más antiguos: es preferible perder un dato viejo de posición que acumular
+            // retraso indefinido respecto a la fábrica real.
+            while (colaMensajesRed.Count > MAX_COLA_MENSAJES_RED)
+            {
+                colaMensajesRed.Dequeue();
+            }
         }
     }
 
@@ -360,272 +378,374 @@ public class MQTTClient : MonoBehaviour
         // así que normalizamos por si el mensaje llega con la capitalización de C# ("True"/"False").
         msg = msg.Replace("True", "true").Replace("False", "false");
 
-        if (topic == "dt/factory")
+        // Despachamos según el topic con un switch (el compilador de C# lo optimiza a una tabla
+        // hash en vez de comparar cadena por cadena una a una): el comportamiento para cada topic
+        // es exactamente el mismo que antes, solo cambia cómo se organiza el despacho.
+        switch (topic)
         {
-            // Heartbeat general: nos dice si la fábrica física sigue conectada y viva, y cuándo se envió.
-            try
-            {
-                JSON_FactoryHeartbeat data = JsonUtility.FromJson<JSON_FactoryHeartbeat>(msg);
-                if (data != null)
+            case "dt/factory":
+                // Heartbeat general: nos dice si la fábrica física sigue conectada y viva, y cuándo se envió.
+                try
                 {
-                    DateTime tsParsed = DateTime.UtcNow;
-                    if (!string.IsNullOrEmpty(data.ts))
+                    JSON_FactoryHeartbeat data = JsonUtility.FromJson<JSON_FactoryHeartbeat>(msg);
+                    if (data != null)
                     {
-                        DateTime.TryParse(data.ts, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out tsParsed);
-                    }
-                    OnFactoryHeartbeatEvent?.Invoke(data.connected, tsParsed);
-                }
-            }
-            catch { }
-        }
-        else if (topic == "dt/sld/belt")
-        {
-            // Datos de la cinta de la estación clasificadora SLD: convertimos del formato "real"
-            // (JSON_SLDBelt) al formato "legado" (SLDBeltPayload) que usan los scripts de Unity.
-            try
-            {
-                JSON_SLDBelt netData = JsonUtility.FromJson<JSON_SLDBelt>(msg);
-                if (netData != null)
-                {
-                    SLDBeltPayload legacyData = new SLDBeltPayload
-                    {
-                        velocidad = netData.speed,
-                        SensorEntrada = netData.entry_sensor ? 1 : 0,
-                        SensorCilindros = netData.cylinder_sensor ? 1 : 0,
-                        z_ts = netData.ts
-                    };
-                    OnBeltUpdateEvent?.Invoke(legacyData);
-                }
-            }
-            catch { }
-        }
-        else if (topic == "dt/sld/cylinder")
-        {
-            // Un pistón de la SLD acaba de empujar (o no) una pieza de un color concreto.
-            try
-            {
-                JSON_SLDCylinder data = JsonUtility.FromJson<JSON_SLDCylinder>(msg);
-                if (data != null) OnCylinderUpdateEvent?.Invoke(data);
-            }
-            catch { }
-        }
-        else if (topic == "dt/dps/dsi")
-        {
-            // Sensor de entrada de piezas (Deposit Sensor In) de la estación DPS.
-            try
-            {
-                var data = JsonUtility.FromJson<JSON_DPSSensor>(msg);
-                if (data != null) OnDPSPiezaDSIEvent?.Invoke(data.dsi_sensor);
-            }
-            catch { }
-        }
-        else if (topic == "dt/dps/dso")
-        {
-            // Sensor de salida de piezas (Deposit Sensor Out) de la estación DPS.
-            try
-            {
-                var data = JsonUtility.FromJson<JSON_DPSSensor>(msg);
-                if (data != null) OnDPSPiezaDSOEvent?.Invoke(data.dso_sensor);
-            }
-            catch { }
-        }
-        else if (topic == "dt/dps/color")
-        {
-            // La cámara/sensor de color de la DPS ha identificado el color de la pieza que entra.
-            try
-            {
-                var data = JsonUtility.FromJson<JSON_DPSColor>(msg);
-                if (data != null && !string.IsNullOrEmpty(data.color)) OnDPSColorEvent?.Invoke(data.color.ToUpper());
-            }
-            catch { }
-        }
-        else if (topic == "dt/vgr/grip")
-        {
-            // La ventosa del robot VGR se ha activado o desactivado (agarra o suelta una pieza).
-            try
-            {
-                var data = JsonUtility.FromJson<VGRGripPayload>(msg);
-                if (data != null) OnVGRGripEvent?.Invoke(data.active);
-            }
-            catch { }
-        }
-        else if (topic == "dt/vgr/pos")
-        {
-            // Nueva posición de los 3 ejes del brazo VGR (rotación, altura, extensión).
-            try
-            {
-                VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
-                if (data != null) OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend);
-            }
-            catch { }
-        }
-        else if (topic == "f/i/stock")
-        {
-            // Inventario completo del almacén HBW. La fábrica lo manda como una lista de "huecos"
-            // ocupados (location + pieza), y aquí lo transformamos en un array plano de 9 posiciones
-            // (una cuadrícula de 3x3: columnas A-C y filas 1-3) para que sea fácil de usar en Unity.
-            lastHBWJson = msg;
-            try
-            {
-                JSON_FullStock data = JsonUtility.FromJson<JSON_FullStock>(msg);
-                if (data != null && data.stockItems != null)
-                {
-                    string[] flatStock = new string[9];
-                    for (int i = 0; i < 9; i++) flatStock[i] = "";
-
-                    foreach (var item in data.stockItems)
-                    {
-                        if (item == null || string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
-
-                        // La ubicación llega como texto tipo "A1", "B2", etc: la letra es la columna y el número la fila.
-                        int col = char.ToUpper(item.location[0]) - 'A';
-                        int row = item.location[1] - '1';
-
-                        if (col >= 0 && col < 3 && row >= 0 && row < 3)
+                        DateTime tsParsed = DateTime.UtcNow;
+                        if (!string.IsNullOrEmpty(data.ts))
                         {
-                            int idx = (row * 3) + col;
+                            DateTime.TryParse(data.ts, null, System.Globalization.DateTimeStyles.AdjustToUniversal, out tsParsed);
+                        }
+                        OnFactoryHeartbeatEvent?.Invoke(data.connected, tsParsed);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
 
-                            if (item.workpiece != null && !string.IsNullOrEmpty(item.workpiece.type))
+            case "dt/sld/belt":
+                // Datos de la cinta de la estación clasificadora SLD: convertimos del formato "real"
+                // (JSON_SLDBelt) al formato "legado" (SLDBeltPayload) que usan los scripts de Unity.
+                try
+                {
+                    JSON_SLDBelt netData = JsonUtility.FromJson<JSON_SLDBelt>(msg);
+                    if (netData != null)
+                    {
+                        SLDBeltPayload legacyData = new SLDBeltPayload
+                        {
+                            velocidad = netData.speed,
+                            SensorEntrada = netData.entry_sensor ? 1 : 0,
+                            SensorCilindros = netData.cylinder_sensor ? 1 : 0,
+                            z_ts = netData.ts
+                        };
+                        OnBeltUpdateEvent?.Invoke(legacyData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/sld/cylinder":
+                // Un pistón de la SLD acaba de empujar (o no) una pieza de un color concreto.
+                try
+                {
+                    JSON_SLDCylinder data = JsonUtility.FromJson<JSON_SLDCylinder>(msg);
+                    if (data != null) OnCylinderUpdateEvent?.Invoke(data);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/dps/dsi":
+                // Sensor de entrada de piezas (Deposit Sensor In) de la estación DPS.
+                try
+                {
+                    var data = JsonUtility.FromJson<JSON_DPSSensor>(msg);
+                    if (data != null) OnDPSPiezaDSIEvent?.Invoke(data.dsi_sensor);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/dps/dso":
+                // Sensor de salida de piezas (Deposit Sensor Out) de la estación DPS.
+                try
+                {
+                    var data = JsonUtility.FromJson<JSON_DPSSensor>(msg);
+                    if (data != null) OnDPSPiezaDSOEvent?.Invoke(data.dso_sensor);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/dps/color":
+                // La cámara/sensor de color de la DPS ha identificado el color de la pieza que entra.
+                try
+                {
+                    var data = JsonUtility.FromJson<JSON_DPSColor>(msg);
+                    if (data != null && !string.IsNullOrEmpty(data.color)) OnDPSColorEvent?.Invoke(data.color.ToUpper());
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/vgr/grip":
+                // La ventosa del robot VGR se ha activado o desactivado (agarra o suelta una pieza).
+                try
+                {
+                    var data = JsonUtility.FromJson<VGRGripPayload>(msg);
+                    if (data != null) OnVGRGripEvent?.Invoke(data.active);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/vgr/pos":
+                // Nueva posición de los 3 ejes del brazo VGR (rotación, altura, extensión).
+                try
+                {
+                    VGRPositionData data = JsonUtility.FromJson<VGRPositionData>(msg);
+                    if (data != null) OnVGRPositionUpdateEvent?.Invoke(data.rotation, data.vertical, data.extend);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "f/i/stock":
+                // Inventario completo del almacén HBW. La fábrica lo manda como una lista de "huecos"
+                // ocupados (location + pieza), y aquí lo transformamos en un array plano de 9 posiciones
+                // (una cuadrícula de 3x3: columnas A-C y filas 1-3) para que sea fácil de usar en Unity.
+                lastHBWJson = msg;
+                try
+                {
+                    JSON_FullStock data = JsonUtility.FromJson<JSON_FullStock>(msg);
+                    if (data != null && data.stockItems != null)
+                    {
+                        string[] flatStock = new string[9];
+                        for (int i = 0; i < 9; i++) flatStock[i] = "";
+
+                        foreach (var item in data.stockItems)
+                        {
+                            if (item == null || string.IsNullOrEmpty(item.location) || item.location.Length < 2) continue;
+
+                            // La ubicación llega como texto tipo "A1", "B2", etc: la letra es la columna y el número la fila.
+                            int col = char.ToUpper(item.location[0]) - 'A';
+                            int row = item.location[1] - '1';
+
+                            if (col >= 0 && col < 3 && row >= 0 && row < 3)
                             {
-                                flatStock[idx] = item.workpiece.type.ToUpper();
+                                int idx = (row * 3) + col;
+
+                                if (item.workpiece != null && !string.IsNullOrEmpty(item.workpiece.type))
+                                {
+                                    flatStock[idx] = item.workpiece.type.ToUpper();
+                                }
+                            }
+                        }
+
+                        initialStock = flatStock;
+                        OnHBWUpdatePiecesEvent?.Invoke(flatStock);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/hbw/pos":
+                // Nueva posición del carro que se mueve por dentro del almacén HBW.
+                try
+                {
+                    HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
+                    if (data != null) OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.extend);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/hbw/belt":
+                // Velocidad y dirección de la cinta interna del HBW.
+                try
+                {
+                    JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
+                    if (netData != null) OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/mpo/oven":
+                // Estado del horno de la estación MPO (puertas, luces, sensor de pieza dentro).
+                try
+                {
+                    JSON_MPOOven netData = JsonUtility.FromJson<JSON_MPOOven>(msg);
+                    if (netData != null)
+                    {
+                        MPOHornoPayload legacyData = new MPOHornoPayload
+                        {
+                            closeDoor = netData.close_door ? 1 : 0,
+                            openDoor = netData.open_door ? 1 : 0,
+                            lights = netData.lights ? 1 : 0,
+                            move2Ref5 = netData.move2Ref5 ? 1 : 0,
+                            move2Ref6 = netData.move2Ref6 ? 1 : 0,
+                            ts = netData.ts,
+                            ovenSensor = netData.oven_sensor ? 1 : 0
+                        };
+                        OnHornoUpdateEvent?.Invoke(legacyData);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/mpo/turntable":
+                // Estado del plato giratorio y la sierra del MPO. Estos mensajes se meten en una cola
+                // (en vez de disparar el evento al momento) porque el controlador del plato necesita
+                // procesarlos en el orden exacto en que ocurrieron, sin saltarse ninguno.
+                try
+                {
+                    JSON_MPOTurntable netData = JsonUtility.FromJson<JSON_MPOTurntable>(msg);
+                    if (netData != null)
+                    {
+                        MPOTurntablePayload legacyData = new MPOTurntablePayload
+                        {
+                            eject = netData.eject ? 1 : 0,
+                            move2Ref7 = netData.move2Ref7 ? 1 : 0,
+                            move2Ref8 = netData.move2Ref8 ? 1 : 0,
+                            move2Ref9 = netData.move2Ref9 ? 1 : 0,
+                            move2Ref10 = netData.move2Ref10 ? 1 : 0,
+                            rotation = netData.rotation,
+                            saw = netData.saw,
+                            ts = netData.ts
+                        };
+                        lock (colaMensajes)
+                        {
+                            colaMensajes.Enqueue(legacyData);
+
+                            // Misma red de seguridad que en colaMensajesRed: en funcionamiento normal el
+                            // controlador del plato giratorio vacía esta cola entera cada frame, así que
+                            // este límite no debería alcanzarse nunca salvo que el turntable se quede sin
+                            // procesar mensajes durante mucho tiempo.
+                            while (colaMensajes.Count > MAX_COLA_TURNTABLE)
+                            {
+                                colaMensajes.Dequeue();
                             }
                         }
                     }
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
 
-                    initialStock = flatStock;
-                    OnHBWUpdatePiecesEvent?.Invoke(flatStock);
-                }
-            }
-            catch { }
-        }
-        else if (topic == "dt/hbw/pos")
-        {
-            // Nueva posición del carro que se mueve por dentro del almacén HBW.
-            try
-            {
-                HBWPositionPayload data = JsonUtility.FromJson<HBWPositionPayload>(msg);
-                if (data != null) OnHBWPositionUpdateEvent?.Invoke(data.horizontal, data.vertical, data.extend);
-            }
-            catch { }
-        }
-        else if (topic == "dt/hbw/belt")
-        {
-            // Velocidad y dirección de la cinta interna del HBW.
-            try
-            {
-                JSON_HBWBelt netData = JsonUtility.FromJson<JSON_HBWBelt>(msg);
-                if (netData != null) OnBeltHBWUpdateEvent?.Invoke(netData.belt_speed, netData.rot_direction);
-            }
-            catch { }
-        }
-        else if (topic == "dt/mpo/oven")
-        {
-            // Estado del horno de la estación MPO (puertas, luces, sensor de pieza dentro).
-            try
-            {
-                JSON_MPOOven netData = JsonUtility.FromJson<JSON_MPOOven>(msg);
-                if (netData != null)
+            case "dt/mpo/belt":
+                // Estado de la cinta transportadora del MPO (activa/parada, sensor de salida de pieza).
+                try
                 {
-                    MPOHornoPayload legacyData = new MPOHornoPayload
+                    JSON_MPOBelt netData = JsonUtility.FromJson<JSON_MPOBelt>(msg);
+                    if (netData != null)
                     {
-                        closeDoor = netData.close_door ? 1 : 0,
-                        openDoor = netData.open_door ? 1 : 0,
-                        lights = netData.lights ? 1 : 0,
-                        move2Ref5 = netData.move2Ref5 ? 1 : 0,
-                        move2Ref6 = netData.move2Ref6 ? 1 : 0,
-                        ts = netData.ts,
-                        ovenSensor = netData.oven_sensor ? 1 : 0
-                    };
-                    OnHornoUpdateEvent?.Invoke(legacyData);
+                        MPOBeltPayload legacyData = new MPOBeltPayload
+                        {
+                            estado = netData.active ? 1 : 0,
+                            sensorSalida = netData.exit_sensor ? 1 : 0,
+                            z_ts = netData.ts
+                        };
+                        OnMPOBeltUpdateEvent?.Invoke(legacyData);
+                    }
                 }
-            }
-            catch { }
-        }
-        else if (topic == "dt/mpo/turntable")
-        {
-            // Estado del plato giratorio y la sierra del MPO. Estos mensajes se meten en una cola
-            // (en vez de disparar el evento al momento) porque el controlador del plato necesita
-            // procesarlos en el orden exacto en que ocurrieron, sin saltarse ninguno.
-            try
-            {
-                JSON_MPOTurntable netData = JsonUtility.FromJson<JSON_MPOTurntable>(msg);
-                if (netData != null)
+                catch (Exception ex)
                 {
-                    MPOTurntablePayload legacyData = new MPOTurntablePayload
-                    {
-                        eject = netData.eject ? 1 : 0,
-                        move2Ref7 = netData.move2Ref7 ? 1 : 0,
-                        move2Ref8 = netData.move2Ref8 ? 1 : 0,
-                        move2Ref9 = netData.move2Ref9 ? 1 : 0,
-                        move2Ref10 = netData.move2Ref10 ? 1 : 0,
-                        rotation = netData.rotation,
-                        saw = netData.saw,
-                        ts = netData.ts
-                    };
-                    lock (colaMensajes) { colaMensajes.Enqueue(legacyData); }
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
                 }
-            }
-            catch { }
-        }
-        else if (topic == "dt/mpo/belt")
-        {
-            // Estado de la cinta transportadora del MPO (activa/parada, sensor de salida de pieza).
-            try
-            {
-                JSON_MPOBelt netData = JsonUtility.FromJson<JSON_MPOBelt>(msg);
-                if (netData != null)
+                break;
+
+            case "dt/mpo/arm":
+                // Estado del pequeño brazo interno del MPO que traslada piezas entre cinta, horno y sierra.
+                try
                 {
-                    MPOBeltPayload legacyData = new MPOBeltPayload
+                    JSON_MPOArm netData = JsonUtility.FromJson<JSON_MPOArm>(msg);
+                    if (netData != null)
                     {
-                        estado = netData.active ? 1 : 0,
-                        sensorSalida = netData.exit_sensor ? 1 : 0,
-                        z_ts = netData.ts
-                    };
-                    OnMPOBeltUpdateEvent?.Invoke(legacyData);
+                        MPOBrazoPayload legacyData = new MPOBrazoPayload
+                        {
+                            move2Ref3 = netData.move2Ref3,
+                            move2Ref4 = netData.move2Ref4,
+                            lowering = netData.lowering,
+                            vacuum = netData.vacuum,
+                            ts = netData.ts
+                        };
+                        OnBrazoUpdateEvent?.Invoke(legacyData);
+                    }
                 }
-            }
-            catch { }
-        }
-        else if (topic == "dt/mpo/arm")
-        {
-            // Estado del pequeño brazo interno del MPO que traslada piezas entre cinta, horno y sierra.
-            try
-            {
-                JSON_MPOArm netData = JsonUtility.FromJson<JSON_MPOArm>(msg);
-                if (netData != null)
+                catch (Exception ex)
                 {
-                    MPOBrazoPayload legacyData = new MPOBrazoPayload
-                    {
-                        move2Ref3 = netData.move2Ref3,
-                        move2Ref4 = netData.move2Ref4,
-                        lowering = netData.lowering,
-                        vacuum = netData.vacuum,
-                        ts = netData.ts
-                    };
-                    OnBrazoUpdateEvent?.Invoke(legacyData);
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
                 }
-            }
-            catch { }
-        }
-        else if (topic == "dt/ssc/leds")
-        {
-            // Estado de los LEDs/semáforo de la estación de supervisión SSC.
-            try
-            {
-                JSON_SSCLEDs data = JsonUtility.FromJson<JSON_SSCLEDs>(msg);
-                if (data != null) OnSSCLEDsUpdateEvent?.Invoke(data.led_online, data.leds_semaphore);
-            }
-            catch { }
-        }
-        else if (topic == "dt/ssc/camera")
-        {
-            // Nuevos ángulos de la cámara Pan-Tilt de la estación SSC.
-            try
-            {
-                JSON_SSCCamera data = JsonUtility.FromJson<JSON_SSCCamera>(msg);
-                if (data != null) OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
-            }
-            catch { }
+                break;
+
+            case "dt/ssc/leds":
+                // Estado de los LEDs/semáforo de la estación de supervisión SSC.
+                try
+                {
+                    JSON_SSCLEDs data = JsonUtility.FromJson<JSON_SSCLEDs>(msg);
+                    if (data != null) OnSSCLEDsUpdateEvent?.Invoke(data.led_online, data.leds_semaphore);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
+
+            case "dt/ssc/camera":
+                // Nuevos ángulos de la cámara Pan-Tilt de la estación SSC.
+                try
+                {
+                    JSON_SSCCamera data = JsonUtility.FromJson<JSON_SSCCamera>(msg);
+                    if (data != null) OnSSCCamaraUpdateEvent?.Invoke(data.pan, data.tilt);
+                }
+                catch (Exception ex)
+                {
+                    // Registramos en la consola de Unity el topic y el motivo del fallo, para poder
+                    // diagnosticar problemas de red o de formato de mensaje durante una demo en vivo.
+                    Debug.LogWarning($"[MQTTClient] No se pudo procesar el mensaje del topic '{topic}': {ex.Message}");
+                }
+                break;
         }
     }
 

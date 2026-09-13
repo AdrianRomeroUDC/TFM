@@ -350,7 +350,10 @@ public class SimuladorOffline : MonoBehaviour
                     JSON_FullStock stockActualizado = JsonUtility.FromJson<JSON_FullStock>(ev.payloadJson);
                     if (stockActualizado != null) ultimoStockConocido = stockActualizado;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[SimuladorOffline] No se pudo parsear el JSON de stock durante la reproducción: {ex.Message}");
+                }
 
                 continue;
             }

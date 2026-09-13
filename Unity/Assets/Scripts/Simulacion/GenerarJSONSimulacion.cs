@@ -174,17 +174,28 @@ public class GenerarJSONSimulacion : MonoBehaviour
             }
         }
 
-        // Nos aseguramos de que la carpeta de destino existe antes de intentar escribir en ella.
-        if (!Directory.Exists(carpetaGuardado))
-        {
-            Directory.CreateDirectory(carpetaGuardado);
-        }
-
         // Convertimos la lista de eventos a texto JSON y la escribimos en el archivo final.
         string rutaCompleta = Path.Combine(carpetaGuardado, config.nombreArchivoJson);
         string jsonTexto = JsonUtility.ToJson(secuenciaData, true);
 
-        File.WriteAllText(rutaCompleta, jsonTexto);
+        try
+        {
+            // Nos aseguramos de que la carpeta de destino existe antes de intentar escribir en ella.
+            if (!Directory.Exists(carpetaGuardado))
+            {
+                Directory.CreateDirectory(carpetaGuardado);
+            }
+
+            File.WriteAllText(rutaCompleta, jsonTexto);
+        }
+        catch (Exception ex)
+        {
+            // Si la carpeta no se puede crear o el archivo no se puede escribir (permisos, disco
+            // lleno, ruta inválida...), avisamos con claridad en vez de dejar que la excepción
+            // interrumpa la corrutina sin explicación.
+            Debug.LogError($"[GenerarJSONSimulacion] No se pudo guardar el archivo '{rutaCompleta}': {ex.Message}");
+            yield break;
+        }
 
         Debug.Log($"<color=green>✅ Archivo guardado: <b>{rutaCompleta}</b> ({secuenciaData.eventos.Count} eventos guardados)</color>");
 
