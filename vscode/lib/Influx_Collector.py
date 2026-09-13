@@ -15,14 +15,10 @@ try:
 except ImportError:
     from urllib2 import Request, urlopen, HTTPError, URLError
 
-from fischertechnik.mqtt.MqttClient import MqttClient
+from lib.Factory_Variables import get_client_local
 
 INFLUX_URL = 'https://eu-central-1-1.aws.cloud2.influxdata.com/api/v2/write?org=fischertechnik&bucket=factory_TFM&precision=ms'
 INFLUX_TOKEN = 'tYzrHx9kwepkwm5ZwAGFbKA_aSok9i_OQBue_zAmXZY-5FxfBFxNoVLvcIzUCc0G1RDcLKY9DNtBI5Lbe0gWAg=='
-MQTT_HOST = '10.113.36.36'
-MQTT_PORT = 1884
-MQTT_USER = 'LearningFactory'
-MQTT_PASSWORD = 'Fischertechnik1'
 
 WORKERS = 1
 BATCH_SIZE = 100
@@ -979,79 +975,64 @@ def mqtt_callback_ssc_camera(message):
 
 def start_influx_collector():
     """
-    Conecta con el broker MQTT y suscribe todos los temas de telemetria.
+    Se suscribe en el cliente MQTT local compartido a todos los temas de telemetria.
 
-    Reintenta hasta 5 veces con esperas cada vez mas largas. Si consigue
-    conectar, se suscribe a la telemetria ambiental, de luz, de
-    inventario y de todas las estaciones fisicas, y arranca los hilos que
-    envian los datos a InfluxDB.
+    En vez de abrir su propia conexion al broker, espera a que el cliente
+    MQTT local (el mismo que usan Digital_Twin.py y el resto de modulos,
+    registrado mediante ``set_client_local``) este conectado, reintentando
+    hasta 10 veces. Una vez disponible, se suscribe a la telemetria
+    ambiental, de luz, de inventario y de todas las estaciones fisicas, y
+    arranca los hilos que envian los datos a InfluxDB.
 
     Returns:
-      El cliente MQTT ya conectado, o ``None`` si no se pudo conectar.
+      El cliente MQTT local ya conectado, o ``None`` si no llego a estarlo.
     """
     global influx_client
-    max_retries = 5
+    max_retries = 10
     retry_count = 0
 
     while retry_count < max_retries:
-        try:
-            print('[{}/{}] Intentando conectar a MQTT...'.format(retry_count + 1, max_retries))
-            influx_client = MqttClient(client_id='influx-collector-' + str(int(time.time())))
-            influx_client.connect(
-                host=MQTT_HOST,
-                port=MQTT_PORT,
-                user=MQTT_USER,
-                password=MQTT_PASSWORD
-            )
+        client = get_client_local()
+        if client is not None and client.is_connected():
+            influx_client = client
 
-            time.sleep(1)
+            influx_client.subscribe(topic='i/bme680', callback=mqtt_callback_bme680, qos=2)
+            influx_client.subscribe(topic='i/ldr', callback=mqtt_callback_ldr, qos=2)
+            influx_client.subscribe(topic='f/i/stock', callback=mqtt_callback_stock, qos=2)
 
-            print('Influx MQTT connected:', influx_client.is_connected())
+            influx_client.subscribe(topic='dt/vgr/pos', callback=mqtt_callback_vgr_pos, qos=2)
+            influx_client.subscribe(topic='dt/vgr/grip', callback=mqtt_callback_vgr_grip, qos=2)
 
-            if influx_client.is_connected():
-                influx_client.subscribe(topic='i/bme680', callback=mqtt_callback_bme680, qos=2)
-                influx_client.subscribe(topic='i/ldr', callback=mqtt_callback_ldr, qos=2)
-                influx_client.subscribe(topic='f/i/stock', callback=mqtt_callback_stock, qos=2)
+            influx_client.subscribe(topic='dt/hbw/pos', callback=mqtt_callback_hbw_pos, qos=2)
+            influx_client.subscribe(topic='dt/hbw/belt', callback=mqtt_callback_hbw_belt, qos=2)
 
-                influx_client.subscribe(topic='dt/vgr/pos', callback=mqtt_callback_vgr_pos, qos=2)
-                influx_client.subscribe(topic='dt/vgr/grip', callback=mqtt_callback_vgr_grip, qos=2)
+            influx_client.subscribe(topic='dt/dps/dsi', callback=mqtt_callback_dps_dsi, qos=2)
+            influx_client.subscribe(topic='dt/dps/dso', callback=mqtt_callback_dps_dso, qos=2)
+            influx_client.subscribe(topic='dt/dps/color', callback=mqtt_callback_dps_color, qos=2)
+            influx_client.subscribe(topic='dt/dps/nfc', callback=mqtt_callback_dps_nfc, qos=2)
 
-                influx_client.subscribe(topic='dt/hbw/pos', callback=mqtt_callback_hbw_pos, qos=2)
-                influx_client.subscribe(topic='dt/hbw/belt', callback=mqtt_callback_hbw_belt, qos=2)
+            influx_client.subscribe(topic='dt/sld/belt', callback=mqtt_callback_sld_belt, qos=2)
+            influx_client.subscribe(topic='dt/sld/cylinder', callback=mqtt_callback_sld_cylinder, qos=2)
 
-                influx_client.subscribe(topic='dt/dps/dsi', callback=mqtt_callback_dps_dsi, qos=2)
-                influx_client.subscribe(topic='dt/dps/dso', callback=mqtt_callback_dps_dso, qos=2)
-                influx_client.subscribe(topic='dt/dps/color', callback=mqtt_callback_dps_color, qos=2)
-                influx_client.subscribe(topic='dt/dps/nfc', callback=mqtt_callback_dps_nfc, qos=2)
+            influx_client.subscribe(topic='dt/mpo/belt', callback=mqtt_callback_mpo_belt, qos=2)
+            influx_client.subscribe(topic='dt/mpo/oven', callback=mqtt_callback_mpo_oven, qos=2)
+            influx_client.subscribe(topic='dt/mpo/arm', callback=mqtt_callback_mpo_arm, qos=2)
+            influx_client.subscribe(topic='dt/mpo/turntable', callback=mqtt_callback_mpo_turntable, qos=2)
 
-                influx_client.subscribe(topic='dt/sld/belt', callback=mqtt_callback_sld_belt, qos=2)
-                influx_client.subscribe(topic='dt/sld/cylinder', callback=mqtt_callback_sld_cylinder, qos=2)
+            influx_client.subscribe(topic='dt/ssc/leds', callback=mqtt_callback_ssc_leds, qos=2)
+            influx_client.subscribe(topic='dt/ssc/camera', callback=mqtt_callback_ssc_camera, qos=2)
 
-                influx_client.subscribe(topic='dt/mpo/belt', callback=mqtt_callback_mpo_belt, qos=2)
-                influx_client.subscribe(topic='dt/mpo/oven', callback=mqtt_callback_mpo_oven, qos=2)
-                influx_client.subscribe(topic='dt/mpo/arm', callback=mqtt_callback_mpo_arm, qos=2)
-                influx_client.subscribe(topic='dt/mpo/turntable', callback=mqtt_callback_mpo_turntable, qos=2)
+            print('Influx Collector suscrito al cliente MQTT local compartido')
 
-                influx_client.subscribe(topic='dt/ssc/leds', callback=mqtt_callback_ssc_leds, qos=2)
-                influx_client.subscribe(topic='dt/ssc/camera', callback=mqtt_callback_ssc_camera, qos=2)
+            _start_workers()
+            return influx_client
 
-                print('Influx MQTT subscribed to all DT topics')
+        retry_count += 1
+        print('[{}/{}] Esperando a que el cliente MQTT local este conectado...'.format(retry_count, max_retries))
+        time.sleep(1)
 
-                _start_workers()
-                return influx_client
-            else:
-                raise Exception("Conexion rechazada o timeout")
-
-        except Exception as e:
-            retry_count += 1
-            print('Error en intento {}: {}'.format(retry_count, e))
-            if retry_count < max_retries:
-                wait_time = 2 ** retry_count
-                print('  Reintentando en {} segundos...'.format(wait_time))
-                time.sleep(wait_time)
-            else:
-                print('No se pudo conectar a MQTT despues de varios intentos')
-                return None
+    print('El cliente MQTT local no llego a conectarse: Influx Collector no arranca')
+    return None
 
 
 def thread_InfluxCollector():
