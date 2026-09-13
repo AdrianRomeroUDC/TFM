@@ -15,10 +15,15 @@ try:
 except ImportError:
     from urllib2 import Request, urlopen, HTTPError, URLError
 
-from lib.Factory_Variables import get_client_local
+from fischertechnik.mqtt.MqttClient import MqttClient
 
 INFLUX_URL = 'https://eu-central-1-1.aws.cloud2.influxdata.com/api/v2/write?org=fischertechnik&bucket=factory_TFM&precision=ms'
 INFLUX_TOKEN = 'tYzrHx9kwepkwm5ZwAGFbKA_aSok9i_OQBue_zAmXZY-5FxfBFxNoVLvcIzUCc0G1RDcLKY9DNtBI5Lbe0gWAg=='
+
+MQTT_HOST = '10.113.36.36'
+MQTT_PORT = 1884
+MQTT_USER = 'LearningFactory'
+MQTT_PASSWORD = 'Fischertechnik1'
 
 WORKERS = 1
 BATCH_SIZE = 100
@@ -975,24 +980,33 @@ def mqtt_callback_ssc_camera(message):
 
 def start_influx_collector():
     """
-    Se suscribe en el cliente MQTT local compartido a todos los temas de telemetria.
+    Abre su propia conexion MQTT y se suscribe a todos los temas de telemetria.
 
-    En vez de abrir su propia conexion al broker, espera a que el cliente
-    MQTT local (el mismo que usan Digital_Twin.py y el resto de modulos,
-    registrado mediante ``set_client_local``) este conectado, reintentando
-    hasta 10 veces. Una vez disponible, se suscribe a la telemetria
-    ambiental, de luz, de inventario y de todas las estaciones fisicas, y
-    arranca los hilos que envian los datos a InfluxDB.
+    Influx_Collector.py es un suscriptor MQTT independiente del resto de
+    modulos del controlador: crea y conecta su propio cliente
+    (``fischertechnik.mqtt.MqttClient``), reintentando hasta 10 veces si el
+    broker aun no esta disponible. Esto mantiene un aislamiento total de
+    responsabilidades respecto a Digital_Twin.py: ninguno de los dos modulos
+    depende de la conexion del otro, y este colector podria ejecutarse en
+    otro proceso o incluso otra maquina sin que Digital_Twin.py cambiara en
+    absoluto. Una vez conectado, se suscribe a la telemetria ambiental, de
+    luz, de inventario y de todas las estaciones fisicas, y arranca los
+    hilos que envian los datos a InfluxDB.
 
     Returns:
-      El cliente MQTT local ya conectado, o ``None`` si no llego a estarlo.
+      El cliente MQTT propio ya conectado, o ``None`` si no llego a estarlo.
     """
     global influx_client
     max_retries = 10
     retry_count = 0
 
     while retry_count < max_retries:
-        client = get_client_local()
+        try:
+            client = MqttClient(client_id='influx-collector-' + str(int(time.time())))
+            client.connect(host=MQTT_HOST, port=MQTT_PORT, user=MQTT_USER, password=MQTT_PASSWORD)
+        except Exception:
+            client = None
+
         if client is not None and client.is_connected():
             influx_client = client
 
@@ -1022,16 +1036,16 @@ def start_influx_collector():
             influx_client.subscribe(topic='dt/ssc/leds', callback=mqtt_callback_ssc_leds, qos=2)
             influx_client.subscribe(topic='dt/ssc/camera', callback=mqtt_callback_ssc_camera, qos=2)
 
-            print('Influx Collector suscrito al cliente MQTT local compartido')
+            print('Influx Collector conectado con su propio cliente MQTT')
 
             _start_workers()
             return influx_client
 
         retry_count += 1
-        print('[{}/{}] Esperando a que el cliente MQTT local este conectado...'.format(retry_count, max_retries))
+        print('[{}/{}] Reintentando conexion propia al broker MQTT...'.format(retry_count, max_retries))
         time.sleep(1)
 
-    print('El cliente MQTT local no llego a conectarse: Influx Collector no arranca')
+    print('Influx Collector no logro conectarse al broker: no arranca')
     return None
 
 
