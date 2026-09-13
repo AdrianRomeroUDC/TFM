@@ -145,8 +145,7 @@ public class MQTT_InterfaceClient : MonoBehaviour
     {
         if (client != null && client.IsConnected)
         {
-            try { client.Disconnect(); }
-            catch (Exception ex) { Debug.LogWarning($"[MQTT_InterfaceClient] Error al desconectar del broker: {ex.Message}"); }
+            try { client.Disconnect(); } catch { }
         }
     }
 
@@ -379,10 +378,7 @@ public class MQTT_InterfaceClient : MonoBehaviour
                 System.Threading.Thread.Sleep(100); // Pequeña espera para dar tiempo a que el mensaje salga antes de desconectar.
                 client.Disconnect();
             }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[MQTT_InterfaceClient] Error al desconectar del broker al salir: {ex.Message}");
-            }
+            catch { }
         }
     }
 }

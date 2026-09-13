@@ -86,16 +86,11 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
         // MQTTClient. Si el mensaje solo trae una orden de actuador (sierra o eyector, sin ninguna
         // orden de giro "move2RefX"), lo procesamos aunque la mesa esté ocupada girando, para no
         // bloquear la sierra o el pusher mientras el turntable todavía está en movimiento.
-        // Vaciamos todos los mensajes que se puedan procesar ya en este mismo frame (no nos
-        // quedamos solo con el primero): así, si alguna vez el framerate cayera por debajo de la
-        // cadencia real de publicación (200ms), la cola no se queda acumulando retraso indefinido
-        // respecto al PLC real. En funcionamiento normal (framerate al día) esto no cambia nada,
-        // porque la cola nunca llega a acumular más de un mensaje entre frames.
         if (MQTTClient.Instance != null)
         {
             lock (MQTTClient.Instance.colaMensajes)
             {
-                while (MQTTClient.Instance.colaMensajes.Count > 0)
+                if (MQTTClient.Instance.colaMensajes.Count > 0)
                 {
                     var data = MQTTClient.Instance.colaMensajes.Peek();
                     bool esSoloActuador = (data.move2Ref7 == 0 && data.move2Ref8 == 0 && data.move2Ref9 == 0 && data.move2Ref10 == 0);
@@ -103,12 +98,6 @@ public class ControladorTurntableMPO_mqtt : MonoBehaviour
                     if (!estaOcupado || esSoloActuador)
                     {
                         ProcesarComando(MQTTClient.Instance.colaMensajes.Dequeue());
-                    }
-                    else
-                    {
-                        // Hay una orden de giro pendiente pero la mesa sigue ocupada con el giro
-                        // anterior: la dejamos en la cola y esperamos al siguiente frame.
-                        break;
                     }
                 }
             }

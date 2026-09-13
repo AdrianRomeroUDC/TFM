@@ -8,21 +8,12 @@ using UnityEngine;
 /// la cinta del MPO, etc.), así que cada vez que ese padre cambia significa que la pieza se ha
 /// movido de sitio en el gemelo digital. Es útil para rastrear, mensaje a mensaje, el camino
 /// real que sigue una pieza física a través de las estaciones.
-/// Este componente está enganchado a los prefabs reales de las piezas (blanca, roja, azul), así
-/// que por defecto viene DESACTIVADO (<see cref="activarDebug"/> = false) para no llenar la
-/// consola ni gastar CPU calculando el Stack Trace durante una demo normal; solo hay que marcar
-/// la casilla en el Inspector cuando de verdad se necesite rastrear una pieza.
 /// </summary>
 public class DetectarCambioPadre : MonoBehaviour
 {
-    [Tooltip("Actívalo solo mientras estés depurando: registra en consola (con Stack Trace) cada vez que esta pieza cambia de padre.")]
-    public bool activarDebug = false;
-
     // Este método lo ejecuta Unity AUTOMÁTICAMENTE cada vez que cambia el padre del objeto
     private void OnTransformParentChanged()
     {
-        if (!activarDebug) return;
-
         // Si ya no tiene padre, significa que se ha "desemparentado" (sacado de cualquier contenedor).
         string nombrePadre = transform.parent != null ? transform.parent.name : "NINGUNO (Se ha desemparentado)";
 

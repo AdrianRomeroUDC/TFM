@@ -43,17 +43,13 @@ public class ControladorCamaraSSC : MonoBehaviour
     public float unityTiltMaxZ;
 
     [Header("Suavizado de Movimiento")]
-    [Tooltip("Recorte mínimo y máximo (en segundos) para la duración de cada interpolación, por si un mensaje tarda demasiado o llega duplicado al instante.")]
-    public float duracionInterpolacionMin = 0.02f;
-    public float duracionInterpolacionMax = 0.6f;
+    public float suavizado = 5f; // Cuanto más alto, más rápido "alcanza" la cámara virtual el ángulo real recibido por MQTT.
 
-    // Ángulo "anterior" y "nuevo" (en grados, escala de Unity) de cada eje: se actualizan al recibir
-    // un mensaje MQTT y se interpolan en Update() repartidos sobre el tiempo real transcurrido entre
-    // dos mensajes consecutivos, en vez de perseguirse con una velocidad de suavizado fija.
-    private float prevAnguloPanY, targetAnguloPanY;
-    private float prevAnguloTiltZ, targetAnguloTiltZ;
-    private float tInicioInterpolacion = -1f; // Instante (Time.time) del último mensaje de telemetría; -1 = aún no ha llegado ninguno.
-    private float duracionInterpolacion = 0.1f; // Tiempo real que debe durar la interpolación hasta el próximo mensaje; se recalcula con cada mensaje nuevo.
+    // Objetivos flotantes a los que deben llegar los ángulos específicos
+    // Guardan el ángulo (en grados, escala de Unity) hacia el que debe moverse cada eje; se
+    // actualizan al recibir un mensaje MQTT y se persiguen suavemente en Update().
+    private float targetAnguloPanY;
+    private float targetAnguloTiltZ;
 
     // --- MÉTODOS DE CAPTURA CON CLIC DERECHO ---
     // Extraen exclusivamente el eje que te interesa independientemente de lo que marque el Inspector
@@ -69,10 +65,10 @@ public class ControladorCamaraSSC : MonoBehaviour
         // Esperamos de forma segura a que exista el cliente MQTT antes de suscribirnos.
         StartCoroutine(IntentarSuscripcionSegura());
 
-        // Inicializamos el ángulo anterior y el objetivo con los valores actuales que tengan al
-        // arrancar (para que la cámara no dé un salto brusco nada más empezar la escena).
-        if (ejePan) prevAnguloPanY = targetAnguloPanY = ejePan.localEulerAngles.y;
-        if (ejeTilt) prevAnguloTiltZ = targetAnguloTiltZ = ejeTilt.localEulerAngles.z;
+        // Inicializamos los objetivos con los valores actuales que tengan al arrancar
+        // (para que la cámara no dé un salto brusco nada más empezar la escena).
+        if (ejePan) targetAnguloPanY = ejePan.localEulerAngles.y;
+        if (ejeTilt) targetAnguloTiltZ = ejeTilt.localEulerAngles.z;
     }
 
     // Corrutina que espera, frame a frame, a que el cliente MQTT central esté listo en la
@@ -99,15 +95,6 @@ public class ControladorCamaraSSC : MonoBehaviour
     /// <param name="plcTilt">Valor bruto del eje de cabeceo vertical (tilt) tal y como lo manda el PLC real.</param>
     private void ProcesarTelemetriaCamara(float plcPan, float plcTilt)
     {
-        // Antes de sustituir los ángulos objetivo, guardamos como "punto de partida" el ángulo que
-        // cada eje tiene ahora mismo (ya interpolado), no el antiguo objetivo en bruto, para que el
-        // siguiente tramo de interpolación arranque sin ningún salto visual.
-        float fracActual = (tInicioInterpolacion >= 0f && duracionInterpolacion > 0f)
-            ? Mathf.Clamp01((Time.time - tInicioInterpolacion) / duracionInterpolacion)
-            : 1f;
-        prevAnguloPanY = Mathf.LerpAngle(prevAnguloPanY, targetAnguloPanY, fracActual);
-        prevAnguloTiltZ = Mathf.LerpAngle(prevAnguloTiltZ, targetAnguloTiltZ, fracActual);
-
         // 1. Mapear el valor analógico del PLC al ángulo Y del Pan
         // Primero calculamos qué porcentaje (0 a 1) representa el valor del PLC dentro de su
         // rango real, y luego aplicamos ese mismo porcentaje al rango de ángulos de Unity.
@@ -117,31 +104,15 @@ public class ControladorCamaraSSC : MonoBehaviour
         // 2. Mapear el valor analógico del PLC al ángulo Z del Tilt
         float porcentajeTilt = Mathf.InverseLerp(plcTiltMin, plcTiltMax, plcTilt);
         targetAnguloTiltZ = Mathf.LerpAngle(unityTiltMinZ, unityTiltMaxZ, porcentajeTilt);
-
-        // Medimos cuánto ha tardado en llegar este mensaje desde el anterior (normalmente ~100ms) y
-        // usamos ese mismo intervalo real para repartir la interpolación del próximo tramo, recortado
-        // a un rango razonable por si hay un corte de red o un mensaje duplicado instantáneo.
-        float ahora = Time.time;
-        if (tInicioInterpolacion >= 0f)
-        {
-            duracionInterpolacion = Mathf.Clamp(ahora - tInicioInterpolacion, duracionInterpolacionMin, duracionInterpolacionMax);
-        }
-        tInicioInterpolacion = ahora;
     }
 
     void Update()
     {
-        // En qué punto de la interpolación estamos entre el mensaje anterior y el más reciente,
-        // repartido sobre el tiempo real que tardó en llegar el mensaje nuevo (ver ProcesarTelemetriaCamara).
-        float frac = (tInicioInterpolacion >= 0f && duracionInterpolacion > 0f)
-            ? Mathf.Clamp01((Time.time - tInicioInterpolacion) / duracionInterpolacion)
-            : 1f;
-
         // --- CONTROL ESTRICTO DEL PAN (Solo Y, X=0, Z=0) ---
         if (ejePan != null)
         {
-            // Interpolamos únicamente el ángulo Y usando LerpAngle para transiciones limpias
-            float currentY = Mathf.LerpAngle(prevAnguloPanY, targetAnguloPanY, frac);
+            // Calculamos el suavizado únicamente en el ángulo Y usando LerpAngle para transiciones limpias
+            float currentY = Mathf.LerpAngle(ejePan.localEulerAngles.y, targetAnguloPanY, Time.deltaTime * suavizado);
 
             // Forzamos explícitamente a que X y Z sean 0 en cada frame
             // (para que el soporte de pan nunca se incline ni gire en un eje que no le corresponde).
@@ -151,8 +122,8 @@ public class ControladorCamaraSSC : MonoBehaviour
         // --- CONTROL ESTRICTO DEL TILT (Solo Z, X=0, Y=0) ---
         if (ejeTilt != null)
         {
-            // Interpolamos únicamente el ángulo Z
-            float currentZ = Mathf.LerpAngle(prevAnguloTiltZ, targetAnguloTiltZ, frac);
+            // Calculamos el suavizado únicamente en el ángulo Z
+            float currentZ = Mathf.LerpAngle(ejeTilt.localEulerAngles.z, targetAnguloTiltZ, Time.deltaTime * suavizado);
 
             // Forzamos explícitamente a que X e Y sean 0 en cada frame
             // (el 180 en Y es un ajuste fijo de orientación del modelo, no algo que cambie con MQTT).

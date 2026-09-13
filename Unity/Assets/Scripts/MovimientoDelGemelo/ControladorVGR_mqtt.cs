@@ -14,15 +14,7 @@ using System.Collections;
 /// </summary>
 public class ControladorVGR_mqtt : MonoBehaviour
 {
-    // Valores "anterior" y "nuevo" (en unidades del PLC) de los 3 ejes, usados para interpolar el
-    // movimiento en el tiempo real transcurrido entre dos mensajes MQTT consecutivos, en vez de
-    // perseguir el objetivo con una velocidad de suavizado fija: así el movimiento se adapta solo a
-    // la cadencia real de red (100ms en condiciones normales) y se estira en vez de saltar si algún
-    // mensaje llega tarde.
-    private float prevRot, prevVert, prevExt;
-    private float targetRot, targetVert, targetExt;
-    private float tInicioInterpolacion = -1f; // Instante (Time.time) en que llegó el último mensaje de posición; -1 = aún no ha llegado ninguno.
-    private float duracionInterpolacion = 0.1f; // Tiempo real que debe durar la interpolación hasta el próximo mensaje; se recalcula con cada mensaje nuevo.
+    private float lastRot, lastVert, lastExt; // Última posición de los 3 ejes recibida por MQTT (en unidades del PLC real).
     private bool estadoGripPendiente = false; // Nuevo estado de la ventosa recibido, pendiente de aplicar en Update().
     private bool cambioGripDetectado = false; // Aviso de que ha llegado un cambio de ventosa que aún no se ha procesado.
 
@@ -65,9 +57,7 @@ public class ControladorVGR_mqtt : MonoBehaviour
     [ContextMenuItem("Capturar", "CapturarExtMax")] public float unityExt_Max;
 
     [Header("Ajustes")]
-    [Tooltip("Recorte mínimo y máximo (en segundos) para la duración de cada interpolación, por si un mensaje tarda demasiado o llega duplicado al instante.")]
-    public float duracionInterpolacionMin = 0.02f;
-    public float duracionInterpolacionMax = 0.6f;
+    public float lerpSpeed = 5f; // Velocidad de suavizado del movimiento (más alto = el gemelo digital "alcanza" antes la posición real).
 
     // --- VARIABLES PARA MONITOREAR CONTROL DE CALIDAD DSI (MUNDIAL) ---
     // Tras agarrar una pieza que viene de la entrada DSI de la DPS, vigilamos si el sensor real
@@ -149,42 +139,29 @@ public class ControladorVGR_mqtt : MonoBehaviour
             cambioGripDetectado = false;
         }
 
-        // En qué punto de la interpolación estamos entre el mensaje anterior y el más reciente,
-        // repartido sobre el tiempo real que tardó en llegar el mensaje nuevo (ver ActualizarPosicionDesdeMQTT).
-        float frac = (tInicioInterpolacion >= 0f && duracionInterpolacion > 0f)
-            ? Mathf.Clamp01((Time.time - tInicioInterpolacion) / duracionInterpolacion)
-            : 1f;
+        float speed = lerpSpeed * Time.deltaTime;
 
-        // Movemos cada eje del robot interpolando entre la posición anterior y la nueva, convirtiendo
-        // primero las unidades del PLC a la escala del modelo 3D de Unity.
+        // Movemos suavemente (con Slerp/Lerp) cada eje del robot hacia la posición real recibida
+        // por MQTT, convirtiendo primero las unidades del PLC a la escala del modelo 3D de Unity.
         if (ejeRotacion)
         {
-            float tPrev = Mathf.InverseLerp(plcRot_Min, plcRot_Max, prevRot);
-            float tTarget = Mathf.InverseLerp(plcRot_Min, plcRot_Max, targetRot);
-            float anguloPrev = unityRot_Min + (unityRot_Max - unityRot_Min) * tPrev;
-            float anguloTarget = unityRot_Min + (unityRot_Max - unityRot_Min) * tTarget;
-            float anguloInterpolado = Mathf.LerpAngle(anguloPrev, anguloTarget, frac);
-            ejeRotacion.localRotation = Quaternion.Euler(0, anguloInterpolado, 0);
+            float t = Mathf.InverseLerp(plcRot_Min, plcRot_Max, lastRot);
+            float targetAngle = unityRot_Min + (unityRot_Max - unityRot_Min) * t;
+            ejeRotacion.localRotation = Quaternion.Slerp(ejeRotacion.localRotation, Quaternion.Euler(0, targetAngle, 0), speed);
         }
 
         if (ejeVertical)
         {
-            float tPrevV = Mathf.InverseLerp(plcVert_Min, plcVert_Max, prevVert);
-            float tTargetV = Mathf.InverseLerp(plcVert_Min, plcVert_Max, targetVert);
-            float yPrev = Mathf.Lerp(unityVert_Min, unityVert_Max, tPrevV);
-            float yTarget = Mathf.Lerp(unityVert_Min, unityVert_Max, tTargetV);
-            float yInterpolado = Mathf.Lerp(yPrev, yTarget, frac);
-            ejeVertical.localPosition = new Vector3(ejeVertical.localPosition.x, yInterpolado, ejeVertical.localPosition.z);
+            float tV = Mathf.InverseLerp(plcVert_Min, plcVert_Max, lastVert);
+            float targetY = Mathf.Lerp(unityVert_Min, unityVert_Max, tV);
+            ejeVertical.localPosition = Vector3.Lerp(ejeVertical.localPosition, new Vector3(ejeVertical.localPosition.x, targetY, ejeVertical.localPosition.z), speed);
         }
 
         if (ejeExtension)
         {
-            float tPrevE = Mathf.InverseLerp(plcExt_Min, plcExt_Max, prevExt);
-            float tTargetE = Mathf.InverseLerp(plcExt_Min, plcExt_Max, targetExt);
-            float xPrev = Mathf.Lerp(unityExt_Min, unityExt_Max, tPrevE);
-            float xTarget = Mathf.Lerp(unityExt_Min, unityExt_Max, tTargetE);
-            float xInterpolado = Mathf.Lerp(xPrev, xTarget, frac);
-            ejeExtension.localPosition = new Vector3(xInterpolado, ejeExtension.localPosition.y, ejeExtension.localPosition.z);
+            float tE = Mathf.InverseLerp(plcExt_Min, plcExt_Max, lastExt);
+            float targetX = Mathf.Lerp(unityExt_Min, unityExt_Max, tE);
+            ejeExtension.localPosition = Vector3.Lerp(ejeExtension.localPosition, new Vector3(targetX, ejeExtension.localPosition.y, ejeExtension.localPosition.z), speed);
         }
 
         // --- 1. SISTEMA ANTIFALLO DSI EN ESPACIO MUNDIAL ---
@@ -360,32 +337,10 @@ public class ControladorVGR_mqtt : MonoBehaviour
         }
     }
 
-    // Guarda la nueva posición de los 3 ejes recibida por MQTT y prepara la interpolación hacia
-    // ella; el movimiento real ocurre en Update(), repartido sobre el tiempo real que tarde en
-    // llegar el próximo mensaje.
+    // Guarda la última posición de los 3 ejes recibida por MQTT; el suavizado real ocurre en Update().
     private void ActualizarPosicionDesdeMQTT(float rot, float vert, float ext)
     {
-        // Antes de sustituir los valores objetivo, guardamos como "punto de partida" el valor que
-        // el eje tiene ahora mismo (ya interpolado), no el antiguo objetivo en bruto, para que el
-        // siguiente tramo de interpolación arranque sin ningún salto visual.
-        float fracActual = (tInicioInterpolacion >= 0f && duracionInterpolacion > 0f)
-            ? Mathf.Clamp01((Time.time - tInicioInterpolacion) / duracionInterpolacion)
-            : 1f;
-        prevRot = Mathf.Lerp(prevRot, targetRot, fracActual);
-        prevVert = Mathf.Lerp(prevVert, targetVert, fracActual);
-        prevExt = Mathf.Lerp(prevExt, targetExt, fracActual);
-
-        targetRot = rot; targetVert = vert; targetExt = ext;
-
-        // Medimos cuánto ha tardado en llegar este mensaje desde el anterior (normalmente ~100ms) y
-        // usamos ese mismo intervalo real para repartir la interpolación del próximo tramo, recortado
-        // a un rango razonable por si hay un corte de red o un mensaje duplicado instantáneo.
-        float ahora = Time.time;
-        if (tInicioInterpolacion >= 0f)
-        {
-            duracionInterpolacion = Mathf.Clamp(ahora - tInicioInterpolacion, duracionInterpolacionMin, duracionInterpolacionMax);
-        }
-        tInicioInterpolacion = ahora;
+        lastRot = rot; lastVert = vert; lastExt = ext;
     }
 
     // Marca que ha llegado un cambio de estado de la ventosa (agarrar/soltar), para procesarlo

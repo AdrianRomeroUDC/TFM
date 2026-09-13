@@ -11,16 +11,8 @@ using System.Collections;
 /// </summary>
 public class ControladorHBWposition_mqtt : MonoBehaviour
 {
-    // Valor "anterior" y "nuevo" (en unidades del PLC) de los ejes Horizontal y Vertical, usados
-    // para interpolar el movimiento en el tiempo real transcurrido entre dos mensajes MQTT
-    // consecutivos, en vez de perseguir el objetivo con una velocidad de suavizado fija.
-    private float prevH, targetH, prevV, targetV;
-    private float tInicioInterpolacion = -1f; // Instante (Time.time) del último mensaje de posición; -1 = aún no ha llegado ninguno.
-    private float duracionInterpolacion = 0.1f; // Tiempo real que debe durar la interpolación hasta el próximo mensaje; se recalcula con cada mensaje nuevo.
-
-    // Último valor recibido por MQTT para el eje de Extensión (en unidades del PLC real): es una
-    // orden discreta (-512/0/512), no una posición continua, así que no se interpola como H/V.
-    private float lastE;
+    // Últimos valores recibidos por MQTT para cada eje: Horizontal, Vertical y Extensión (en unidades del PLC real).
+    private float lastH, lastV, lastE;
 
     // Aviso de que ha llegado una orden nueva de estirar/recoger el brazo, para procesarla en el siguiente Update().
     private bool hayNuevaOrdenEstirar = false;
@@ -45,9 +37,7 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
     [ContextMenuItem("Capturar", "CapturarExtRec")] public float unityE_Recogido;
 
     [Header("Ajustes de Animación")]
-    [Tooltip("Recorte mínimo y máximo (en segundos) para la duración de cada interpolación de H/V, por si un mensaje tarda demasiado o llega duplicado al instante.")]
-    public float duracionInterpolacionMin = 0.02f;
-    public float duracionInterpolacionMax = 0.6f;
+    public float lerpSpeed = 5f;        // Velocidad de suavizado del movimiento de los carros de cada eje.
     public float tiempoAnimacion = 4f;   // Segundos que tarda el brazo en estirarse o recogerse del todo.
 
     [Header("Estado del Agarre")]
@@ -76,32 +66,12 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
         Debug.Log("<color=green>HBW suscrito correctamente</color>");
     }
 
-    // Guarda la nueva posición real que acaba de reportar el carro del almacén y prepara la
-    // interpolación de los ejes Horizontal/Vertical hacia ella; el movimiento real ocurre después,
-    // en Update(), repartido sobre el tiempo real que tarde en llegar el próximo mensaje.
+    // Guarda la posición real que acaba de reportar el carro del almacén; el movimiento suave del
+    // modelo 3D hacia esa posición se hace después, en Update().
     private void ActualizarPosicionDesdeMQTT(float hor, float vert, float ext)
     {
-        // Antes de sustituir los valores objetivo, guardamos como "punto de partida" el valor que
-        // cada eje tiene ahora mismo (ya interpolado), no el antiguo objetivo en bruto, para que el
-        // siguiente tramo de interpolación arranque sin ningún salto visual.
-        float fracActual = (tInicioInterpolacion >= 0f && duracionInterpolacion > 0f)
-            ? Mathf.Clamp01((Time.time - tInicioInterpolacion) / duracionInterpolacion)
-            : 1f;
-        prevH = Mathf.Lerp(prevH, targetH, fracActual);
-        prevV = Mathf.Lerp(prevV, targetV, fracActual);
-
-        targetH = hor;   // Nueva posición objetivo del eje Horizontal (columna A/B/C).
-        targetV = vert;  // Nueva posición objetivo del eje Vertical (fila 1/2/3).
-
-        // Medimos cuánto ha tardado en llegar este mensaje desde el anterior (normalmente ~100ms) y
-        // usamos ese mismo intervalo real para repartir la interpolación del próximo tramo, recortado
-        // a un rango razonable por si hay un corte de red o un mensaje duplicado instantáneo.
-        float ahora = Time.time;
-        if (tInicioInterpolacion >= 0f)
-        {
-            duracionInterpolacion = Mathf.Clamp(ahora - tInicioInterpolacion, duracionInterpolacionMin, duracionInterpolacionMax);
-        }
-        tInicioInterpolacion = ahora;
+        lastH = hor;   // Nueva posición objetivo del eje Horizontal (columna A/B/C).
+        lastV = vert;  // Nueva posición objetivo del eje Vertical (fila 1/2/3).
 
         // El brazo extractor real no manda una posición continua, sino dos órdenes discretas:
         // -512 significa "estirar el brazo" y 512 significa "recoger el brazo". Solo reaccionamos
@@ -131,35 +101,25 @@ public class ControladorHBWposition_mqtt : MonoBehaviour
             IniciarAnimacionExtension(lastE == -512 ? unityE_Estirado : unityE_Recogido);
         }
 
-        // En qué punto de la interpolación estamos entre el mensaje anterior y el más reciente,
-        // repartido sobre el tiempo real que tardó en llegar el mensaje nuevo (ver ActualizarPosicionDesdeMQTT).
-        float frac = (tInicioInterpolacion >= 0f && duracionInterpolacion > 0f)
-            ? Mathf.Clamp01((Time.time - tInicioInterpolacion) / duracionInterpolacion)
-            : 1f;
+        float dt = Time.deltaTime;
 
-        // --- MOVIMIENTO DEL EJE HORIZONTAL (columna A/B/C del almacén) ---
+        // --- MOVIMIENTO SUAVE DEL EJE HORIZONTAL (columna A/B/C del almacén) ---
         if (ejeHorizontal)
         {
-            float tPrevH = Mathf.InverseLerp(plcH_Min, plcH_Max, prevH); // Convertimos la posición anterior del PLC a un valor entre 0 y 1.
-            float tTargetH = Mathf.InverseLerp(plcH_Min, plcH_Max, targetH); // Lo mismo para la posición nueva.
-            float zPrev = Mathf.Lerp(unityH_Min, unityH_Max, tPrevH);  // Traducimos ambos 0-1 a la posición equivalente en el modelo 3D.
-            float zTarget = Mathf.Lerp(unityH_Min, unityH_Max, tTargetH);
-            float zInterpolado = Mathf.Lerp(zPrev, zTarget, frac);
+            float tH = Mathf.InverseLerp(plcH_Min, plcH_Max, lastH); // Convertimos la posición real del PLC a un valor entre 0 y 1.
+            float targetZ = Mathf.Lerp(unityH_Min, unityH_Max, tH);  // Traducimos ese 0-1 a la posición equivalente en el modelo 3D.
             Vector3 p = ejeHorizontal.localPosition;
-            p.z = zInterpolado; // Desplazamos el carro hacia esa posición interpolada en el eje Z.
+            p.z = Mathf.Lerp(p.z, targetZ, lerpSpeed * dt);          // Desplazamos el carro suavemente hacia esa posición en el eje Z.
             ejeHorizontal.localPosition = p;
         }
 
-        // --- MOVIMIENTO DEL EJE VERTICAL (fila 1/2/3 del almacén) ---
+        // --- MOVIMIENTO SUAVE DEL EJE VERTICAL (fila 1/2/3 del almacén) ---
         if (ejeVertical)
         {
-            float tPrevV = Mathf.InverseLerp(plcV_Min, plcV_Max, prevV); // Convertimos la posición anterior del PLC a un valor entre 0 y 1.
-            float tTargetV = Mathf.InverseLerp(plcV_Min, plcV_Max, targetV); // Lo mismo para la posición nueva.
-            float yPrev = Mathf.Lerp(unityV_Min, unityV_Max, tPrevV);  // Traducimos ambos 0-1 a la posición equivalente en el modelo 3D.
-            float yTarget = Mathf.Lerp(unityV_Min, unityV_Max, tTargetV);
-            float yInterpolado = Mathf.Lerp(yPrev, yTarget, frac);
+            float tV = Mathf.InverseLerp(plcV_Min, plcV_Max, lastV); // Convertimos la posición real del PLC a un valor entre 0 y 1.
+            float targetY = Mathf.Lerp(unityV_Min, unityV_Max, tV);  // Traducimos ese 0-1 a la posición equivalente en el modelo 3D.
             Vector3 p = ejeVertical.localPosition;
-            p.y = yInterpolado; // Desplazamos el carro hacia esa posición interpolada en el eje Y.
+            p.y = Mathf.Lerp(p.y, targetY, lerpSpeed * dt);          // Desplazamos el carro suavemente hacia esa posición en el eje Y.
             ejeVertical.localPosition = p;
 
             // Bloque original comentado para prevenir caídas accidentales basándose puramente en altura:
