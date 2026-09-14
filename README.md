@@ -58,6 +58,6 @@ Abre `ROBO Pro Coding/FactoryMain-DigitalTwin.ft` con el software ROBO Pro Codin
 
 ---
 
-[!NOTE]
-**Nota:** la carpeta `vscode/` contiene una copia del código Python pensada por si en el futuro se programa desde ese entorno (VS Code). El código que realmente se ejecuta en el controlador es el empaquetado en `ROBO Pro Coding/FactoryMain-DigitalTwin.ft`.
+> [!NOTE]
+> **Nota:** la carpeta `vscode/` contiene una copia del código Python pensada por si en el futuro se programa desde ese entorno (VS Code). El código que realmente se ejecuta en el controlador es el empaquetado en `ROBO Pro Coding/FactoryMain-DigitalTwin.ft`.
 
