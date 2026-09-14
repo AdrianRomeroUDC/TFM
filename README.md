@@ -51,7 +51,7 @@ Abre `ROBO Pro Coding/FactoryMain-DigitalTwin.ft` con el software ROBO Pro Codin
 - **`lib/MQTT.py`** (función `connectLocal()`): host, puerto, usuario y contraseña del broker MQTT local.
 - **`lib/Influx_Collector.py`**: los mismos datos del broker MQTT, además de `INFLUX_BASE_URL`, `INFLUX_ORG`, `INFLUX_BUCKET` y `INFLUX_TOKEN` de tu instancia de InfluxDB Cloud.
 
-### Lado Unity
+### Unity
 
 - **`MQTTClient`** (componente en la escena `GemeloDigital_LearningFactory`): rellenar en el Inspector los campos `Broker Host`, `Puerto`, `Usuario` y `Contrasena`.
 - **`InfluxDBClient`** (componente en la misma escena): rellenar en el Inspector los campos `Server Url`, `Token`, `Org` y `Bucket`.
