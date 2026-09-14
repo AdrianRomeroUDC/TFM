@@ -12,13 +12,17 @@ import os
 try:
     from urllib.request import Request, urlopen
     from urllib.error import HTTPError, URLError
+    from urllib.parse import quote
 except ImportError:
     from urllib2 import Request, urlopen, HTTPError, URLError
 
 from fischertechnik.mqtt.MqttClient import MqttClient
 
-INFLUX_URL = 'https://your-influx-instance.example.com' # Cambiar por la URL de InfluxDB Cloud que se haya creado
-INFLUX_TOKEN = 'ChangeMe' # Cambiar por el token de InfluxDB Cloud que se haya creado
+INFLUX_BASE_URL = 'ChangeMe'  # Ej: https://eu-central-1-1.aws.cloud2.influxdata.com
+INFLUX_ORG = 'ChangeMe' # Cambiar por el nombre de la organizacion en InfluxDB
+INFLUX_BUCKET = 'ChangeMe' # Cambiar por el nombre del bucket en InfluxDB
+INFLUX_TOKEN = 'ChangeMe' # Cambiar por el token de acceso a InfluxDB
+INFLUX_URL = '{0}/api/v2/write?org={1}&bucket={2}&precision=ms'.format(INFLUX_BASE_URL, quote(INFLUX_ORG), quote(INFLUX_BUCKET))
 
 MQTT_HOST = 'ChangeMe' # Cambiar por la IP o dominio del broker MQTT
 MQTT_PORT = 1884 # Cambiar por el puerto del broker MQTT
