@@ -53,7 +53,7 @@ def connectLocal():
   global _tr0, _tr, _dg, state, type2, client_local, is_cloud_connected, ts_publishStorage, last_movement_alarm, tsdiff, payload_order, last_temperature_alarm, last_humidity_alarm, ts, _type
   logging.log(logging.TRACE_FCL, '-')
   # El cliente local recibe órdenes de operación y publica estados de planta.
-  client_local = MqttClient(client_id='factory-main-txt-') # Cliente local #TODO: ID de cliente único para evitar conflictos
+  client_local = MqttClient(client_id='factory-main-txt-') # Cliente local
   set_client_local(client_local)
   for count in range(10): # Reintenta la conexión hasta 10 veces
     logging.log(logging.DEBUG_FCL, 'connecting local ...')

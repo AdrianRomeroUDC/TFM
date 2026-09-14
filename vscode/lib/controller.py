@@ -1,10 +1,7 @@
 """El plano de cableado de la fabrica, escrito en Python.
 
-Cada TXT 4.0 es una cajita controladora atornillada a una estacion fisica
-(la camara, el almacen, el brazo, el horno, la mesa giratoria o la cinta de
-clasificacion). A cada una le hemos enchufado sensores, motores y luces en
-unos conectores numerados (I1, I2... para entradas; O1, O2... para salidas;
-M1, M2... para motores). Este archivo le pone nombre a cada cable para que,
+Cada TXT 4.0 es un controlador asociado a una estacion física.
+Este archivo le pone nombre a cada cable para que,
 en el resto del programa, en vez de escribir "enciende la salida 7 del
 controlador 3" podamos escribir "abre la puerta del horno".
 
