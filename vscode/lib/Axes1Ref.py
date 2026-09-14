@@ -125,12 +125,6 @@ def update_live():
           continue
 
         step = delta - live_last_delta[i]
-        # Ningun ciclo de 100ms puede recorrer todo el rango fisico del eje: si el
-        # salto es asi de grande, el contador del encoder se ha reiniciado de forma
-        # anomala y se descarta ese ciclo en vez de arrastrar el error para siempre.
-        if abs(step) > ABSLIMIT[i]:
-          live_last_delta[i] = delta
-          continue
         live_last_delta[i] = delta
         live_abspos[i] = live_abspos[i] - step
         new_abs = live_abspos[i]
@@ -143,11 +137,6 @@ def update_live():
           live_abspos[i] = min(live_abspos[i], new_abs)
         else:
           live_abspos[i] = new_abs
-    else:
-      # Eje parado: se resincroniza cada ciclo con la posicion oficial (abspos),
-      # que es robusta frente a reinicios del encoder, para que una lectura
-      # corrupta de live_abspos no se quede arrastrada indefinidamente.
-      live_abspos[i] = abspos[i]
 
 
 def get_live_abspos(axis):
@@ -189,6 +178,22 @@ def _get_axis_step_count(num):
     return TXT_SSC_M_C2_motor_step_counter.get_count()
   return 0
 
+def _set_abspos_live_from_counter(num, abs_start, rv):
+  """Calcula la posición en vivo desde una posición inicial y el encoder.
+
+  Args:
+    num: Número lógico del eje que se actualiza.
+    abs_start: Posición absoluta al comienzo del movimiento.
+    rv: Sentido del movimiento relativo; positivo incrementa y negativo decrementa.
+
+  Returns:
+    None.
+  """
+  count = _get_axis_step_count(num)
+  if rv > 0:
+    live_abspos[int(num - 1)] = min(abs_start + count, ABSLIMIT[int(num - 1)])
+  elif rv < 0:
+    live_abspos[int(num - 1)] = max(abs_start - count, 0)
 # Actualiza la posición absoluta después de un movimiento relativo.
 def _update_abspos(num, rv):
   """Actualiza la posición absoluta usando el desplazamiento del encoder.
@@ -500,7 +505,7 @@ def moveRel(num, rv):
   Returns:
     None.
   """
-  global _tr0, _tr, _dg, msg, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, _ref_last, SPEED_REF, TIMEOUT_S
+  global _tr0, _tr, _dg, msg, av, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   logging.log(logging.TRACE_A1R, num)
 
   if num < 1 or num > len(ABSLIMIT):
@@ -602,6 +607,7 @@ def moveRel(num, rv):
       if not running or _b_exit:
         break
 
+      _set_abspos_live_from_counter(num, abs_start, rv)
       _check_timeout_exit(num)
 
     abspos[num - 1] = abs_start + rv
@@ -622,7 +628,7 @@ def moveAbs(num, av):
   Returns:
     None.
   """
-  global _tr0, _tr, _dg, msg, rv, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, _ref_last, SPEED_REF, TIMEOUT_S
+  global _tr0, _tr, _dg, msg, rv, abspos, ABSLIMIT, _b_exit, tsdiff, _ref_valid, SPEED, ts0, temp, _ref_last, SPEED_REF, TIMEOUT_S
   if num < 1 or num > len(ABSLIMIT):
     logging.error('A1R: num out of bounds: %d', num)
     return
