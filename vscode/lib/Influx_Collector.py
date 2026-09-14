@@ -18,7 +18,7 @@ except ImportError:
 
 from fischertechnik.mqtt.MqttClient import MqttClient
 
-INFLUX_BASE_URL = 'ChangeMe'  # Ej: https://eu-central-1-1.aws.cloud2.influxdata.com
+INFLUX_BASE_URL = 'ChangeMe'  # Cambiar por la URL de InfluxDB
 INFLUX_ORG = 'ChangeMe' # Cambiar por el nombre de la organizacion en InfluxDB
 INFLUX_BUCKET = 'ChangeMe' # Cambiar por el nombre del bucket en InfluxDB
 INFLUX_TOKEN = 'ChangeMe' # Cambiar por el token de acceso a InfluxDB
