@@ -338,17 +338,33 @@ public class SimuladorOffline : MonoBehaviour
             // Tratamiento especial de stock: la UI se actualiza, el 3D no para no vaciar cajones
             if (ev.topic == "f/i/stock")
             {
-                // Actualizamos la interfaz (lista de inventario) pero NO reenviamos este mensaje al
-                // MQTTClient "de escena", para que el almacén 3D no se vacíe/rellene de golpe con
-                // cada actualización de stock grabada.
-                if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.isActiveAndEnabled)
-                {
-                    MQTT_InterfaceClient.Instance.ProcesarMensajeExterno(ev.topic, ev.payloadJson);
-                }
                 try
                 {
                     JSON_FullStock stockActualizado = JsonUtility.FromJson<JSON_FullStock>(ev.payloadJson);
-                    if (stockActualizado != null) ultimoStockConocido = stockActualizado;
+                    if (stockActualizado != null)
+                    {
+                        // Sustituimos los IDs reales grabados por IDs sintéticos OFFLINE_0..OFFLINE_N,
+                        // igual que hace InicializarStockPorDefecto, para que el panel del almacén
+                        // muestre siempre la misma convención en modo simulación offline.
+                        if (stockActualizado.stockItems != null)
+                        {
+                            for (int i = 0; i < stockActualizado.stockItems.Length; i++)
+                            {
+                                JSON_Workpiece workpiece = stockActualizado.stockItems[i].workpiece;
+                                if (workpiece != null) workpiece.id = $"OFFLINE_{i}";
+                            }
+                        }
+
+                        ultimoStockConocido = stockActualizado;
+
+                        // Actualizamos la interfaz (lista de inventario) con los IDs ya renumerados,
+                        // pero NO reenviamos este mensaje al MQTTClient "de escena", para que el
+                        // almacén 3D no se vacíe/rellene de golpe con cada actualización de stock grabada.
+                        if (MQTT_InterfaceClient.Instance != null && MQTT_InterfaceClient.Instance.isActiveAndEnabled)
+                        {
+                            MQTT_InterfaceClient.Instance.ProcesarMensajeExterno(ev.topic, JsonUtility.ToJson(stockActualizado));
+                        }
+                    }
                 }
                 catch { }
 

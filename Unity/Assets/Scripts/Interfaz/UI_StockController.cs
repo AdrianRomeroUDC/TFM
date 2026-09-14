@@ -252,7 +252,13 @@ public class UI_StockController : MonoBehaviour
     {
         if (slotBajoElCursor == null || panelTooltip == null || txtTooltipContenido == null) return;
 
-        if (slotBajoElCursor.piezaActual == null || string.IsNullOrEmpty(slotBajoElCursor.piezaActual.id))
+        // Un hueco se considera vacío si no hay pieza, o si su color no es ninguno de los tres
+        // reconocidos (por ejemplo la fábrica real marca los huecos vacíos con type "NONE"),
+        // el mismo criterio que usa ActualizarPanelAlmacen para elegir el sprite vacío.
+        string tipoPieza = slotBajoElCursor.piezaActual?.type?.ToUpper();
+        bool esColorValido = tipoPieza == "WHITE" || tipoPieza == "RED" || tipoPieza == "BLUE";
+
+        if (slotBajoElCursor.piezaActual == null || !esColorValido)
         {
             panelTooltip.SetActive(false);
             return;
