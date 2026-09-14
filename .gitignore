@@ -1,0 +1,10 @@
+# Caché de Visual Studio (se genera en la raíz al abrir Unity/Unity.slnx)
+.vs/
+
+# Secretos y configuración local (defensa extra, ya cubiertos también en vscode/.gitignore)
+.env
+**/.claude/
+
+# Basura de SO
+Thumbs.db
+.DS_Store

@@ -5,6 +5,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// Panel de la interfaz que permite al usuario elegir un rango de fechas y horas (inicio y fin)
+/// para reproducir el histórico de la fábrica guardado en InfluxDB. Gestiona el calendario y los
+/// desplegables de hora/minuto/segundo de ambos extremos del rango, valida y expone ese rango a
+/// <see cref="UI_ControladorMenu"/> (que es quien realmente arranca la reproducción llamando a
+/// <c>InfluxDBClient</c>), y recuerda la última selección del usuario entre reinicios de la escena
+/// mediante variables estáticas.
+/// </summary>
 public class UI_SeccionBBDD : MonoBehaviour
 {
     [Header("Botones Multiplicador")]
@@ -22,16 +30,26 @@ public class UI_SeccionBBDD : MonoBehaviour
     [Header("Fecha y Hora - FIN")]
     public UI_CalendarPicker calendarFin;
     public TMP_Dropdown dropdownHoraFin;
-    public TMP_Dropdown dropdownMinFin; // 👈 ¡Declarada aquí para solucionar el error!
+    public TMP_Dropdown dropdownMinFin; // Dropdown de minutos del rango FIN.
     public TMP_Dropdown dropdownSegFin;
 
-    // Persistencia global de fechas seleccionadas por el usuario
+    // Persistencia global de fechas seleccionadas por el usuario: al ser "static", estos valores
+    // sobreviven a la recarga de la escena (que se usa, por ejemplo, al pulsar PLAY para cambiar de modo).
     private static bool fechasGuardadasInicializadas = false;
     private static DateTime fechaInicioGuardada;
     private static DateTime fechaFinGuardada;
 
+    // Callback que se ejecuta cada vez que el usuario cambia cualquier control de fecha/hora,
+    // para que UI_ControladorMenu pueda reevaluar si el botón PLAY debe mostrarse como "cambio pendiente".
     private Action callbackCambioControl;
 
+    /// <summary>
+    /// Prepara todo el panel: comprueba que las referencias del Inspector estén bien asignadas,
+    /// rellena los desplegables de hora/minuto/segundo, oculta los botones de multiplicador de
+    /// velocidad (no usados en este panel) y conecta los listeners de cambio en los controles.
+    /// La llama <see cref="UI_ControladorMenu"/> al arrancar la escena.
+    /// </summary>
+    /// <param name="alCambiarControl">Función a ejecutar cada vez que el usuario modifique una fecha u hora.</param>
     public void Inicializar(Action alCambiarControl)
     {
         Debug.Log("🔍 [UI_SeccionBBDD] -> Método Inicializar() llamado.");
@@ -43,6 +61,8 @@ public class UI_SeccionBBDD : MonoBehaviour
         VincularListenersDeCambioEnControles(alCambiarControl);
     }
 
+    // Comprueba que todas las referencias que deberían haberse arrastrado en el Inspector de Unity
+    // estén realmente asignadas, avisando por consola si falta alguna (ayuda a detectar errores de configuración).
     private void VerificarReferenciasInspector()
     {
         Debug.Log("🔍 [UI_SeccionBBDD] Comprobando referencias del Inspector...");
@@ -61,21 +81,29 @@ public class UI_SeccionBBDD : MonoBehaviour
 
     private void OnEnable()
     {
+        // Cada vez que este panel se vuelve a activar (por ejemplo al abrir el menú), refrescamos
+        // visualmente los desplegables, porque a veces Unity no repinta bien su texto tras estar ocultos.
         Debug.Log("🔍 [UI_SeccionBBDD] OnEnable() ejecutado. Iniciando corrutina de refresco visual.");
         StartCoroutine(RefrescarVisualsAlActivar());
     }
 
+    // Espera un frame antes de refrescar, para dar tiempo a que Unity termine de activar todos los
+    // componentes del panel antes de tocar su contenido visual.
     private IEnumerator RefrescarVisualsAlActivar()
     {
         yield return null; // Esperar 1 frame
         RefrescarTodosLosDropdownsVisualmente();
     }
 
+    // Este panel no usa los botones de multiplicador de velocidad (x1, x2, x5), así que se ocultan
+    // por completo si el contenedor está asignado.
     private void OcultarYColapsarMultiplicadores()
     {
         if (contenedorMultiplicador != null) contenedorMultiplicador.SetActive(false);
     }
 
+    // Conecta el callback de cambio a cada desplegable y a cada calendario, para que cualquier
+    // modificación que haga el usuario dispare la función indicada (normalmente, reevaluar el botón PLAY).
     private void VincularListenersDeCambioEnControles(Action alCambiarControl)
     {
         VincularListenerDropdown(dropdownHoraInicio, alCambiarControl);
@@ -88,6 +116,7 @@ public class UI_SeccionBBDD : MonoBehaviour
 
         if (calendarInicio != null)
         {
+            // Nos aseguramos de no dejar el listener duplicado si Inicializar() se llama más de una vez.
             calendarInicio.OnFechaSeleccionada -= ResponderACambio;
             calendarInicio.OnFechaSeleccionada += ResponderACambio;
         }
@@ -99,6 +128,8 @@ public class UI_SeccionBBDD : MonoBehaviour
         }
     }
 
+    // Ayuda a no repetir código: limpia los listeners previos del dropdown y añade uno nuevo
+    // que simplemente reenvía el aviso al callback recibido, ignorando el valor concreto elegido.
     private void VincularListenerDropdown(TMP_Dropdown dropdown, Action callback)
     {
         if (dropdown == null) return;
@@ -106,11 +137,15 @@ public class UI_SeccionBBDD : MonoBehaviour
         dropdown.onValueChanged.AddListener((_) => callback?.Invoke());
     }
 
+    // Adaptador para que el evento OnFechaSeleccionada del calendario (que manda la fecha elegida)
+    // encaje con el callback genérico "sin parámetros" que usa el resto del panel.
     private void ResponderACambio(DateTime fecha)
     {
         callbackCambioControl?.Invoke();
     }
 
+    // Rellena los desplegables de horas (0-23) y de minutos/segundos (0-59), usando por defecto
+    // la última fecha guardada (o, si es la primera vez, un rango de 8:00 a 18:00 del día actual).
     private void InicializarControlesTiempo()
     {
         if (!fechasGuardadasInicializadas)
@@ -140,6 +175,13 @@ public class UI_SeccionBBDD : MonoBehaviour
         if (calendarFin != null) calendarFin.SetFechaInicial(fechaFinGuardada);
     }
 
+    /// <summary>
+    /// Ajusta todos los controles del panel (calendarios y desplegables) para reflejar un rango de
+    /// fechas concreto. Se usa cuando la escena se recarga en modo "auto-arranque" (por ejemplo,
+    /// tras pulsar PLAY) y hay que restaurar exactamente la selección que el usuario había hecho antes.
+    /// </summary>
+    /// <param name="fechaIni">Fecha y hora de inicio del rango a restaurar.</param>
+    /// <param name="fechaFin">Fecha y hora de fin del rango a restaurar.</param>
     public void ConfigurarEstadoPorAutoStart(DateTime fechaIni, DateTime fechaFin)
     {
         Debug.Log($"🔄 [UI_SeccionBBDD] ConfigurarEstadoPorAutoStart: {fechaIni} -> {fechaFin}");
@@ -158,6 +200,14 @@ public class UI_SeccionBBDD : MonoBehaviour
         SetDropdownValor(dropdownSegFin, fechaFin.Second);
     }
 
+    /// <summary>
+    /// Lee los controles del panel (calendarios + desplegables de hora/minuto/segundo) y construye
+    /// las dos fechas completas (inicio y fin) que el usuario ha seleccionado para el histórico.
+    /// También guarda ese rango en las variables estáticas para que sobreviva a un reinicio de escena.
+    /// </summary>
+    /// <param name="fechaInicio">Fecha y hora de inicio resultante.</param>
+    /// <param name="fechaFin">Fecha y hora de fin resultante.</param>
+    /// <returns>true si se pudo construir el rango correctamente; false si ocurrió algún error.</returns>
     public bool ObtenerRangoFechas(out DateTime fechaInicio, out DateTime fechaFin)
     {
         fechaInicio = DateTime.Now;
@@ -189,6 +239,12 @@ public class UI_SeccionBBDD : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Activa o desactiva todos los controles del panel (calendarios y desplegables). Se usa para
+    /// bloquear el panel cuando el modo activo no es el histórico de base de datos, evitando que el
+    /// usuario cambie fechas mientras no tiene efecto.
+    /// </summary>
+    /// <param name="estado">true para permitir la interacción, false para bloquearla.</param>
     public void SetUIInteractables(bool estado)
     {
         if (calendarInicio != null) calendarInicio.SetInteractable(estado);
@@ -211,6 +267,8 @@ public class UI_SeccionBBDD : MonoBehaviour
         }
     }
 
+    // Rellena un desplegable con la lista de opciones dada y selecciona el índice por defecto indicado,
+    // dejando además avisos por consola si falta alguna referencia (para depurar errores de configuración del Inspector).
     private void PoblarDropdown(TMP_Dropdown dropdown, List<string> opciones, int indiceDefecto)
     {
         if (dropdown == null)
@@ -226,6 +284,8 @@ public class UI_SeccionBBDD : MonoBehaviour
 
         int targetIndex = Mathf.Clamp(indiceDefecto, 0, opciones.Count - 1);
 
+        // Truco: forzamos primero un valor "-1" para asegurarnos de que al asignar targetIndex
+        // se refresque bien el texto mostrado, incluso si targetIndex coincide con el valor previo.
         dropdown.SetValueWithoutNotify(-1);
         dropdown.value = targetIndex;
         dropdown.RefreshShownValue();
@@ -244,6 +304,8 @@ public class UI_SeccionBBDD : MonoBehaviour
         }
     }
 
+    // Cambia el valor seleccionado de un desplegable ya poblado (sin volver a rellenar sus opciones),
+    // usado por ConfigurarEstadoPorAutoStart para restaurar una selección previa.
     private void SetDropdownValor(TMP_Dropdown dropdown, int valor)
     {
         if (dropdown == null)
@@ -276,6 +338,8 @@ public class UI_SeccionBBDD : MonoBehaviour
         }
     }
 
+    // Lee el número (hora, minuto o segundo) representado por el texto de la opción actualmente
+    // seleccionada en el desplegable; si algo falla, devuelve el valor por defecto indicado.
     private int ObtenerValorDropdown(TMP_Dropdown dropdown, int valorPorDefecto)
     {
         if (dropdown != null && dropdown.options != null && dropdown.options.Count > 0)
@@ -291,6 +355,8 @@ public class UI_SeccionBBDD : MonoBehaviour
         return valorPorDefecto;
     }
 
+    // Fuerza el repintado del texto mostrado en todos los desplegables del panel (a veces Unity
+    // no actualiza bien el texto visible tras activar/desactivar el panel).
     private void RefrescarTodosLosDropdownsVisualmente()
     {
         Debug.Log("🔄 [UI_SeccionBBDD] Refrescando visualmente todos los desplegables...");

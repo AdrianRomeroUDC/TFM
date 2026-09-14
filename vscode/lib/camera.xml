@@ -1,0 +1,23 @@
+// Configuración física y de resolución de la cámara USB
+// auto generated content from camera configuration
+from lib.controller import *
+import fischertechnik.factories as txt_factory
+
+// Indica que la imagen no debe rotarse (False = orientación estándar)
+TXT_SSC_M_USB1_1_camera.set_rotate(False)
+// Define la resolución vertical en 240 píxeles
+TXT_SSC_M_USB1_1_camera.set_height(240)
+// Define la resolución horizontal en 320 píxeles
+TXT_SSC_M_USB1_1_camera.set_width(320)
+// Establece la velocidad de captura en 15 cuadros por segundo (FPS)
+TXT_SSC_M_USB1_1_camera.set_fps(15)
+// Ordena a la cámara que comience a capturar y transmitir video
+TXT_SSC_M_USB1_1_camera.start()
+
+// Configuración de la detección de movimiento (Analítica de video)
+// Crea el detector definiendo el área de vigilancia:
+// (x=0, y=0, ancho=320, alto=240, sensibilidad=1)
+// En este caso, vigila TODA el área de la imagen con sensibilidad mínima (1)
+motion_detector = txt_factory.camera_factory.create_motion_detector(0, 0, 320, 240, 1)
+// Vincula el detector de movimiento a la cámara activa para que empiece a procesar frames
+TXT_SSC_M_USB1_1_camera.add_detector(motion_detector)
