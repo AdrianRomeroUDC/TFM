@@ -105,27 +105,21 @@ public class MQTT_InterfaceClient : MonoBehaviour
     {
         if (client != null && client.IsConnected) return;
 
-        // Valores de conexión por defecto (red local de la fábrica).
-        string brokerHost = "10.113.36.36";
-        int puerto = 1884;
-        string usuario = "LearningFactory";
-        string contrasena = "Fischertechnik1";
-
-        // Si el cliente MQTT "principal" (el que mueve el gemelo digital) ya existe y está configurado,
-        // reutilizamos exactamente los mismos datos de conexión para no tener que mantenerlos duplicados.
-        if (MQTTClient.Instance != null)
+        if (MQTTClient.Instance == null)
         {
-            brokerHost = MQTTClient.Instance.brokerHost;
-            puerto = MQTTClient.Instance.puerto;
-            usuario = MQTTClient.Instance.usuario;
-            contrasena = MQTTClient.Instance.contrasena;
+            Debug.LogError("MQTT_InterfaceClient: no se encontró MQTTClient en la escena, no se puede conectar.");
+            return;
         }
 
-        string clientIdShort = "Unity_Interfaz_" + UnityEngine.Random.Range(10000, 99999);
+        string brokerHost = MQTTClient.Instance.brokerHost;
+        int puerto = MQTTClient.Instance.puerto;
+        string usuario = MQTTClient.Instance.usuario;
+        string contrasena = MQTTClient.Instance.contrasena;
 
-        // Lanzamos la conexión en un hilo de fondo (Task.Run) para no bloquear el hilo principal de Unity.
+        string clientIdShort = "Unity_Interfaz_" + UnityEngine.Random.Range(10000, 99999);
         Task.Run(() => ConnectAsync(clientIdShort, brokerHost, puerto, usuario, contrasena));
     }
+
 
     void OnEnable()
     {

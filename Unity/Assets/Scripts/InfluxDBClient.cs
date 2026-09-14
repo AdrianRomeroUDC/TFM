@@ -22,10 +22,10 @@ public class InfluxDBClient : MonoBehaviour
     public static InfluxDBClient Instance { get { return instance; } }
 
     [Header("Configuración InfluxDB Cloud AWS")]
-    public string serverUrl = "https://eu-central-1-1.aws.cloud2.influxdata.com";
-    public string token = "tYzrHx9kwepkwm5ZwAGFbKA_aSok9i_OQBue_zAmXZY-5FxfBFxNoVLvcIzUCc0G1RDcLKY9DNtBI5Lbe0gWAg==";
-    public string org = "fischertechnik";
-    public string bucket = "factory_TFM";
+    public string serverUrl = "https://your-influx-instance.example.com"; // Cambiar por la URL de InfluxDB Cloud que se haya creado
+    public string token = "ChangeMe"; // Cambiar por el token de InfluxDB Cloud que se haya creado
+    public string org = "ChangeMe"; // Cambiar por el nombre de la organización de InfluxDB Cloud
+    public string bucket = "ChangeMe"; // Cambiar por el nombre del bucket de InfluxDB Cloud donde se guardan los datos
 
     // Representa una única fila del histórico: en qué instante (timestamp) se recibió qué mensaje
     // (topic + JSON) de la fábrica real.

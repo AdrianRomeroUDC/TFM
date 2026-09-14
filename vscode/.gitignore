@@ -17,3 +17,6 @@ Thumbs.db
 
 # Ignorar toda la carpeta de configuración de VS Code
 .vscode/
+
+.env
+.claude/

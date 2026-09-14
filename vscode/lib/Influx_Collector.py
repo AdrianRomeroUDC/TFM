@@ -17,13 +17,13 @@ except ImportError:
 
 from fischertechnik.mqtt.MqttClient import MqttClient
 
-INFLUX_URL = 'https://eu-central-1-1.aws.cloud2.influxdata.com/api/v2/write?org=fischertechnik&bucket=factory_TFM&precision=ms'
-INFLUX_TOKEN = 'tYzrHx9kwepkwm5ZwAGFbKA_aSok9i_OQBue_zAmXZY-5FxfBFxNoVLvcIzUCc0G1RDcLKY9DNtBI5Lbe0gWAg=='
+INFLUX_URL = 'https://your-influx-instance.example.com' # Cambiar por la URL de InfluxDB Cloud que se haya creado
+INFLUX_TOKEN = 'ChangeMe' # Cambiar por el token de InfluxDB Cloud que se haya creado
 
-MQTT_HOST = '10.113.36.36'
-MQTT_PORT = 1884
-MQTT_USER = 'LearningFactory'
-MQTT_PASSWORD = 'Fischertechnik1'
+MQTT_HOST = 'ChangeMe' # Cambiar por la IP o dominio del broker MQTT
+MQTT_PORT = 1884 # Cambiar por el puerto del broker MQTT
+MQTT_USER = 'ChangeMe' # Cambiar por el usuario del broker MQTT
+MQTT_PASSWORD = 'ChangeMe' # Cambiar por la contraseña del broker MQTT
 
 WORKERS = 1
 BATCH_SIZE = 100

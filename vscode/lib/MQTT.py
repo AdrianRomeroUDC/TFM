@@ -60,10 +60,10 @@ def connectLocal():
 
     # TODO:
     client_local.connect(
-      host='10.113.36.36', 
-      port=1884, 
-      user='LearningFactory', 
-      password='Fischertechnik1'
+      host='ChangeMe', # Cambiar por la IP o dominio del broker MQTT 
+      port=1884, # Cambiar por el puerto del broker MQTT
+      user='ChangeMe', # Cambiar por el usuario del broker MQTT
+      password='ChangeMe' # Cambiar por la contraseña del broker MQTT
       ) # Conexión al broker del PC
     
     # client_local.connect(host='localhost', port=2883, user='', password='') # Conexión al broker interno (Mosquitto)

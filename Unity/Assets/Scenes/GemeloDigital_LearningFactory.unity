@@ -23143,8 +23143,7 @@ MonoBehaviour:
   unityPanMaxY: 50
   unityTiltMinZ: 250
   unityTiltMaxZ: 15
-  duracionInterpolacionMin: 0.02
-  duracionInterpolacionMax: 0.6
+  suavizado: 5
 --- !u!1 &1157828167
 GameObject:
   m_ObjectHideFlags: 0
@@ -25336,8 +25335,7 @@ MonoBehaviour:
   unityVert_Max: 0.000652
   unityExt_Min: -0.00089
   unityExt_Max: 0.00043
-  duracionInterpolacionMin: 0.02
-  duracionInterpolacionMax: 0.6
+  lerpSpeed: 5
 --- !u!4 &1243185283
 Transform:
   m_ObjectHideFlags: 0
@@ -37157,10 +37155,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15658a2a98b17fd48b0fb5bb1bb0d717, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InfluxDBClient
-  serverUrl: https://eu-central-1-1.aws.cloud2.influxdata.com
-  token: tYzrHx9kwepkwm5ZwAGFbKA_aSok9i_OQBue_zAmXZY-5FxfBFxNoVLvcIzUCc0G1RDcLKY9DNtBI5Lbe0gWAg==
-  org: fischertechnik
-  bucket: factory_TFM
+  serverUrl: CHANGE_ME
+  token: CHANGE_ME
+  org: CHANGE_ME
+  bucket: CHANGE_ME
 --- !u!4 &1874690347
 Transform:
   m_ObjectHideFlags: 0
@@ -37798,8 +37796,7 @@ MonoBehaviour:
   unityV_Max: -0.001279
   unityE_Estirado: -0.00149
   unityE_Recogido: -0.001883
-  duracionInterpolacionMin: 0.02
-  duracionInterpolacionMax: 0.6
+  lerpSpeed: 5
   tiempoAnimacion: 4
   objetoCogido: {fileID: 0}
   esOperacionDeEntrega: 0
@@ -40685,10 +40682,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9de9c0eec693b07449b47663f377526e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MQTTClient
-  brokerHost: 10.113.36.36
-  puerto: 1884
-  usuario: LearningFactory
-  contrasena: Fischertechnik1
+  brokerHost: CHANGE_ME
+  puerto: 0
+  usuario: CHANGE_ME
+  contrasena: CHANGE_ME
 --- !u!4 &2076051687
 Transform:
   m_ObjectHideFlags: 0

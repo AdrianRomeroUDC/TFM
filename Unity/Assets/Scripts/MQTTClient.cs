@@ -121,10 +121,10 @@ public class MQTTClient : MonoBehaviour
     private readonly object lockCola = new object(); // Candado para que ambos hilos no toquen la cola a la vez.
 
     [Header("Configuración del Broker")]
-    public string brokerHost = "10.113.36.36";
-    public int puerto = 1884;
-    public string usuario = "LearningFactory";
-    public string contrasena = "Fischertechnik1";
+    public string brokerHost = "ChangeMe"; // Cambiar por la IP o dominio del broker MQTT
+    public int puerto = 1884; // Cambiar por el puerto del broker MQTT
+    public string usuario = "ChangeMe"; // Cambiar por el usuario del broker MQTT
+    public string contrasena = "ChangeMe"; // Cambiar por la contraseña del broker MQTT
 
     // --- EVENTOS ---
     // Cada evento representa "algo que ha cambiado en la fábrica real". Los controladores de cada
